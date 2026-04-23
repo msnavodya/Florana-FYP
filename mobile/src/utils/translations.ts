@@ -1,0 +1,46 @@
+const translations: Record<string, Record<string, string>> = {
+  en: {
+    hello_guest: "Hello, Guest",
+    hello_user: "Hello, {name}!",
+    search_placeholder: "Find Your Plants & More...",
+    todays_insights: "Today's Insights",
+    diagnose: "Diagnose",
+    analyzing: "Analyzing...",
+    tap_to_scan_leaf: "Tap to Scan Leaf",
+    feedback_card: "Feedback",
+    reviews: "{count} reviews",
+    care_reminder_card: "Care Reminder",
+    quick_tip_card: "Quick Tip",
+    search_plants: "Search plants...",
+    settings: "Settings",
+    display: "Display",
+    font_size: "Font Size",
+    language: "Language",
+    notifications: "Notifications",
+    watering_reminders: "Watering Reminders",
+    disease_alerts: "Disease Alerts",
+    weekly_summary: "Weekly Summary",
+    privacy_security: "Privacy & Security",
+    clear_search_history: "Clear Search History",
+    app_not_working: "App Not Working?",
+    app_restart_hint: "Try restarting the app or checking your internet connection.",
+    contact_support_card: "Contact Support",
+    email_support: "Email Support",
+    faq_center: "FAQ Center",
+    call_us: "Call Us",
+    share_your_thoughts: "Share Your Thoughts",
+    rate_app: "Rate App",
+    type_feedback: "Type your feedback here...",
+    submit_feedback: "Submit Feedback",
+    help_support: "Help & Support",
+    quick_tip: "Quick Tip",
+    plant_disease_prediction: "Plant Disease Prediction",
+  },
+  si: {},
+  ta: {},
+};
+
+translations.si = { ...translations.en };
+translations.ta = { ...translations.en };
+
+export default translations;
