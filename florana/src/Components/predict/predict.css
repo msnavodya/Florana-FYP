@@ -2,10 +2,25 @@
 .predict-container {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   background: #f4f6f8;
   padding: 20px;
+  position: relative;
+}
+
+.predict-topbar {
+  width: 100%;
+  max-width: 350px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.predict-topbar .menu-btn {
+  margin-left: auto;
 }
 
 /* Card */

@@ -1,51 +1,36 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Menu, ShoppingCart, WalletCards } from "lucide-react";
+import { buildApiUrl, createProduct, deleteProduct, getProducts } from "../../api";
 import { useTranslation } from "../language/LanguageContext";
-import Menu from "../menu/menu";
-import LanguageSelector from "../language/LanguageSelector";
-import "./catalog.css";
-
-/* Images */
+import autumnImg from "../Assets/autumnflower.jpg";
 import springImg from "../Assets/springflower.jpg";
 import summerImg from "../Assets/summerflower.jpg";
-import autumnImg from "../Assets/autumnflower.jpg";
 import winterImg from "../Assets/winterflower.jpg";
+import LanguageSelector from "../language/LanguageSelector";
+import MenuPanel from "../menu/menu";
+import "./catalog.css";
+
+const exchangeRates = { LKR: 1, USD: 0.0033, EUR: 0.003 };
+const currencySymbols = { LKR: "Rs.", USD: "$", EUR: "EUR" };
+
+const seasons = [
+  { title: "Spring", image: springImg },
+  { title: "Summer", image: summerImg },
+  { title: "Autumn", image: autumnImg },
+  { title: "Winter", image: winterImg },
+];
 
 export default function Catalog() {
   const navigate = useNavigate();
-  const API = "http://127.0.0.1:8000";
-
+  const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("buy");
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
   const [cartCount, setCartCount] = useState(0);
-  const { t } = useTranslation();
-
-  /* 🌍 Currency - global via localStorage */
-  const [currency, setCurrency] = useState(
-    localStorage.getItem("currency") || "LKR"
-  );
-  const [rates] = useState({
-    LKR: 1,
-    USD: 0.0033,
-    EUR: 0.003,
-  });
-
-  /* Listen for global changes from other tabs/pages */
-  useEffect(() => {
-    const handleStorageChange = () => {
-      setCurrency(localStorage.getItem("currency") || "LKR");
-    };
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
-
-  /* Update localStorage whenever currency changes */
-  useEffect(() => {
-    localStorage.setItem("currency", currency);
-  }, [currency]);
-
+  const [status, setStatus] = useState("");
+  const [currency, setCurrency] = useState(localStorage.getItem("currency") || "LKR");
   const [newPlant, setNewPlant] = useState({
     name: "",
     price: "",
@@ -53,48 +38,65 @@ export default function Catalog() {
     image: null,
   });
 
-  // ================= FETCH PRODUCTS =================
-  const fetchProducts = async () => {
+  const syncCartCount = () => {
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    setCartCount(cart.length);
+  };
+
+  const showStatus = (message) => {
+    setStatus(message);
+    window.clearTimeout(window.floranaCatalogStatusTimer);
+    window.floranaCatalogStatusTimer = window.setTimeout(() => setStatus(""), 2500);
+  };
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setCurrency(localStorage.getItem("currency") || "LKR");
+      syncCartCount();
+    };
+
+    fetchProductsList();
+    syncCartCount();
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("currency", currency);
+  }, [currency]);
+
+  const fetchProductsList = async () => {
     try {
-      const res = await fetch(`${API}/shop/products`);
-      const data = await res.json();
-      setProducts(data);
-    } catch (err) {
-      console.error("Fetch error:", err);
+      const response = await getProducts();
+      setProducts(response.data || []);
+    } catch (error) {
+      console.error("Fetch error:", error);
       setProducts([]);
     }
   };
 
-  // ================= LOAD =================
-  useEffect(() => {
-    fetchProducts();
-    const cart = JSON.parse(localStorage.getItem("cart")) || [];
-    setCartCount(cart.length);
-  }, []);
-
-  // ================= CONVERT PRICE =================
-  const convertPrice = (price) => {
-    return (price * rates[currency]).toFixed(2);
+  const formatPrice = (price) => {
+    const converted = Number(price || 0) * exchangeRates[currency];
+    return `${currencySymbols[currency]} ${converted.toFixed(2)}`;
   };
 
-  // ================= ADD TO CART =================
+  const updateCurrency = (value) => {
+    setCurrency(value);
+    localStorage.setItem("currency", value);
+    showStatus(`Currency changed to ${value}.`);
+  };
+
   const addToCart = (product) => {
-    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
     cart.push(product);
     localStorage.setItem("cart", JSON.stringify(cart));
-    setCartCount(cart.length);
-    alert("Added to cart 🛒");
+    syncCartCount();
+    showStatus(`${product.name} added to cart.`);
   };
 
-  // ================= NAVIGATE =================
-  const goToSeasonPage = (season) => {
-    navigate(`/season/${season.toLowerCase()}`);
-  };
-
-  // ================= SELL =================
   const handleSell = async () => {
     if (!newPlant.name || !newPlant.price || !newPlant.image) {
-      alert("Please fill all fields + image");
+      showStatus("Add the plant name, price, season, and image first.");
       return;
     }
 
@@ -105,243 +107,188 @@ export default function Catalog() {
       formData.append("season", newPlant.season);
       formData.append("file", newPlant.image);
 
-      await fetch(`${API}/shop/products`, {
-        method: "POST",
-        body: formData,
-      });
-
-      alert("Plant listed successfully 🌱");
-
-      setNewPlant({
-        name: "",
-        price: "",
-        season: "Spring",
-        image: null,
-      });
-
-      fetchProducts();
+      await createProduct(formData);
+      setNewPlant({ name: "", price: "", season: "Spring", image: null });
+      fetchProductsList();
       setActiveTab("buy");
-    } catch (err) {
-      console.error(err);
-      alert("Upload failed ❌");
+      showStatus("Plant listed successfully.");
+    } catch (error) {
+      console.error(error);
+      showStatus(error.response?.data?.detail || "Upload failed.");
     }
   };
 
-  // ================= SEARCH =================
-  const filteredProducts = products.filter((p) =>
-    (p.name || "").toLowerCase().includes(search.toLowerCase())
+  const filteredProducts = products.filter((product) =>
+    (product.name || "").toLowerCase().includes(search.toLowerCase())
   );
 
-  // ================= SEASONS =================
-  const seasons = [
-    { title: "Spring", image: springImg },
-    { title: "Summer", image: summerImg },
-    { title: "Autumn", image: autumnImg },
-    { title: "Winter", image: winterImg },
-  ];
-
   return (
-    <div className="catalog-wrapper">
-      <Menu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
-      <LanguageSelector />
-      <div className="catalog-container">
-        {/* BACK */}
-        <button className="back-btn" onClick={() => navigate(-1)}>←</button>
+    <div className="catalog-wrapper mobile-screen">
+      <MenuPanel isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
 
-        {/* MENU BUTTON */}
-        <button className="menu-btn" style={{position: "absolute", top: "10px", right: "10px"}} onClick={() => setMenuOpen(true)}>☰</button>
+      <div className="catalog-container mobile-frame">
+        <div className="catalog-scroll mobile-panel">
+          <div className="catalog-topbar">
+            <button className="back-btn" aria-label="Go back" onClick={() => navigate(-1)}>
+              <ArrowLeft size={18} />
+            </button>
 
-        {/* HEADER */}
-        <div className="catalog-header">
-          <div className="logo">🌸</div>
+            <div className="catalog-actions">
+              <LanguageSelector />
 
-          <input
-            type="text"
-            placeholder={t("search_plants")}
-            className="search-input"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+              <button className="catalog-cart-btn compact-cart-btn" aria-label="Open cart" onClick={() => navigate("/cart")}>
+                <ShoppingCart size={16} />
+                {cartCount > 0 ? <span className="catalog-cart-badge">{cartCount}</span> : null}
+              </button>
 
-          {/* 🔥 SMALL CURRENCY SELECT */}
-          <select
-            className="currency-mini"
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
-          >
-            <option value="LKR">Rs</option>
-            <option value="USD">$</option>
-            <option value="EUR">€</option>
-          </select>
-
-          {/* CART */}
-          <div className="cart-icon" onClick={() => navigate("/cart")}>
-            🛒
-            {cartCount > 0 && (
-              <span className="cart-badge">{cartCount}</span>
-            )}
-          </div>
-        </div>
-
-        <h2 className="catalog-title">Season Catalog</h2>
-
-        {/* TOGGLE */}
-        <div className="toggle-bar">
-          <button
-            className={activeTab === "buy" ? "active" : ""}
-            onClick={() => setActiveTab("buy")}
-          >
-            Buy
-          </button>
-          <button
-            className={activeTab === "sell" ? "active" : ""}
-            onClick={() => setActiveTab("sell")}
-          >
-            Sell
-          </button>
-        </div>
-
-        {/* ================= BUY ================= */}
-        {activeTab === "buy" && (
-          <>
-            <div className="season-grid">
-              {seasons.map((season) => (
-                <div
-                  key={season.title}
-                  className="season-card"
-                  onClick={() => goToSeasonPage(season.title)}
+              <label className="catalog-currency-btn compact-cart-btn" aria-label="Currency converter">
+                <WalletCards size={14} />
+                <select
+                  className="currency-mini compact-currency-mini"
+                  aria-label="Currency"
+                  value={currency}
+                  onChange={(event) => updateCurrency(event.target.value)}
                 >
-                  <img src={season.image} alt={season.title} />
-                  <div className="season-name">{season.title}</div>
-                </div>
-              ))}
+                  <option value="LKR">LKR</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                </select>
+              </label>
 
-              <div
-                className="season-card all-card"
-                onClick={() => navigate("/season/all")}
-              >
-                <div className="season-name">All</div>
-              </div>
+              <button className="menu-btn" aria-label="Open menu" onClick={() => setMenuOpen(true)}>
+                <Menu size={18} />
+              </button>
+            </div>
+          </div>
+
+          <div className="catalog-hero">
+            <div>
+              <p className="catalog-eyebrow">Florana Shop</p>
+              <h2 className="catalog-title">Season Catalog</h2>
+              <p className="catalog-subtitle">
+                Browse plants, switch currency instantly, and manage what you want to buy or sell.
+              </p>
             </div>
 
-            <h3 className="section-title">All Plants 🌿</h3>
-
-            <div className="product-grid">
-              {filteredProducts.length > 0 ? (
-                filteredProducts.map((p) => (
-                  <div key={p.id} className="product-card">
-                    <img
-                      src={p.image ? `${API}/${p.image}` : "/defaultPlant.jpg"}
-                      alt={p.name}
-                    />
-
-                    <h4>{p.name}</h4>
-                    <p>🌼 {p.season}</p>
-
-                    {/* 💱 PRICE */}
-                    <p className="price">
-                      {currency === "LKR" && "Rs. "}
-                      {currency === "USD" && "$ "}
-                      {currency === "EUR" && "€ "}
-                      {convertPrice(p.price)}
-                    </p>
-
-                    <button onClick={() => addToCart(p)}>
-                      Add to Cart
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <p className="no-data">No plants found 🌱</p>
-              )}
+            <div className="catalog-meta-card">
+              <div className="meta-stat">{products.length} plants listed</div>
             </div>
-          </>
-        )}
+          </div>
 
-        {/* ================= SELL ================= */}
-        {activeTab === "sell" && (
-          <div className="sell-form">
-            <h3>Manage Your Plants 🌱</h3>
+          {status ? <div className="catalog-status">{status}</div> : null}
 
+          <div className="catalog-header">
             <input
               type="text"
-              placeholder="Plant Name"
-              value={newPlant.name}
-              onChange={(e) =>
-                setNewPlant({ ...newPlant, name: e.target.value })
-              }
+              placeholder={t("search_plants")}
+              className="search-input"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
             />
-
-            <input
-              type="number"
-              placeholder="Price"
-              value={newPlant.price}
-              onChange={(e) =>
-                setNewPlant({ ...newPlant, price: e.target.value })
-              }
-            />
-
-            <select
-              value={newPlant.season}
-              onChange={(e) =>
-                setNewPlant({ ...newPlant, season: e.target.value })
-              }
-            >
-              <option>Spring</option>
-              <option>Summer</option>
-              <option>Autumn</option>
-              <option>Winter</option>
-            </select>
-
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) =>
-                setNewPlant({ ...newPlant, image: e.target.files[0] })
-              }
-            />
-
-            <button onClick={handleSell}>List Plant</button>
-
-            <h4>Your Listed Plants</h4>
-
-            <div className="product-grid">
-              {products.map((p) => (
-                <div key={p.id} className="product-card">
-                  <img
-                    src={p.image ? `${API}/${p.image}` : "/defaultPlant.jpg"}
-                    alt={p.name}
-                  />
-                  <h4>{p.name}</h4>
-                  <p>🌼 {p.season}</p>
-                  <p className="price">
-                    {currency === "LKR" && "Rs. "}
-                    {currency === "USD" && "$ "}
-                    {currency === "EUR" && "€ "}
-                    {convertPrice(p.price)}
-                  </p>
-
-                  <button
-                    onClick={async () => {
-                      if (window.confirm(`Delete ${p.name}? ❌`)) {
-                        await fetch(`${API}/shop/products/${p.id}`, {
-                          method: "DELETE",
-                        });
-                        fetchProducts();
-                      }
-                    }}
-                  >
-                    Delete
-                  </button>
-                </div>
-              ))}
-            </div>
           </div>
-        )}
 
-        {/* FLOATING CART */}
-        <div className="floating-cart" onClick={() => navigate("/cart")}>
-          🛒 {cartCount}
+          <div className="toggle-bar">
+            <button className={activeTab === "buy" ? "active" : ""} onClick={() => setActiveTab("buy")}>
+              Buy Plants
+            </button>
+            <button className={activeTab === "sell" ? "active" : ""} onClick={() => setActiveTab("sell")}>
+              Sell Plants
+            </button>
+          </div>
+
+          {activeTab === "buy" ? (
+            <>
+              <div className="season-grid">
+                {seasons.map((season) => (
+                  <div key={season.title} className="season-card" onClick={() => navigate(`/season/${season.title.toLowerCase()}`)}>
+                    <img src={season.image} alt={season.title} />
+                    <div className="season-name">{season.title}</div>
+                  </div>
+                ))}
+
+                <div className="season-card all-card" onClick={() => navigate("/season/all")}>
+                  <div className="season-name">All Plants</div>
+                </div>
+              </div>
+
+              <h3 className="section-title">Available Plants</h3>
+
+              <div className="product-grid">
+                {filteredProducts.length > 0 ? (
+                  filteredProducts.map((product) => (
+                    <div key={product.id} className="product-card">
+                      <img src={product.image ? buildApiUrl(product.image) : "/defaultPlant.jpg"} alt={product.name} />
+                      <h4>{product.name}</h4>
+                      <p>{product.season}</p>
+                      <p className="price">{formatPrice(product.price)}</p>
+                      <button onClick={() => addToCart(product)}>Add to Cart</button>
+                    </div>
+                  ))
+                ) : (
+                  <p className="no-data">No plants found for that search.</p>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="sell-form">
+              <h3>List a Plant for Sale</h3>
+
+              <input
+                type="text"
+                placeholder="Plant Name"
+                value={newPlant.name}
+                onChange={(event) => setNewPlant({ ...newPlant, name: event.target.value })}
+              />
+              <input
+                type="number"
+                placeholder="Price"
+                value={newPlant.price}
+                onChange={(event) => setNewPlant({ ...newPlant, price: event.target.value })}
+              />
+
+              <select
+                value={newPlant.season}
+                onChange={(event) => setNewPlant({ ...newPlant, season: event.target.value })}
+              >
+                <option>Spring</option>
+                <option>Summer</option>
+                <option>Autumn</option>
+                <option>Winter</option>
+              </select>
+
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) => setNewPlant({ ...newPlant, image: event.target.files?.[0] || null })}
+              />
+
+              <button onClick={handleSell}>List Plant</button>
+
+              <h4>Your Listed Plants</h4>
+
+              <div className="product-grid">
+                {products.map((product) => (
+                  <div key={product.id} className="product-card">
+                    <img src={product.image ? buildApiUrl(product.image) : "/defaultPlant.jpg"} alt={product.name} />
+                    <h4>{product.name}</h4>
+                    <p>{product.season}</p>
+                    <p className="price">{formatPrice(product.price)}</p>
+                    <button
+                      onClick={async () => {
+                        if (window.confirm(`Delete ${product.name}?`)) {
+                          await deleteProduct(product.id);
+                          fetchProductsList();
+                          showStatus(`${product.name} deleted.`);
+                        }
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

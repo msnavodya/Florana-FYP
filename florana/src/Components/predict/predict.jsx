@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Menu from "../menu/menu";
+import { ArrowLeft, Menu as MenuIcon } from "lucide-react";
+import { predictImage } from "../../api";
 import LanguageSelector from "../language/LanguageSelector";
+import Menu from "../menu/menu";
 import "./predict.css";
 
 export default function Predict() {
@@ -12,9 +14,11 @@ export default function Predict() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    if (!selectedFile) return;
+  const handleFileChange = (event) => {
+    const selectedFile = event.target.files[0];
+    if (!selectedFile) {
+      return;
+    }
 
     setFile(selectedFile);
     setPreview(URL.createObjectURL(selectedFile));
@@ -27,31 +31,19 @@ export default function Predict() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     setLoading(true);
     setMessage("");
 
     try {
-      const response = await fetch("http://localhost:8000/predict", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        const { prediction, confidence } = data;
-        const isHealthy = prediction === "Healthy Plant 🌿";
-        const status = isHealthy ? "Healthy Plant 🌿" : "Unhealthy Plant - Disease Detected";
-        setMessage(`✅ ${status} (${prediction}) - Confidence: ${confidence}%`);
-      } else {
-        setMessage(`❌ Error: ${data.detail || response.statusText || "Unknown server error"}`);
-      }
+      const response = await predictImage(file);
+      const { prediction, confidence } = response.data;
+      const percent = typeof confidence === "number" ? (confidence * 100).toFixed(2) : confidence;
+      const isHealthy = prediction === "Healthy Plant";
+      const status = isHealthy ? "Healthy Plant" : "Unhealthy Plant - Disease Detected";
+      setMessage(`${status} (${prediction}) - Confidence: ${percent}%`);
     } catch (error) {
       console.error(error);
-      setMessage("❌ Backend not reachable");
+      setMessage(`Error: ${error.response?.data?.detail || "Backend not reachable"}`);
     } finally {
       setLoading(false);
     }
@@ -61,10 +53,18 @@ export default function Predict() {
     <div className="predict-container">
       <Menu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
       <LanguageSelector />
-      <button className="back-btn" style={{position: "absolute", top: "10px", left: "10px"}} onClick={() => navigate(-1)}>←</button>
-      <button className="menu-btn" style={{position: "absolute", top: "10px", right: "10px"}} onClick={() => setMenuOpen(true)}>☰</button>
+
+      <div className="predict-topbar">
+        <button className="back-btn" aria-label="Go back" onClick={() => navigate(-1)}>
+          <ArrowLeft size={18} />
+        </button>
+        <button className="menu-btn" aria-label="Open menu" onClick={() => setMenuOpen(true)}>
+          <MenuIcon size={18} />
+        </button>
+      </div>
+
       <div className="predict-card">
-        <h2>🌿 Plant Disease Prediction</h2>
+        <h2>Plant Disease Prediction</h2>
 
         <input
           type="file"
@@ -73,19 +73,13 @@ export default function Predict() {
           className="file-input"
         />
 
-        {preview && (
-          <img src={preview} alt="preview" className="image-preview" />
-        )}
+        {preview ? <img src={preview} alt="preview" className="image-preview" /> : null}
 
-        <button
-          onClick={handleUpload}
-          disabled={loading}
-          className="upload-btn"
-        >
+        <button onClick={handleUpload} disabled={loading} className="upload-btn">
           {loading ? "Processing..." : "Predict Disease"}
         </button>
 
-        {message && <p className="status-message">{message}</p>}
+        {message ? <p className="status-message">{message}</p> : null}
       </div>
     </div>
   );

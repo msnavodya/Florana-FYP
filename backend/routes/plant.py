@@ -1,17 +1,25 @@
 # routes/plant.py
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
-from typing import Optional
+from datetime import datetime
 import os
 import shutil
-from database import plants_collection, growth_collection
-from datetime import datetime
+from typing import Optional
+
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+
+try:
+    from .. import database
+    from ..utils import local_store
+except ImportError:
+    import database
+    from utils import local_store
+
 
 router = APIRouter()
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# ================= CREATE PLANT =================
+
 @router.post("/plants/")
 async def create_plant(
     name: str = Form(...),
@@ -28,15 +36,17 @@ async def create_plant(
     lastWatered: Optional[str] = Form(None),
     initialSize: Optional[str] = Form(None),
     tracking: Optional[str] = Form("true"),
-    image: UploadFile = File(None)
+    image: UploadFile = File(None),
 ):
     try:
         image_path = None
         if image:
-            file_path = os.path.join(UPLOAD_DIR, image.filename)
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            filename = f"{timestamp}_{image.filename}"
+            file_path = os.path.join(UPLOAD_DIR, filename)
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(image.file, buffer)
-            image_path = file_path
+            image_path = file_path.replace("\\", "/")
 
         plant = {
             "name": name,
@@ -52,36 +62,42 @@ async def create_plant(
             "fertilizerSchedule": fertilizerSchedule,
             "lastWatered": lastWatered,
             "initialSize": initialSize,
-            "tracking": tracking.lower() == "true",
+            "tracking": str(tracking).lower() == "true",
             "image_path": image_path,
-            "created_at": datetime.now()
+            "created_at": local_store.now_iso(),
         }
+
+        plants_collection = database.get_plants_collection()
+        if plants_collection is None:
+            return local_store.create_item(local_store.PLANTS_FILE, plant)
 
         result = plants_collection.insert_one(plant)
         plant["_id"] = str(result.inserted_id)
         return plant
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ================= GET ALL PLANTS =================
 @router.get("/plants/")
 def get_all_plants():
-    plants = list(plants_collection.find({}))
-    for p in plants:
-        p["_id"] = str(p["_id"])
+    plants_collection = database.get_plants_collection()
+    plants = local_store.list_items(local_store.PLANTS_FILE) if plants_collection is None else list(plants_collection.find({}))
+    for plant in plants:
+        if "_id" in plant:
+            plant["_id"] = str(plant["_id"])
     return plants
 
 
-# ================= GET BY NAME =================
 @router.get("/plants/by-name/{name}")
 def get_plant_by_name(name: str):
-    plant = plants_collection.find_one({"name": name})
+    plants_collection = database.get_plants_collection()
+    if plants_collection is None:
+        plant = local_store.find_item(local_store.PLANTS_FILE, lambda item: item.get("name") == name)
+    else:
+        plant = plants_collection.find_one({"name": name})
+
     if not plant:
         raise HTTPException(status_code=404, detail="Plant not found")
+
     plant["_id"] = str(plant["_id"])
     return plant
-
-
-# ================= END =================

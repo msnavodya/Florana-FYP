@@ -1,127 +1,96 @@
-// api.js
 import axios from "axios";
 
-// ================= BASE CONFIG =================
-const defaultHost = window?.location?.hostname || "127.0.0.1";
-const API_URL =
-  process.env.REACT_APP_API_URL ||
-  `http://${defaultHost}:8000`;
+
+const fallbackHost = window?.location?.hostname || "127.0.0.1";
+export const API_URL = (process.env.REACT_APP_API_URL || `http://${fallbackHost}:8000`).replace(/\/+$/, "");
 
 const API = axios.create({
   baseURL: API_URL,
   timeout: 15000,
 });
 
-console.log("API base URL:", API_URL);
 
-// ================= REQUEST LOGGING =================
 API.interceptors.request.use(
   (config) => {
-    console.log("API Request:", config.method, config.url, config.data || config.params);
     const token = localStorage.getItem("token");
-
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
     return config;
   },
-  (error) => {
-    console.error("API Request Error:", error);
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// ================= RESPONSE LOGGING =================
-API.interceptors.response.use(
-  (response) => {
-    console.log("API Response:", response.status, response.config.url, response.data);
-    return response;
-  },
-  (error) => {
-    console.error("API Response Error:", error.response?.status, error.response?.data || error.message);
-    return Promise.reject(error);
+
+export const buildApiUrl = (path = "") => {
+  if (!path) {
+    return API_URL;
   }
-);
 
-// ================= AUTH =================
+  if (/^https?:\/\//i.test(path)) {
+    return path;
+  }
 
-// 🔐 REGISTER
-export const registerUser = (email, password) => {
-  return API.post("/auth/signup", { email, password });
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${API_URL}${normalizedPath}`;
 };
 
-// 🔐 LOGIN
+
+export const signupUser = (payload) => API.post("/auth/signup", payload);
+
 export const loginUser = async (email, password) => {
-  const res = await API.post("/auth/login", { email, password });
+  const response = await API.post("/auth/login", { email, password });
 
-  // ✅ Save token automatically
-  if (res.data.access_token) {
-    localStorage.setItem("token", res.data.access_token);
+  if (response.data?.access_token) {
+    localStorage.setItem("token", response.data.access_token);
   }
 
-  return res;
+  return response;
 };
 
-// ================= AI PREDICTION =================
-
-// 🌿 Predict plant disease
 export const predictImage = (file) => {
   const formData = new FormData();
   formData.append("file", file);
 
   return API.post("/predict", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
+    headers: { "Content-Type": "multipart/form-data" },
   });
 };
 
-// ================= PLANTS =================
+export const getPlants = () => API.get("/plants/");
 
-// 🌱 Get all plants
-export const getPlants = () => {
-  return API.get("/plants/");
-};
-
-// 🌱 Create new plant
-export const createPlant = (formData) => {
-  return API.post("/plants/", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
+export const createPlant = (formData) =>
+  API.post("/plants/", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
   });
-};
 
-// 🌱 Get plant by ID
-export const getPlant = (plantId) => {
-  return API.get(`/plants/${plantId}`);
-};
+export const deletePlant = (plantId) => API.delete(`/plants/${plantId}`);
 
-// 🌱 Get plant by name
-export const getPlantByName = (plantName) => {
-  return API.get(`/plants/by-name/${encodeURIComponent(plantName)}`);
-};
+export const getPlant = (plantId) => API.get(`/plants/${plantId}`);
 
-// ================= 🌱 GROWTH TRACKER =================
+export const getPlantByName = (plantName) =>
+  API.get(`/plants/by-name/${encodeURIComponent(plantName)}`);
 
-// 🌿 Add growth record
-export const addGrowth = (formData) => {
-  return API.post("/growth/", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
+export const addGrowth = (formData) =>
+  API.post("/growth/", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
   });
-};
 
-// 🌿 Get growth history by plant ID
-export const getGrowth = (plantId) => {
-  return API.get(`/growth/${plantId}`);
-};
+export const getGrowth = (plantId) => API.get(`/growth/${plantId}`);
 
-// ================= EXTRA (OPTIONAL) =================
+export const getProducts = () => API.get("/shop/products");
 
-// 🚪 Logout helper
+export const createProduct = (formData) =>
+  API.post("/shop/products", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+export const deleteProduct = (productId) => API.delete(`/shop/products/${productId}`);
+
 export const logoutUser = () => {
   localStorage.removeItem("token");
+  localStorage.removeItem("user");
 };
+
+
+export default API;

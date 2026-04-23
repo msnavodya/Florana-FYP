@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Menu as MenuIcon } from "lucide-react";
 import { useTranslation } from "../language/LanguageContext";
-import Menu from "../menu/menu";
 import LanguageSelector from "../language/LanguageSelector";
-import "./feedback.css";
+import Menu from "../menu/menu";
 import logo from "../Assets/floranalogo.jpg";
+import "./feedback.css";
 
 export default function Feedback() {
   const navigate = useNavigate();
@@ -27,7 +28,7 @@ export default function Feedback() {
     saved.unshift(newEntry);
     localStorage.setItem("feedbacks", JSON.stringify(saved));
 
-    alert(t("submit_feedback") + " 👍");
+    alert(`${t("submit_feedback")} 👍`);
     setFeedback("");
     setRating(0);
   };
@@ -37,40 +38,27 @@ export default function Feedback() {
       <Menu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
       <LanguageSelector />
       <div className="feedback-container">
-
-        {/* Back Button */}
-        <button className="back-btn" onClick={() => navigate(-1)}>←</button>
-
-        {/* Menu Button */}
-        <button className="menu-btn" onClick={() => setMenuOpen(true)}>☰</button>
-
-        {/* Logo */}
-        <img src={logo} alt="App Logo" className="feedback-logo" />
-
-        {/* Title */}
-        <h2 className="feedback-title">{t("feedback_card")}</h2>
-
-        {/* Contact Support Card */}
-        <div className="card support-card">
-          <h3>{t("contact_support_card")}</h3>
-
-          <div className="support-item">
-            <span>📧</span> {t("email_support")}
-          </div>
-
-          <div className="support-item">
-            <span>❓</span> {t("faq_center")}
-          </div>
-
-          <div className="support-item">
-            <span>📞</span> {t("call_us")}
-          </div>
+        <div className="page-topbar">
+          <button className="back-btn" aria-label="Go back" onClick={() => navigate(-1)}>
+            <ArrowLeft size={18} />
+          </button>
+          <button className="menu-btn" aria-label="Open menu" onClick={() => setMenuOpen(true)}>
+            <MenuIcon size={18} />
+          </button>
         </div>
 
-        {/* Share Thoughts */}
+        <img src={logo} alt="App Logo" className="feedback-logo" />
+        <h2 className="feedback-title">{t("feedback_card")}</h2>
+
+        <div className="card support-card">
+          <h3>{t("contact_support_card")}</h3>
+          <div className="support-item"><span>📧</span> {t("email_support")}</div>
+          <div className="support-item"><span>❓</span> {t("faq_center")}</div>
+          <div className="support-item"><span>📞</span> {t("call_us")}</div>
+        </div>
+
         <div className="card thoughts-card">
           <h3>{t("share_your_thoughts")}</h3>
-
           <p>{t("rate_app")}</p>
 
           <div className="stars">
@@ -85,22 +73,19 @@ export default function Feedback() {
             ))}
           </div>
 
-          <button className="review-btn">
-            Leave an App Store Review
-          </button>
+          <button className="review-btn">Leave an App Store Review</button>
 
           <textarea
             className="feedback-input"
             placeholder={t("type_feedback")}
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
-          ></textarea>
+          />
 
           <button className="submit-btn" onClick={handleSubmit}>
             {t("submit_feedback")}
           </button>
         </div>
-
       </div>
     </div>
   );

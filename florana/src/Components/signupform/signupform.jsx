@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "./signupform.css";
-
+import { signupUser } from "../../api";
 import logo from "../Assets/florana.jpg";
 import googleLogo from "../Assets/google.jpg";
+import "./signupform.css";
+
 
 export default function SignUpForm() {
   const navigate = useNavigate();
@@ -41,35 +42,24 @@ export default function SignUpForm() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          full_name: fullName,
-          email,
-          password,
-          contact: contact || null,
-          location: location || null,
-        }),
+      const response = await signupUser({
+        full_name: fullName,
+        email,
+        password,
+        contact: contact || null,
+        location: location || null,
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        saveSession(data);
-        navigate("/home", { replace: true });
-      } else if (Array.isArray(data.detail)) {
-        setErrorMessage(
-          data.detail.map((err) => err.msg || JSON.stringify(err)).join(", ")
-        );
-      } else if (typeof data.detail === "string") {
-        setErrorMessage(data.detail);
-      } else {
-        setErrorMessage("Signup failed. Please try again.");
-      }
+      saveSession(response.data);
+      navigate("/home", { replace: true });
     } catch (error) {
       console.error("Signup Error:", error);
-      setErrorMessage("Cannot connect to backend server!");
+      const detail = error.response?.data?.detail;
+      setErrorMessage(
+        Array.isArray(detail)
+          ? detail.map((err) => err.msg || JSON.stringify(err)).join(", ")
+          : detail || "Cannot connect to backend server!"
+      );
     } finally {
       setLoading(false);
     }
@@ -80,14 +70,12 @@ export default function SignUpForm() {
       <div className="phone-frame">
         <div className="signup-card">
           <button className="back-btn" onClick={() => navigate(-1)}>
-            ←
+            {"<"}
           </button>
 
           <img src={logo} alt="Florana Logo" className="signup-logo" />
 
-          {errorMessage && (
-            <p style={{ color: "red", fontSize: "14px" }}>{errorMessage}</p>
-          )}
+          {errorMessage && <p style={{ color: "red", fontSize: "14px" }}>{errorMessage}</p>}
 
           <input
             type="text"
@@ -117,11 +105,7 @@ export default function SignUpForm() {
             value={contact}
             onChange={(e) => setContact(e.target.value)}
           />
-          <select
-            className="input-field"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-          >
+          <select className="input-field" value={location} onChange={(e) => setLocation(e.target.value)}>
             <option value="">Select Location</option>
             <option value="Colombo">Colombo</option>
             <option value="Gampaha">Gampaha</option>
@@ -140,12 +124,7 @@ export default function SignUpForm() {
 
           <div className="or-text">OR</div>
 
-          <button
-            className="google-btn"
-            onClick={() =>
-              window.open("https://accounts.google.com/signin", "_blank")
-            }
-          >
+          <button className="google-btn" onClick={() => window.open("https://accounts.google.com/signin", "_blank")}>
             <img src={googleLogo} alt="Google Logo" className="google-icon" />
             CONTINUE WITH GOOGLE
           </button>

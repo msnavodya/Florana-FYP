@@ -27,13 +27,25 @@
   box-shadow: 0 8px 20px rgba(0,0,0,0.15);
 }
 
+.help-topbar {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 44px;
+}
+
+.help-topbar .menu-btn {
+  margin-left: auto;
+}
+
 /* ===== LOGO ===== */
 .help-logo {
   width: 140px;         /* smaller to fit frame */
   height: 140px;        /* proportional */
   border-radius: 50%;
   object-fit: cover;
-  margin-top: 20px;
+  margin-top: 8px;
 }
 
 /* ===== TITLE ===== */
@@ -47,9 +59,6 @@
 
 /* ===== BACK BUTTON ===== */
 .back-btn {
-  position: absolute;
-  left: 12px;
-  top: 12px;
   font-size: 18px;      /* smaller */
   background: none;
   color: white;

@@ -23,6 +23,19 @@
   text-align: center;
 }
 
+.page-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 44px;
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+.page-topbar .menu-btn {
+  margin-left: auto;
+}
+
 .quick-tip-card h2 {
   margin: 0 0 8px;
   color: #523e7a;
@@ -80,9 +93,6 @@
 }
 
 .back-btn {
-  position: absolute;
-  top: 12px;
-  left: 12px;
   width: 34px;
   height: 34px;
   border-radius: 50%;

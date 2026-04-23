@@ -1,49 +1,52 @@
-import React from 'react';
-import { useTranslation } from './LanguageContext';
-import './language.css';
+import React from "react";
+import { Languages } from "lucide-react";
+import { useTranslation } from "./LanguageContext";
+import "./language.css";
 
-const LanguageSelector = () => {
+const codeToLabel = {
+  en: "English",
+  si: "Sinhala",
+  ta: "Tamil",
+};
+
+const labelToCode = {
+  English: "en",
+  Sinhala: "si",
+  Tamil: "ta",
+};
+
+const languages = [
+  { code: "en", short: "EN", label: "English" },
+  { code: "si", short: "SI", label: "Sinhala" },
+  { code: "ta", short: "TA", label: "Tamil" },
+];
+
+export default function LanguageSelector() {
   const { language, setLanguage } = useTranslation();
-
-  const codeToLabel = {
-    en: 'English',
-    si: 'Sinhala',
-    ta: 'Tamil',
-  };
-
-  const labelToCode = {
-    English: 'en',
-    Sinhala: 'si',
-    Tamil: 'ta',
-  };
-
-  const selectedLanguage = labelToCode[language] || 'en';
+  const selectedLanguage = labelToCode[language] || "en";
+  const selectedShort = languages.find((item) => item.code === selectedLanguage)?.short || "EN";
 
   const handleLanguageChange = (languageCode) => {
-    setLanguage(codeToLabel[languageCode] || 'English');
+    setLanguage(codeToLabel[languageCode] || "English");
   };
-
-  const languages = [
-    { code: 'en', name: 'EN' },
-    { code: 'si', name: 'SI' },
-    { code: 'ta', name: 'TA' }
-  ];
 
   return (
     <div className="language-selector">
-      <select
-        value={selectedLanguage}
-        onChange={(e) => handleLanguageChange(e.target.value)}
-        className="language-dropdown"
-      >
-        {languages.map((lang) => (
-          <option key={lang.code} value={lang.code}>
-            {lang.name}
-          </option>
-        ))}
-      </select>
+      <label className="language-field" aria-label="Language selector">
+        <Languages size={12} strokeWidth={2.3} />
+        <span className="language-code">{selectedShort}</span>
+        <select
+          value={selectedLanguage}
+          onChange={(event) => handleLanguageChange(event.target.value)}
+          className="language-dropdown"
+        >
+          {languages.map((languageOption) => (
+            <option key={languageOption.code} value={languageOption.code}>
+              {languageOption.short} · {languageOption.label}
+            </option>
+          ))}
+        </select>
+      </label>
     </div>
   );
-};
-
-export default LanguageSelector;
+}

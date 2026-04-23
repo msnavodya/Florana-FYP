@@ -1,15 +1,16 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Menu from "../menu/menu";
+import { AlarmClock, ArrowLeft, BellRing, Menu, Plus, Trash2 } from "lucide-react";
+import MenuPanel from "../menu/menu";
 import LanguageSelector from "../language/LanguageSelector";
 import "./carereminder.css";
 
 const defaultOptions = [
   { key: "watering", title: "Watering", info: "Notify when plant needs water" },
   { key: "fertilizing", title: "Fertilizing", info: "Remind when to fertilize" },
-  { key: "pruning", title: "Pruning", info: "Alerts for trimming/shaping" },
+  { key: "pruning", title: "Pruning", info: "Alerts for trimming and shaping" },
   { key: "repotting", title: "Repotting", info: "Remind when to repot" },
-  { key: "sunlight", title: "Sunlight", info: "Suggest moving plants for light" },
+  { key: "sunlight", title: "Sunlight", info: "Suggest moving plants for better light" },
 ];
 
 const initialOptions = {
@@ -26,18 +27,15 @@ export default function CareReminder() {
   const navigate = useNavigate();
   const timerRef = useRef(null);
   const [menuOpen, setMenuOpen] = useState(false);
-
   const [options, setOptions] = useState(initialOptions);
   const [customNotes, setCustomNotes] = useState([]);
   const [newCustomNote, setNewCustomNote] = useState("");
   const [summaryMode, setSummaryMode] = useState("daily");
   const [notifications, setNotifications] = useState(initialNotifications);
   const [wateringTime, setWateringTime] = useState("07:00");
-
-  // ✅ NEW: in-app reminders
   const [inAppMessages, setInAppMessages] = useState([]);
+  const [status, setStatus] = useState("");
 
-  /* ========= LOAD ========= */
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem("careReminder") || "null");
     if (saved) {
@@ -54,7 +52,6 @@ export default function CareReminder() {
     }
   }, []);
 
-  /* ========= SAVE ========= */
   useEffect(() => {
     localStorage.setItem(
       "careReminder",
@@ -69,39 +66,41 @@ export default function CareReminder() {
     );
   }, [options, customNotes, summaryMode, notifications, wateringTime, inAppMessages]);
 
-  /* ========= NOTIFICATION ========= */
+  const showStatus = (message) => {
+    setStatus(message);
+    window.clearTimeout(window.floranaCareStatusTimer);
+    window.floranaCareStatusTimer = window.setTimeout(() => setStatus(""), 2600);
+  };
+
   const sendNotification = () => {
     const messageText = `Time to water your plant (${wateringTime})`;
 
-    // Browser push
     if (notifications.push && Notification.permission === "granted") {
-      new Notification("🌿 Plant Care Reminder", { body: messageText });
+      new Notification("Plant Care Reminder", { body: messageText });
     }
 
-    // In-app message
-    setInAppMessages((prev) => [
-      { id: Date.now(), text: messageText },
-      ...prev,
-    ]);
+    setInAppMessages((previous) => [{ id: Date.now(), text: messageText }, ...previous]);
+    showStatus("Test reminder added.");
   };
 
-  /* ========= DAILY SCHEDULER ========= */
   const scheduleNotification = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     if (!options.watering) return;
 
     const now = new Date();
-    const [h, m] = wateringTime.split(":").map(Number);
-
+    const [hour, minute] = wateringTime.split(":").map(Number);
     const target = new Date();
-    target.setHours(h, m, 0, 0);
-    if (target <= now) target.setDate(target.getDate() + 1);
+    target.setHours(hour, minute, 0, 0);
+
+    if (target <= now) {
+      target.setDate(target.getDate() + 1);
+    }
 
     const delay = target - now;
 
     timerRef.current = setTimeout(() => {
       sendNotification();
-      scheduleNotification(); // repeat next day
+      scheduleNotification();
     }, delay);
   };
 
@@ -110,150 +109,186 @@ export default function CareReminder() {
     return () => timerRef.current && clearTimeout(timerRef.current);
   }, [wateringTime, options.watering, notifications.push]);
 
-  /* ========= FUNCTIONS ========= */
-  const toggleOption = (key) =>
-    setOptions((prev) => ({ ...prev, [key]: !prev[key] }));
+  const toggleOption = (key) => {
+    setOptions((previous) => ({ ...previous, [key]: !previous[key] }));
+    showStatus(`${key} reminder updated.`);
+  };
 
-  const toggleNotification = (type) =>
-    setNotifications((prev) => ({ ...prev, [type]: !prev[type] }));
+  const toggleNotification = (type) => {
+    setNotifications((previous) => ({ ...previous, [type]: !previous[type] }));
+    showStatus(`${type} alerts updated.`);
+  };
 
   const addCustomNote = () => {
     const trimmed = newCustomNote.trim();
-    if (!trimmed) return;
-    setCustomNotes((prev) => [trimmed, ...prev]);
+
+    if (!trimmed) {
+      showStatus("Add a note first.");
+      return;
+    }
+
+    setCustomNotes((previous) => [trimmed, ...previous]);
     setNewCustomNote("");
+    showStatus("Custom reminder added.");
   };
 
-  const removeCustomNote = (index) =>
-    setCustomNotes((prev) => prev.filter((_, idx) => idx !== index));
+  const removeCustomNote = (index) => {
+    setCustomNotes((previous) => previous.filter((_, currentIndex) => currentIndex !== index));
+    showStatus("Custom reminder removed.");
+  };
 
-  const activeTasks =
-    defaultOptions.filter((opt) => options[opt.key]).length +
-    customNotes.length;
+  const activeTasks = defaultOptions.filter((option) => options[option.key]).length + customNotes.length;
 
-  /* ========= UI ========= */
   return (
-    <div className="care-reminder-mobile">
-      <Menu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
-      <LanguageSelector />
-      <div className="care-card">
-        {/* HEADER */}
-        <div className="header-row">
-          <button className="back-btn" onClick={() => navigate("/home")}>←</button>
-          <button className="menu-btn" style={{position: "absolute", top: "12px", right: "12px"}} onClick={() => setMenuOpen(true)}>☰</button>
-          <h2>Care Reminder</h2>
-        </div>
+    <div className="care-page mobile-screen">
+      <MenuPanel isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
 
-        {/* SUMMARY */}
-        <div className="summary-row">
-          <span>Active tasks: {activeTasks}</span>
-          <span>Mode: {summaryMode}</span>
-        </div>
+      <div className="care-shell mobile-frame">
+        <div className="care-scroll mobile-panel">
+          <LanguageSelector />
 
-        <div className="scroll-section">
-          {/* OPTIONS */}
-          <p className="section-title">Options</p>
-          {defaultOptions.map((opt) => (
-            <div key={opt.key} className="option-row">
-              <div>
-                <p>{opt.title}</p>
-                <small>{opt.info}</small>
-              </div>
-              <button
-                onClick={() => toggleOption(opt.key)}
-                className={options[opt.key] ? "on" : "off"}
-              >
-                {options[opt.key] ? "On" : "Off"}
-              </button>
+          <div className="care-topbar">
+            <button className="back-btn" aria-label="Go back" onClick={() => navigate("/home")}>
+              <ArrowLeft size={18} />
+            </button>
+
+            <button className="menu-btn" aria-label="Open menu" onClick={() => setMenuOpen(true)}>
+              <Menu size={18} />
+            </button>
+          </div>
+
+          <div className="care-hero">
+            <div className="care-hero-icon">
+              <AlarmClock size={22} />
             </div>
-          ))}
+            <p className="care-eyebrow">Plant schedule</p>
+            <h2>Care Reminder</h2>
+            <p className="care-subtitle">
+              Keep watering and care tasks organized with a clean mobile planner that saves automatically.
+            </p>
 
-          {/* TIME SETTING */}
-          {options.watering && (
-            <>
+            <div className="summary-row">
+              <span>Active tasks: {activeTasks}</span>
+              <span>Mode: {summaryMode}</span>
+            </div>
+          </div>
+
+          {status ? <div className="care-status">{status}</div> : null}
+
+          <div className="care-section">
+            <p className="section-title">Options</p>
+            {defaultOptions.map((option) => (
+              <div key={option.key} className="option-row">
+                <div>
+                  <p>{option.title}</p>
+                  <small>{option.info}</small>
+                </div>
+                <button
+                  onClick={() => toggleOption(option.key)}
+                  className={`toggle-btn ${options[option.key] ? "on" : "off"}`}
+                >
+                  {options[option.key] ? "On" : "Off"}
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {options.watering ? (
+            <div className="care-section">
               <p className="section-title">Watering Time</p>
               <div className="time-picker-row">
-                <input
-                  type="time"
-                  value={wateringTime}
-                  onChange={(e) => setWateringTime(e.target.value)}
-                />
+                <input type="time" value={wateringTime} onChange={(event) => setWateringTime(event.target.value)} />
               </div>
-            </>
-          )}
-
-          {/* CUSTOM NOTES */}
-          <p className="section-title">Custom Notes</p>
-          <div className="custom-input-row">
-            <input
-              placeholder="Add note"
-              value={newCustomNote}
-              onChange={(e) => setNewCustomNote(e.target.value)}
-            />
-            <button onClick={addCustomNote}>Add</button>
-          </div>
-          {customNotes.map((note, i) => (
-            <div key={i} className="custom-note-row">
-              <span>{note}</span>
-              <button onClick={() => removeCustomNote(i)}>✕</button>
             </div>
-          ))}
+          ) : null}
 
-          {/* SUMMARY */}
-          <p className="section-title">Summary</p>
-          <div className="summary-buttons">
-            <button
-              className={summaryMode === "daily" ? "active" : ""}
-              onClick={() => setSummaryMode("daily")}
-            >
-              Daily
-            </button>
-            <button
-              className={summaryMode === "weekly" ? "active" : ""}
-              onClick={() => setSummaryMode("weekly")}
-            >
-              Weekly
+          <div className="care-section">
+            <p className="section-title">Custom Notes</p>
+            <div className="custom-input-row">
+              <input
+                placeholder="Add note"
+                value={newCustomNote}
+                onChange={(event) => setNewCustomNote(event.target.value)}
+              />
+              <button onClick={addCustomNote} aria-label="Add custom note">
+                <Plus size={16} />
+              </button>
+            </div>
+
+            {customNotes.map((note, index) => (
+              <div key={`${note}-${index}`} className="custom-note-row">
+                <span>{note}</span>
+                <button onClick={() => removeCustomNote(index)} aria-label="Remove custom note">
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="care-section">
+            <p className="section-title">Summary</p>
+            <div className="summary-buttons">
+              <button
+                className={`summary-btn ${summaryMode === "daily" ? "active" : ""}`}
+                onClick={() => setSummaryMode("daily")}
+              >
+                Daily
+              </button>
+              <button
+                className={`summary-btn ${summaryMode === "weekly" ? "active" : ""}`}
+                onClick={() => setSummaryMode("weekly")}
+              >
+                Weekly
+              </button>
+            </div>
+          </div>
+
+          <div className="care-section">
+            <p className="section-title">Notifications</p>
+            <div className="option-row">
+              <div>
+                <p>Push Alerts</p>
+                <small>Browser notification reminders.</small>
+              </div>
+              <button
+                onClick={() => toggleNotification("push")}
+                className={`toggle-btn ${notifications.push ? "on" : "off"}`}
+              >
+                {notifications.push ? "On" : "Off"}
+              </button>
+            </div>
+
+            <div className="option-row">
+              <div>
+                <p>Email Alerts</p>
+                <small>Save your email reminder preference.</small>
+              </div>
+              <button
+                onClick={() => toggleNotification("email")}
+                className={`toggle-btn ${notifications.email ? "on" : "off"}`}
+              >
+                {notifications.email ? "On" : "Off"}
+              </button>
+            </div>
+
+            <button className="test-btn" onClick={sendNotification}>
+              <BellRing size={16} />
+              <span>Test Notification</span>
             </button>
           </div>
 
-          {/* NOTIFICATIONS */}
-          <p className="section-title">Notifications</p>
-          <div className="option-row">
-            <div>Push Alerts</div>
-            <button
-              onClick={() => toggleNotification("push")}
-              className={notifications.push ? "on" : "off"}
-            >
-              {notifications.push ? "On" : "Off"}
-            </button>
-          </div>
-          <div className="option-row">
-            <div>Email Alerts</div>
-            <button
-              onClick={() => toggleNotification("email")}
-              className={notifications.email ? "on" : "off"}
-            >
-              {notifications.email ? "On" : "Off"}
-            </button>
-          </div>
-
-          {/* TEST BUTTON */}
-          <button className="test-btn" onClick={sendNotification}>
-            Test Notification
-          </button>
-
-          {/* ========= IN-APP MESSAGES ========= */}
-          {inAppMessages.length > 0 && (
-            <div className="in-app-messages">
+          {inAppMessages.length > 0 ? (
+            <div className="care-section">
               <p className="section-title">Care Reminder Messages</p>
-              {inAppMessages.map((msg) => (
-                <div key={msg.id} className="message-box">
-                  {msg.text}
-                </div>
-              ))}
+              <div className="in-app-messages">
+                {inAppMessages.map((message) => (
+                  <div key={message.id} className="message-box">
+                    {message.text}
+                  </div>
+                ))}
+              </div>
             </div>
-          )}
-
+          ) : null}
         </div>
       </div>
     </div>

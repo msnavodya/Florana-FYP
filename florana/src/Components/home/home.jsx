@@ -1,10 +1,12 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Menu as MenuIcon } from "lucide-react";
+import { predictImage } from "../../api";
 import { useTranslation } from "../language/LanguageContext";
-import "./home.css";
 import logo from "../Assets/floranalogo.jpg";
-import Menu from "../menu/menu";
 import LanguageSelector from "../language/LanguageSelector";
+import Menu from "../menu/menu";
+import "./home.css";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -20,7 +22,6 @@ export default function Home() {
   const [touchEnd, setTouchEnd] = useState(null);
   const { t } = useTranslation();
 
-  // ================= GET USER (FIXED) =================
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
 
@@ -32,12 +33,10 @@ export default function Home() {
         localStorage.removeItem("user");
       }
     } else {
-      // allow guest user instead of redirecting
       setUser(null);
     }
   }, []);
 
-  // ================= LOAD FEEDBACK =================
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("feedbacks") || "[]");
@@ -47,7 +46,6 @@ export default function Home() {
     }
   }, []);
 
-  // ================= SLIDER FIX =================
   useEffect(() => {
     if (feedbacks.length === 0) {
       setCurrentFeedbackIndex(0);
@@ -56,27 +54,28 @@ export default function Home() {
     }
   }, [feedbacks, currentFeedbackIndex]);
 
-  // ================= SWIPE =================
   const minSwipeDistance = 50;
 
-  const onTouchStart = (e) => {
-    setTouchStart(e.targetTouches[0].clientX);
+  const onTouchStart = (event) => {
+    setTouchStart(event.targetTouches[0].clientX);
   };
 
-  const onTouchMove = (e) => {
-    setTouchEnd(e.targetTouches[0].clientX);
+  const onTouchMove = (event) => {
+    setTouchEnd(event.targetTouches[0].clientX);
   };
 
   const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
+    if (!touchStart || !touchEnd) {
+      return;
+    }
 
     const distance = touchStart - touchEnd;
 
     if (Math.abs(distance) > minSwipeDistance) {
       if (distance > 0 && currentFeedbackIndex < feedbacks.length - 1) {
-        setCurrentFeedbackIndex((prev) => prev + 1);
+        setCurrentFeedbackIndex((previous) => previous + 1);
       } else if (distance < 0 && currentFeedbackIndex > 0) {
-        setCurrentFeedbackIndex((prev) => prev - 1);
+        setCurrentFeedbackIndex((previous) => previous - 1);
       }
     }
 
@@ -85,65 +84,40 @@ export default function Home() {
   };
 
   const nextFeedback = () => {
-    setCurrentFeedbackIndex((prev) =>
-      prev < feedbacks.length - 1 ? prev + 1 : 0
-    );
+    setCurrentFeedbackIndex((previous) => (previous < feedbacks.length - 1 ? previous + 1 : 0));
   };
 
   const prevFeedback = () => {
-    setCurrentFeedbackIndex((prev) =>
-      prev > 0 ? prev - 1 : feedbacks.length - 1
-    );
+    setCurrentFeedbackIndex((previous) => (previous > 0 ? previous - 1 : feedbacks.length - 1));
   };
 
-  // ================= IMAGE SCAN =================
   const handleScan = async (event) => {
     const file = event.target.files[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
     setLoading(true);
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     try {
-      const response = await fetch("http://localhost:8000/predict", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        const { prediction, confidence } = data;
-
-        const isHealthy = prediction === "Healthy Plant 🌿";
-        const status = isHealthy
-          ? "Healthy Plant 🌿"
-          : "Unhealthy Plant - Disease Detected";
-
-        setDiagnosis(
-          `${status} (${prediction}) - Confidence: ${confidence}%`
-        );
-      } else {
-        setDiagnosis(
-          `❌ Error: ${data.detail || response.statusText}`
-        );
-      }
+      const response = await predictImage(file);
+      const { prediction, confidence } = response.data;
+      const percent = typeof confidence === "number" ? (confidence * 100).toFixed(2) : confidence;
+      const isHealthy = prediction === "Healthy Plant";
+      const status = isHealthy ? "Healthy Plant" : "Unhealthy Plant - Disease Detected";
+      setDiagnosis(`${status} (${prediction}) - Confidence: ${percent}%`);
     } catch (error) {
-      setDiagnosis("❌ Backend not reachable");
+      setDiagnosis(`Error: ${error.response?.data?.detail || "Backend not reachable"}`);
     } finally {
       setLoading(false);
+      event.target.value = "";
     }
   };
 
   return (
     <div className="home-container">
-
       <Menu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
-      <LanguageSelector />
 
-      {/* HEADER */}
       <div className="top-header">
         <div className="header-left">
           <img src={logo} alt="Florana Logo" className="header-logo" />
@@ -152,12 +126,14 @@ export default function Home() {
           </h3>
         </div>
 
-        <button className="menu-btn" onClick={() => setMenuOpen(true)}>
-          ☰
-        </button>
+        <div className="home-header-actions">
+          <LanguageSelector />
+          <button className="menu-btn" aria-label="Open menu" onClick={() => setMenuOpen(true)}>
+            <MenuIcon size={18} />
+          </button>
+        </div>
       </div>
 
-      {/* FILE INPUT */}
       <input
         type="file"
         ref={fileInputRef}
@@ -166,25 +142,22 @@ export default function Home() {
         accept="image/*"
       />
 
-      {/* SEARCH */}
       <div className="search-box">
         <input type="text" placeholder={t("search_placeholder")} />
-        <button className="search-icon">🔍</button>
+        <button className="search-icon">Search</button>
       </div>
 
-      {/* RESULT */}
-      {diagnosis && (
+      {diagnosis ? (
         <div className="diagnosis-alert">
           <strong>Result: {diagnosis}</strong>
-          <button onClick={() => setDiagnosis(null)}>×</button>
+          <button onClick={() => setDiagnosis(null)}>x</button>
         </div>
-      )}
+      ) : null}
 
-      {/* CARDS */}
       <h2 className="section-title">{t("todays_insights")}</h2>
 
       <div className="cards-grid">
-        <div className="card yellow" onClick={() => fileInputRef.current.click()}>
+        <div className="card yellow" onClick={() => fileInputRef.current?.click()}>
           <h4>{t("diagnose")}</h4>
           <p>{loading ? t("analyzing") : t("tap_to_scan_leaf")}</p>
         </div>
@@ -194,44 +167,37 @@ export default function Home() {
           <p>{t("reviews", { count: feedbacks.length })}</p>
         </div>
 
-        <div className="card green" onClick={() => navigate("/care") }>
+        <div className="card green" onClick={() => navigate("/care")}>
           <h4>{t("care_reminder_card")}</h4>
           <p>Water Monstera.</p>
         </div>
 
-        <div className="card blue" onClick={() => navigate("/quicktip") }>
+        <div className="card blue" onClick={() => navigate("/quicktip")}>
           <h4>{t("quick_tip_card")}</h4>
           <p>Use well-draining soil.</p>
         </div>
       </div>
 
-      {/* FEEDBACK SLIDESHOW */}
       <div className="home-feedback-box">
         <div className="feedback-header">
           <h3>User Feedback</h3>
-          {feedbacks.length > 0 && (
+          {feedbacks.length > 0 ? (
             <span className="feedback-count">
               {currentFeedbackIndex + 1}/{feedbacks.length}
             </span>
-          )}
+          ) : null}
         </div>
 
         {feedbacks.length === 0 ? (
           <div className="no-feedback-box">
-            <p>🌿 No feedback yet</p>
+            <p>No feedback yet</p>
           </div>
         ) : (
           <div className="feedback-slideshow">
-            {/* Navigation Buttons */}
-            <button
-              className="slide-btn prev"
-              onClick={prevFeedback}
-              disabled={feedbacks.length <= 1}
-            >
-              ‹
+            <button className="slide-btn prev" onClick={prevFeedback} disabled={feedbacks.length <= 1}>
+              {"<"}
             </button>
 
-            {/* Slideshow Container */}
             <div className="slideshow-container">
               <div
                 className="feedback-track"
@@ -243,47 +209,35 @@ export default function Home() {
                   transition: "transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)",
                 }}
               >
-                {feedbacks.map((entry, idx) => (
+                {feedbacks.map((entry) => (
                   <div key={entry.id} className="feedback-slide">
                     <div className="feedback-card">
                       <div className="feedback-content">
                         <p className="feedback-msg">{entry.message}</p>
-                        {entry.rating && (
-                          <div className="feedback-stars">
-                            {"⭐".repeat(entry.rating)}
-                          </div>
-                        )}
+                        {entry.rating ? <div className="feedback-stars">{"*".repeat(entry.rating)}</div> : null}
                       </div>
-                      <small className="feedback-date">
-                        {entry.timestamp || "Just now"}
-                      </small>
+                      <small className="feedback-date">{entry.timestamp || "Just now"}</small>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Next Button */}
-            <button
-              className="slide-btn next"
-              onClick={nextFeedback}
-              disabled={feedbacks.length <= 1}
-            >
-              ›
+            <button className="slide-btn next" onClick={nextFeedback} disabled={feedbacks.length <= 1}>
+              {">"}
             </button>
 
-            {/* Dot Indicators */}
-            {feedbacks.length > 1 && (
+            {feedbacks.length > 1 ? (
               <div className="feedback-dots">
-                {feedbacks.map((_, idx) => (
+                {feedbacks.map((_, index) => (
                   <button
-                    key={idx}
-                    className={`dot ${idx === currentFeedbackIndex ? "active" : ""}`}
-                    onClick={() => setCurrentFeedbackIndex(idx)}
+                    key={index}
+                    className={`dot ${index === currentFeedbackIndex ? "active" : ""}`}
+                    onClick={() => setCurrentFeedbackIndex(index)}
                   />
                 ))}
               </div>
-            )}
+            ) : null}
           </div>
         )}
       </div>

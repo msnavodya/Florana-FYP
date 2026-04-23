@@ -1,191 +1,213 @@
-/* APP BACKGROUND */
 .app {
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #1f1f1f;
-  font-family: "Poppins", sans-serif;
+  padding: 16px;
 }
 
-/* CART PAGE (FIXED MOBILE FRAME) */
 .cart-page {
-  width: 350px;
-  height: 700px;
-  background: linear-gradient(180deg, #d0a9db, #3c3442);
-  border-radius: 30px;
-  padding: 18px;
-  box-sizing: border-box;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  color: black;
-  overflow: hidden; /* hide scroll for full page */
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.24), transparent 24%),
+    linear-gradient(180deg, #f7f1fc 0%, #ece4ff 32%, #dfeee4 100%);
 }
 
-/* SCROLLABLE CONTENT INSIDE CART */
-.cart-content {
-  flex: 1; /* takes all available height */
-  overflow-y: auto;
-  margin-top: 10px;
-  padding-right: 5px; /* for scrollbar spacing */
+.cart-scroll {
+  height: 100%;
+  padding: 16px;
+  color: #241a37;
 }
 
-/* NAV */
 .nav {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cart-title-wrap {
+  flex: 1;
+  min-width: 0;
+  padding-left: 8px;
+}
+
+.cart-eyebrow {
+  margin: 0 0 4px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7c679c;
+}
+
+.cart-heading {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #2c2241;
+}
+
+.cart-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.cart-currency-pill {
+  overflow: hidden;
+  color: #000000;
+}
+
+.cart-icon-btn {
+  flex-shrink: 0;
+}
+
+.cart-toolbar .language-selector {
+  position: static;
+}
+
+.cart-summary-card,
+.cart-status,
+.item,
+.empty-state,
+.payment-drawer {
+  box-shadow: 0 18px 34px rgba(54, 41, 82, 0.08);
+}
+
+.cart-summary-card {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 24px;
+  background: linear-gradient(140deg, #346b50, #6a52cb 55%, #9d6ae0);
+  color: #ffffff;
+}
+
+.cart-summary-card p,
+.cart-summary-card strong {
+  margin: 0;
+}
+
+.cart-summary-card p {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.9rem;
+}
+
+.cart-summary-card strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.3rem;
+}
+
+.cart-status {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #24513b;
+}
+
+.cart-box {
+  margin: 16px 0;
+  display: grid;
+  gap: 12px;
+}
+
+.item {
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 10px;
 }
 
-/* ===== BACK BUTTON ===== */
-.back-btn {
-  position: absolute;
-  top: 14px;
-  left: 14px;
+.item h4,
+.item p {
+  margin: 0;
+}
 
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
+.item h4 {
+  color: #2d2342;
+}
 
-  background: #ac25eb; /* lavender */
-  border: none;
-  color: white;
-  font-size: 18px;
+.item p {
+  margin-top: 6px;
+  color: #22553f;
+  font-weight: 700;
+}
 
+.empty-state {
+  padding: 26px 18px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.95);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  cursor: pointer;
-  z-index: 10;
-  transition: background 0.2s ease;
-}
-
-.back-btn:hover {
-  background: #b845ec; /* slightly lighter on hover */
-}
-
-/* CART ITEMS */
-.cart-box {
-  margin: 15px 0;
-}
-
-.item {
-  background: white;
-  padding: 12px;
-  border-radius: 12px;
-  margin-bottom: 10px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-/* EMPTY CART */
-.empty {
+  gap: 12px;
   text-align: center;
-  margin-top: 50px;
-  font-size: 16px;
-  color: #333;
+  color: #5f5478;
 }
 
-/* CHECKOUT BUTTON FIXED AT BOTTOM */
 .checkout-btn {
   width: 100%;
-  padding: 15px;
-  border-radius: 20px;
-  border: none;
-  background: #ac25eb; /* lavender */
-  color: white;
-  font-size: 16px;
-  cursor: pointer;
-  margin-top: 10px;
-  flex-shrink: 0; /* prevents shrinking */
-  transition: background 0.2s ease;
 }
 
-.checkout-btn:hover {
-  background: #b845ec; /* hover effect */
-}
-
-/* OVERLAY */
 .overlay {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 1300;
 }
 
 .overlay-bg {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(12, 9, 20, 0.5);
+  backdrop-filter: blur(8px);
 }
 
-/* PAYMENT DRAWER */
 .payment-drawer {
   position: absolute;
-  bottom: 0;
-  width: 100%;
-  max-width: 350px;
   left: 50%;
+  bottom: 16px;
+  width: min(390px, calc(100vw - 24px));
   transform: translateX(-50%);
-  background: white;
-  border-radius: 25px 25px 0 0;
-  padding: 20px;
-  box-sizing: border-box;
+  padding: 22px;
+  border-radius: 28px;
+  background: #ffffff;
 }
 
-/* PAYMENT METHOD */
-.method {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px;
-  background: #f3f4f6;
-  border-radius: 15px;
+.payment-drawer h2 {
+  margin: 0 0 14px;
+  color: #2d2342;
+}
+
+.input {
+  width: 100%;
+  min-height: 48px;
   margin-bottom: 10px;
-  cursor: pointer;
-  transition: background 0.2s;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(120, 102, 156, 0.16);
+  outline: none;
 }
 
-.method.active {
-  background: #dbeafe;
+.success {
+  text-align: center;
+  color: #2d2342;
 }
 
-/* PHONE INPUT */
-.phone {
-  margin-top: 10px;
-}
+@media (max-width: 480px) {
+  .cart-scroll {
+    padding: 12px;
+  }
 
-.phone label {
-  font-size: 14px;
-  color: #666;
-  display: block;
-  margin-bottom: 5px;
-}
+  .cart-summary-card {
+    grid-template-columns: 1fr;
+  }
 
-.phone input {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid #ccc;
-  box-sizing: border-box;
-}
-
-/* PAY BUTTON */
-.pay-btn {
-  width: 100%;
-  margin-top: 15px;
-  padding: 15px;
-  border-radius: 20px;
-  border: none;
-  background: #ac25eb; /* lavender */
-  color: white;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.pay-btn:hover {
-  background: #b845ec; /* hover effect */
+  .payment-drawer {
+    bottom: 12px;
+    border-radius: 24px;
+    padding: 18px;
+  }
 }

@@ -27,13 +27,25 @@
   position: relative;
 }
 
+.page-topbar {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 44px;
+}
+
+.page-topbar .menu-btn {
+  margin-left: auto;
+}
+
 /* ===== LOGO ===== */
 .feedback-logo {
   width: 60px;         /* smaller to fit frame */
   height: 60px;
   border-radius: 50%;
   object-fit: cover;
-  margin-top: 15px;
+  margin-top: 0;
 }
 
 /* ===== TITLE ===== */

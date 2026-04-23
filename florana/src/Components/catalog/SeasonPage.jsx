@@ -1,161 +1,169 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import Menu from "../menu/menu";
+import { useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, Menu, ShoppingCart, WalletCards } from "lucide-react";
+import { buildApiUrl, getProducts } from "../../api";
+import LanguageSelector from "../language/LanguageSelector";
+import MenuPanel from "../menu/menu";
 import "./catalog.css";
+
+const exchangeRates = { LKR: 1, USD: 0.0033, EUR: 0.003 };
+const currencySymbols = { LKR: "Rs.", USD: "$", EUR: "EUR" };
 
 export default function SeasonPage() {
   const { season } = useParams();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
-
-  const API = "http://127.0.0.1:8000";
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
+  const [currency, setCurrency] = useState(localStorage.getItem("currency") || "LKR");
+  const [cartCount, setCartCount] = useState(0);
+  const [status, setStatus] = useState("");
 
-  /* 🌍 Currency - global via localStorage */
-  const [currency, setCurrency] = useState(
-    localStorage.getItem("currency") || "LKR"
-  );
-  const [rates] = useState({
-    LKR: 1,
-    USD: 0.0033,
-    EUR: 0.003,
-  });
+  const syncCartCount = () => {
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    setCartCount(cart.length);
+  };
 
-  // Listen to global currency changes from other pages
+  const showStatus = (message) => {
+    setStatus(message);
+    window.clearTimeout(window.floranaSeasonStatusTimer);
+    window.floranaSeasonStatusTimer = window.setTimeout(() => setStatus(""), 2400);
+  };
+
   useEffect(() => {
     const handleStorageChange = () => {
       setCurrency(localStorage.getItem("currency") || "LKR");
+      syncCartCount();
     };
+
+    getProducts()
+      .then((response) => setProducts(response.data || []))
+      .catch(() => setProducts([]));
+
+    syncCartCount();
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
-  // Fetch products
   useEffect(() => {
-    fetch(`${API}/shop/products`)
-      .then((res) => res.json())
-      .then((data) => setProducts(data))
-      .catch(() => setProducts([]));
-  }, []);
+    localStorage.setItem("currency", currency);
+  }, [currency]);
 
-  /* 💱 Convert Price */
-  const convertPrice = (price) => {
-    return (price * rates[currency]).toFixed(2);
+  const formatPrice = (price) => {
+    const converted = Number(price || 0) * exchangeRates[currency];
+    return `${currencySymbols[currency]} ${converted.toFixed(2)}`;
   };
 
   const addToCart = (product) => {
-    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
     cart.push(product);
     localStorage.setItem("cart", JSON.stringify(cart));
-    alert("Added to cart 🛒");
+    syncCartCount();
+    showStatus(`${product.name} added to cart.`);
   };
 
-  const filteredProducts = products.filter((p) => {
-    const name = (p.name || "").toLowerCase();
-    const productSeason = (p.season || "").toLowerCase();
-    return (
-      name.includes(search.toLowerCase()) &&
-      (season === "all" || productSeason === season.toLowerCase())
-    );
+  const filteredProducts = products.filter((product) => {
+    const name = (product.name || "").toLowerCase();
+    const productSeason = (product.season || "").toLowerCase();
+    return name.includes(search.toLowerCase()) && (season === "all" || productSeason === season?.toLowerCase());
   });
 
   const seasonList = ["spring", "summer", "autumn", "winter", "all"];
 
   return (
-    <div className="catalog-wrapper">
-      <div className="catalog-container">
-
-        {/* ===== TOP NAVBAR ===== */}
-        <div className="top-navbar">
-          <button className="nav-back" onClick={() => navigate(-1)}>←</button>
-          <h3 className="nav-title">Plant Shop</h3>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            {/* 🔥 SMALL CURRENCY SELECT */}
-            <select
-              className="currency-mini"
-              value={currency}
-              onChange={(e) => {
-                setCurrency(e.target.value);
-                localStorage.setItem("currency", e.target.value);
-              }}
-            >
-              <option value="LKR">Rs</option>
-              <option value="USD">$</option>
-              <option value="EUR">€</option>
-            </select>
-
-            <button className="nav-cart" onClick={() => navigate("/cart")}>
-              🛒
+    <div className="catalog-wrapper mobile-screen">
+      <div className="catalog-container mobile-frame">
+        <div className="catalog-scroll mobile-panel">
+          <div className="catalog-topbar">
+            <button className="back-btn" aria-label="Go back" onClick={() => navigate(-1)}>
+              <ArrowLeft size={18} />
             </button>
 
-            <button className="menu-btn" onClick={() => setMenuOpen(true)}>☰</button>
+            <div className="catalog-actions">
+              <LanguageSelector />
+
+              <button className="catalog-cart-btn compact-cart-btn" aria-label="Open cart" onClick={() => navigate("/cart")}>
+                <ShoppingCart size={16} />
+                {cartCount > 0 ? <span className="catalog-cart-badge">{cartCount}</span> : null}
+              </button>
+
+              <label className="catalog-currency-btn compact-cart-btn" aria-label="Currency converter">
+                <WalletCards size={14} />
+                <select
+                  className="currency-mini compact-currency-mini"
+                  aria-label="Currency"
+                  value={currency}
+                  onChange={(event) => setCurrency(event.target.value)}
+                >
+                  <option value="LKR">LKR</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                </select>
+              </label>
+
+              <button className="menu-btn" aria-label="Open menu" onClick={() => setMenuOpen(true)}>
+                <Menu size={18} />
+              </button>
+            </div>
+          </div>
+
+          <div className="catalog-hero season-hero">
+            <div>
+              <p className="catalog-eyebrow">Plant Finder</p>
+              <h2 className="catalog-title">{season === "all" ? "All Plants" : `${season?.toUpperCase()} Plants`}</h2>
+              <p className="catalog-subtitle">
+                Shop by season, switch the currency instantly, and keep your cart synced while you browse.
+              </p>
+            </div>
+
+            <div className="catalog-meta-card">
+              <div className="meta-stat">{filteredProducts.length} results</div>
+            </div>
+          </div>
+
+          {status ? <div className="catalog-status">{status}</div> : null}
+
+          <div className="season-navbar">
+            {seasonList.map((item) => (
+              <button
+                key={item}
+                className={`season-btn ${season === item ? "active-btn" : ""}`}
+                onClick={() => navigate(`/season/${item}`)}
+              >
+                {item.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
+          <div className="catalog-header season-header">
+            <input
+              type="text"
+              placeholder="Search plants..."
+              className="search-input"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </div>
+
+          <div className="product-grid">
+            {filteredProducts.length > 0 ? (
+              filteredProducts.map((product) => (
+                <div key={product.id} className="product-card">
+                  <img src={product.image ? buildApiUrl(product.image) : "/defaultPlant.jpg"} alt={product.name} />
+                  <h4>{product.name}</h4>
+                  <p>{product.season}</p>
+                  <p className="price">{formatPrice(product.price)}</p>
+                  <button onClick={() => addToCart(product)}>Add to Cart</button>
+                </div>
+              ))
+            ) : (
+              <p className="no-data">No plants available for this season.</p>
+            )}
           </div>
         </div>
-
-        {/* ===== SEASON NAVBAR ===== */}
-        <div className="season-navbar">
-          {seasonList.map((s) => (
-            <button
-              key={s}
-              className={`season-btn ${season === s ? "active-btn" : ""}`}
-              onClick={() => navigate(`/season/${s}`)}
-            >
-              {s.toUpperCase()}
-            </button>
-          ))}
-        </div>
-
-        {/* HEADER */}
-        <div className="catalog-header">
-          <div className="logo">🌸</div>
-          <input
-            type="text"
-            placeholder="Search plants..."
-            className="search-input"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-
-        {/* TITLE */}
-        <h2 className="catalog-title">
-          {season === "all"
-            ? "All Plants 🌿"
-            : `${season.toUpperCase()} Plants 🌿`}
-        </h2>
-
-        {/* PRODUCTS */}
-        <div className="product-grid">
-          {filteredProducts.length > 0 ? (
-            filteredProducts.map((p) => (
-              <div key={p.id} className="product-card">
-                <img
-                  src={p.image ? `${API}/${p.image}` : "/defaultPlant.jpg"}
-                  alt={p.name}
-                />
-                <h4>{p.name}</h4>
-                <p>🌼 {p.season}</p>
-
-                {/* 💱 UPDATED PRICE */}
-                <p className="price">
-                  {currency === "LKR" && "Rs. "}
-                  {currency === "USD" && "$ "}
-                  {currency === "EUR" && "€ "}
-                  {convertPrice(p.price)}
-                </p>
-
-                <button onClick={() => addToCart(p)}>Add</button>
-              </div>
-            ))
-          ) : (
-            <p className="no-data">No plants available 🌱</p>
-          )}
-        </div>
-
       </div>
-      <Menu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
+
+      <MenuPanel isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
     </div>
   );
 }

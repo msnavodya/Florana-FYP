@@ -1,97 +1,105 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
-from database import products_collection
-from bson import ObjectId
 import os
 from datetime import datetime
 
+from bson import ObjectId
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+
+try:
+    from .. import database
+    from ..utils import local_store
+except ImportError:
+    import database
+    from utils import local_store
+
+
 router = APIRouter(prefix="/shop", tags=["Shop"])
 
-# 📁 Upload folder
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# ================= GET PRODUCTS =================
+
 @router.get("/products")
 def get_products():
-    if products_collection is None:
-        raise HTTPException(status_code=503, detail="Database connection failed. Please start MongoDB.")
-    
-    products = []
+    products_collection = database.get_products_collection()
+    records = local_store.list_items(local_store.PRODUCTS_FILE) if products_collection is None else list(products_collection.find())
 
-    for p in products_collection.find():
-        products.append({
-            "id": str(p["_id"]),
-            "name": p.get("name", ""),
-            "price": p.get("price", 0),
-            "season": p.get("season", "Spring"),
-            "image": p.get("image", None),
-            "stock": p.get("stock", 10)
-        })
+    products = []
+    for product in records:
+        products.append(
+            {
+                "id": str(product.get("_id", "")),
+                "name": product.get("name", ""),
+                "price": product.get("price", 0),
+                "season": product.get("season", "Spring"),
+                "image": product.get("image"),
+                "stock": product.get("stock", 10),
+            }
+        )
 
     return products
 
 
-# ================= ADD PRODUCT (WITH IMAGE) =================
 @router.post("/products")
 async def add_product(
     name: str = Form(...),
     price: float = Form(...),
     season: str = Form(...),
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
 ):
     try:
-        if products_collection is None:
-            raise HTTPException(status_code=503, detail="Database connection failed. Please start MongoDB.")
-        
-        # ✅ Save image
+        products_collection = database.get_products_collection()
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         filename = f"{timestamp}_{file.filename}"
         filepath = os.path.join(UPLOAD_DIR, filename)
 
-        with open(filepath, "wb") as f:
-            f.write(await file.read())
+        with open(filepath, "wb") as file_handle:
+            file_handle.write(await file.read())
 
-        # ✅ Save to DB
-        result = products_collection.insert_one({
+        product = {
             "name": name,
             "price": price,
             "season": season,
-            "image": f"uploads/{filename}",
+            "image": f"uploads/{filename}".replace("\\", "/"),
             "stock": 10,
-            "created_at": datetime.now()
-        })
-
-        return {
-            "message": "Product added successfully 🌱",
-            "id": str(result.inserted_id)
+            "created_at": local_store.now_iso(),
         }
 
+        if products_collection is None:
+            stored = local_store.create_item(local_store.PRODUCTS_FILE, product)
+            product_id = stored["_id"]
+        else:
+            result = products_collection.insert_one(product)
+            product_id = str(result.inserted_id)
+
+        return {
+            "message": "Product added successfully",
+            "id": product_id,
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ================= DELETE PRODUCT =================
 @router.delete("/products/{product_id}")
 def delete_product(product_id: str):
     try:
+        products_collection = database.get_products_collection()
         if products_collection is None:
-            raise HTTPException(status_code=503, detail="Database connection failed. Please start MongoDB.")
-        
-        product = products_collection.find_one({"_id": ObjectId(product_id)})
+            product = local_store.find_item(local_store.PRODUCTS_FILE, lambda item: item.get("_id") == product_id)
+        else:
+            product = products_collection.find_one({"_id": ObjectId(product_id)})
 
         if not product:
             raise HTTPException(status_code=404, detail="Product not found")
 
-        # ✅ Delete image file
-        if product.get("image"):
-            image_path = product["image"]
-            if os.path.exists(image_path):
-                os.remove(image_path)
+        image_path = product.get("image")
+        if image_path and os.path.exists(image_path):
+            os.remove(image_path)
 
-        # ✅ Delete from DB
-        products_collection.delete_one({"_id": ObjectId(product_id)})
+        if products_collection is None:
+            local_store.delete_item(local_store.PRODUCTS_FILE, lambda item: item.get("_id") == product_id)
+        else:
+            products_collection.delete_one({"_id": ObjectId(product_id)})
 
         return {"message": "Product deleted successfully"}
-
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -1,0 +1,264 @@
+:root {
+  --mobile-btn-height: 48px;
+  --mobile-btn-radius: 16px;
+  --mobile-btn-shadow: 0 10px 24px rgba(35, 23, 53, 0.18);
+  --mobile-btn-primary-start: #7c5cff;
+  --mobile-btn-primary-end: #5a3fe0;
+  --mobile-btn-surface: rgba(255, 255, 255, 0.92);
+  --mobile-btn-surface-strong: #ffffff;
+  --mobile-btn-border: rgba(120, 95, 177, 0.2);
+  --mobile-btn-text: #24183d;
+  --mobile-btn-muted: #6a5e86;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.back-btn,
+.menu-btn,
+.nav-back,
+.nav-cart,
+.settings-back,
+.delete-btn,
+.search-icon {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--mobile-btn-border);
+  border-radius: 14px;
+  background: var(--mobile-btn-surface-strong);
+  color: var(--mobile-btn-text);
+  box-shadow: 0 8px 18px rgba(22, 16, 35, 0.14);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.back-btn:hover,
+.menu-btn:hover,
+.nav-back:hover,
+.nav-cart:hover,
+.settings-back:hover,
+.delete-btn:hover,
+.search-icon:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(22, 16, 35, 0.18);
+}
+
+.back-btn:active,
+.menu-btn:active,
+.nav-back:active,
+.nav-cart:active,
+.settings-back:active,
+.delete-btn:active,
+.search-icon:active {
+  transform: scale(0.96);
+}
+
+.start-btn,
+.login-btn,
+.signup-btn,
+.submit-btn,
+.upload-btn,
+.checkout-btn,
+.pay-btn,
+.review-btn,
+.profile-register-btn,
+.test-btn,
+.catalog-container .product-card button,
+.catalog-container .sell-form button,
+.flower-wrapper .growth-card button,
+.feedback-container .submit-btn {
+  min-height: var(--mobile-btn-height);
+  border: none;
+  border-radius: var(--mobile-btn-radius);
+  background: linear-gradient(135deg, var(--mobile-btn-primary-start), var(--mobile-btn-primary-end));
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: var(--mobile-btn-shadow);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.start-btn:hover,
+.login-btn:hover,
+.signup-btn:hover,
+.submit-btn:hover,
+.upload-btn:hover,
+.checkout-btn:hover,
+.pay-btn:hover,
+.review-btn:hover,
+.profile-register-btn:hover,
+.test-btn:hover,
+.catalog-container .product-card button:hover,
+.catalog-container .sell-form button:hover,
+.flower-wrapper .growth-card button:hover,
+.feedback-container .submit-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+  box-shadow: 0 14px 28px rgba(65, 43, 130, 0.24);
+}
+
+.start-btn:active,
+.login-btn:active,
+.signup-btn:active,
+.submit-btn:active,
+.upload-btn:active,
+.checkout-btn:active,
+.pay-btn:active,
+.review-btn:active,
+.profile-register-btn:active,
+.test-btn:active,
+.catalog-container .product-card button:active,
+.catalog-container .sell-form button:active,
+.flower-wrapper .growth-card button:active,
+.feedback-container .submit-btn:active {
+  transform: scale(0.98);
+}
+
+.google-btn,
+.menu-item,
+.season-btn,
+.toggle-bar button,
+.toggle-btn,
+.back-home-btn,
+.custom-input-row button,
+.summary-btn,
+.method-item {
+  min-height: 44px;
+  border: 1px solid var(--mobile-btn-border);
+  border-radius: 14px;
+  background: var(--mobile-btn-surface);
+  color: var(--mobile-btn-text);
+  box-shadow: 0 6px 16px rgba(31, 22, 51, 0.1);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.google-btn:hover,
+.menu-item:hover,
+.season-btn:hover,
+.toggle-bar button:hover,
+.toggle-btn:hover,
+.back-home-btn:hover,
+.custom-input-row button:hover,
+.summary-btn:hover,
+.method-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(31, 22, 51, 0.14);
+}
+
+.google-btn {
+  width: 100%;
+  padding: 12px 16px;
+}
+
+.menu-item {
+  box-shadow: 0 8px 18px rgba(31, 22, 51, 0.08);
+}
+
+.menu-item.logout {
+  background: linear-gradient(135deg, #5d274f, #3a1635);
+  color: #fff;
+  border: none;
+}
+
+.toggle-bar {
+  padding: 5px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.toggle-bar button,
+.season-btn,
+.summary-btn,
+.toggle-btn,
+.method-item {
+  font-weight: 600;
+}
+
+.toggle-bar .active,
+.active-btn,
+.summary-btn.active,
+.toggle-btn.on,
+.season-btn.active {
+  background: linear-gradient(135deg, #ffffff, #f0eaff);
+  color: #352456;
+  box-shadow: 0 10px 20px rgba(74, 50, 127, 0.16);
+}
+
+.toggle-btn.off {
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--mobile-btn-muted);
+}
+
+.search-icon {
+  padding: 0 14px;
+  min-width: 76px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.delete-btn {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 10px;
+  background: rgba(255, 245, 248, 0.98);
+  color: #b33d68;
+  border-color: rgba(179, 61, 104, 0.16);
+  box-shadow: 0 8px 18px rgba(179, 61, 104, 0.12);
+}
+
+.slide-btn,
+.dot {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+
+.slide-btn {
+  box-shadow: 0 8px 18px rgba(65, 43, 130, 0.18);
+}
+
+.method-item {
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+button:disabled,
+.slide-btn:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+@media (max-width: 480px) {
+  .start-btn,
+  .login-btn,
+  .signup-btn,
+  .submit-btn,
+  .upload-btn,
+  .checkout-btn,
+  .pay-btn,
+  .review-btn,
+  .profile-register-btn,
+  .test-btn,
+  .catalog-container .product-card button,
+  .catalog-container .sell-form button,
+  .flower-wrapper .growth-card button {
+    min-height: 46px;
+    border-radius: 15px;
+  }
+
+  .back-btn,
+  .menu-btn,
+  .nav-back,
+  .nav-cart,
+  .settings-back,
+  .search-icon {
+    min-height: 42px;
+  }
+}

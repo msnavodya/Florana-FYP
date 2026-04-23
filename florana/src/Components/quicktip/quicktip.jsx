@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Menu as MenuIcon } from "lucide-react";
 import { useTranslation } from "../language/LanguageContext";
-import Menu from "../menu/menu";
 import LanguageSelector from "../language/LanguageSelector";
+import Menu from "../menu/menu";
 import "./quicktip.css";
 
 const tipOptions = [
@@ -12,8 +13,8 @@ const tipOptions = [
   { key: "fertilizer", title: "Fertilizer Tips", tip: "Use organic fertilizer every 2 weeks.", detail: "Supports growth without chemical buildup." },
   { key: "pest", title: "Pest Control Tips", tip: "Check leaves for insects weekly.", detail: "Early detection prevents infestations." },
   { key: "seasonal", title: "Seasonal Care Tips", tip: "Reduce watering during winter.", detail: "Plants often go into rest mode when cooler." },
-  { key: "diy", title: "DIY Hacks", tip: "Use coffee grounds for soil enrichment.", detail: "Mix into compost for extra nutrients; don’t overdo it." },
-  { key: "pairing", title: "Plant Pairing Tips", tip: "Group plants with similar water needs.", detail: "This avoids over/under-watering issues for pets." },
+  { key: "diy", title: "DIY Hacks", tip: "Use coffee grounds for soil enrichment.", detail: "Mix into compost for extra nutrients; don't overdo it." },
+  { key: "pairing", title: "Plant Pairing Tips", tip: "Group plants with similar water needs.", detail: "This avoids over and under watering issues for pairs." },
 ];
 
 export default function QuickTip() {
@@ -29,8 +30,15 @@ export default function QuickTip() {
       <Menu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
       <LanguageSelector />
       <div className="quick-tip-card">
-        <button className="back-btn" onClick={() => navigate(-1)}>←</button>
-        <button className="menu-btn" style={{position: "absolute", top: "12px", right: "12px"}} onClick={() => setMenuOpen(true)}>☰</button>
+        <div className="page-topbar">
+          <button className="back-btn" aria-label="Go back" onClick={() => navigate(-1)}>
+            <ArrowLeft size={18} />
+          </button>
+          <button className="menu-btn" aria-label="Open menu" onClick={() => setMenuOpen(true)}>
+            <MenuIcon size={18} />
+          </button>
+        </div>
+
         <h2>{t("quick_tip")}</h2>
 
         <div className="tips-list">

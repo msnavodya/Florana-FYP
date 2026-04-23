@@ -1,13 +1,22 @@
-from fastapi import APIRouter, Form, UploadFile, File, HTTPException
-from database import growth_collection
+import os
+import shutil
+
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from datetime import datetime
-import os, shutil
+
+try:
+    from .. import database
+    from ..utils import local_store
+except ImportError:
+    import database
+    from utils import local_store
+
 
 router = APIRouter(prefix="/growth", tags=["Growth"])
 
-# Folder to save uploaded images
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 
 @router.post("/")
 async def add_growth(
@@ -15,17 +24,12 @@ async def add_growth(
     height: str = Form(...),
     health: str = Form(...),
     notes: str = Form(None),
-    image: UploadFile = File(None)
+    image: UploadFile = File(None),
 ):
-    """
-    Add a new growth record for a plant.
-    Supports optional image upload.
-    """
     try:
         image_path = None
 
         if image:
-            # Ensure unique file names using timestamp
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             filename = f"{timestamp}_{image.filename}"
             file_path = os.path.join(UPLOAD_DIR, filename)
@@ -33,7 +37,7 @@ async def add_growth(
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(image.file, buffer)
 
-            image_path = file_path
+            image_path = file_path.replace("\\", "/")
 
         record = {
             "plant_id": plant_id,
@@ -41,27 +45,35 @@ async def add_growth(
             "health": health,
             "notes": notes,
             "image_path": image_path,
-            "date": datetime.now()
+            "date": local_store.now_iso(),
         }
 
-        result = growth_collection.insert_one(record)
-        record["_id"] = str(result.inserted_id)
+        growth_collection = database.get_growth_collection()
+        if growth_collection is None:
+            record = local_store.create_item(local_store.GROWTH_FILE, record)
+        else:
+            result = growth_collection.insert_one(record)
+            record["_id"] = str(result.inserted_id)
 
         return {"status": "success", "data": record}
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{plant_id}")
 def get_growth(plant_id: str):
-    """
-    Get all growth records for a specific plant.
-    """
     try:
-        records = list(growth_collection.find({"plant_id": plant_id}))
-        for r in records:
-            r["_id"] = str(r["_id"])
+        growth_collection = database.get_growth_collection()
+        records = (
+            local_store.filter_items(local_store.GROWTH_FILE, lambda item: item.get("plant_id") == plant_id)
+            if growth_collection is None
+            else list(growth_collection.find({"plant_id": plant_id}))
+        )
+
+        for record in records:
+            if "_id" in record:
+                record["_id"] = str(record["_id"])
+
         return {"status": "success", "data": records}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

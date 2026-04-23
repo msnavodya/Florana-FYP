@@ -38,6 +38,21 @@ body {
   flex-shrink: 0;
 }
 
+.home-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.home-header-actions .language-selector {
+  position: static;
+}
+
+.home-header-actions .menu-btn {
+  margin-left: auto;
+}
+
 .header-left {
   display: flex;
   align-items: center;
@@ -491,6 +506,10 @@ body {
   .top-header {
     padding: 8px 10px;
     margin-bottom: 8px;
+  }
+
+  .home-header-actions {
+    gap: 6px;
   }
 
   .header-title {

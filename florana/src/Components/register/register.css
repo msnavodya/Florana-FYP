@@ -43,18 +43,20 @@ body {
 .mobile-header {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   position: sticky;
   top: 0;
-  padding: 10px 0;
+  padding: 10px 0 12px;
   z-index: 100;
+  background: linear-gradient(180deg, #ece9f4, #ece9f4 75%, transparent);
+}
+
+.mobile-header .menu-btn {
+  margin-left: auto;
 }
 
 /* ===== BACK BUTTON ===== */
 .back-btn {
-  position: absolute;
-  top: 10px;
-  left: 10px;
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -81,6 +83,7 @@ body {
   color: #222;
   margin: 0;
   text-align: center;
+  flex: 1;
 }
 
 /* ===== IMAGE UPLOAD ===== */

@@ -4,10 +4,16 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, Request
 from pymongo.errors import AutoReconnect, ServerSelectionTimeoutError
 
-import database
-from schemas.user import UserCreate, UserLogin
-import utils.auth_store as auth_store
-from utils.security import create_token, hash_password, verify_password
+try:
+    from .. import database
+    from ..schemas.user import UserCreate, UserLogin
+    from ..utils import auth_store
+    from ..utils.security import create_token, hash_password, verify_password
+except ImportError:
+    import database
+    from schemas.user import UserCreate, UserLogin
+    import utils.auth_store as auth_store
+    from utils.security import create_token, hash_password, verify_password
 
 
 router = APIRouter(prefix="/auth", tags=["Auth"])

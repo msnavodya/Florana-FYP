@@ -3,6 +3,7 @@
   width: 350px;         /* exact mobile frame width */
   height: 700px;        /* exact mobile frame height */
   background: #f2e7ff;
+  color: #000000;
   padding: 15px;        
   display: flex;
   flex-direction: column;
@@ -15,11 +16,20 @@
   border: 2px solid #d3b5ff;      /* subtle border matching background */
 }
 
+.profile-topbar {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 44px;
+}
+
+.profile-topbar .menu-btn {
+  margin-left: auto;
+}
+
 /* ===== BACK BUTTON ===== */
 .back-btn {
-  position: absolute;
-  top: 15px;
-  left: 15px;
   width: 35px;
   height: 35px;
   border-radius: 50%;
@@ -41,10 +51,10 @@
 
 /* ===== PAGE TITLE ===== */
 .profile-container h1 {
-  margin-top: 60px;     
+  margin-top: 18px;     
   margin-bottom: 15px;  
-  color: #4b2e83;
-  font-size: 20px;      
+  color: #000000;
+  font-size: 20px;
   text-align: center;
 }
 
@@ -54,6 +64,7 @@
   max-width: 350px;
   padding: 15px;        
   background: white;
+  color: #000000;
   border-radius: 25px;             
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);  
   margin-bottom: 20px;  
@@ -61,6 +72,11 @@
   display: flex;
   flex-direction: column;
   gap: 8px;                        
+}
+
+.profile-card p,
+.profile-card strong {
+  color: #000000;
 }
 
 /* ===== REGISTER / SAVE BUTTON ===== */

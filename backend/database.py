@@ -2,6 +2,7 @@
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError, ServerSelectionTimeoutError
 import os
+from sqlalchemy.orm import declarative_base
 
 # =============================
 # MongoDB Connection
@@ -19,6 +20,7 @@ products_collection = None
 prediction_collection = None
 growth_collection = None
 login_history_collection = None
+Base = declarative_base()
 
 
 def _set_collections(current_db):
@@ -98,6 +100,26 @@ def ensure_db_connection():
 def get_users_collection():
     ensure_db_connection()
     return users_collection
+
+
+def get_plants_collection():
+    ensure_db_connection()
+    return plants_collection
+
+
+def get_products_collection():
+    ensure_db_connection()
+    return products_collection
+
+
+def get_prediction_collection():
+    ensure_db_connection()
+    return prediction_collection
+
+
+def get_growth_collection():
+    ensure_db_connection()
+    return growth_collection
 
 
 def get_login_history_collection():
