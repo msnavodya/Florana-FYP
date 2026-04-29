@@ -1,10 +1,52 @@
 const net = require("net");
 const path = require("path");
+const fs = require("fs");
 const { spawn } = require("child_process");
 
 const argv = process.argv.slice(2);
 const preferredPorts = [8081, 8082, 8083, 8084, 8085, 8090, 8091];
-const backendPort = 8000;
+
+function readLocalEnv() {
+  const envPath = path.resolve(process.cwd(), ".env");
+  if (!fs.existsSync(envPath)) {
+    return {};
+  }
+
+  return fs
+    .readFileSync(envPath, "utf8")
+    .split(/\r?\n/)
+    .reduce((result, line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) {
+        return result;
+      }
+
+      const separatorIndex = trimmed.indexOf("=");
+      if (separatorIndex === -1) {
+        return result;
+      }
+
+      const key = trimmed.slice(0, separatorIndex).trim();
+      const value = trimmed.slice(separatorIndex + 1).trim();
+      result[key] = value;
+      return result;
+    }, {});
+}
+
+function resolveBackendPort() {
+  const explicitUrl = process.env.EXPO_PUBLIC_API_URL || readLocalEnv().EXPO_PUBLIC_API_URL;
+  if (!explicitUrl) {
+    return 8000;
+  }
+
+  try {
+    return Number(new URL(explicitUrl).port || 8000);
+  } catch {
+    return 8000;
+  }
+}
+
+const backendPort = resolveBackendPort();
 
 function canConnect(port, host = "127.0.0.1") {
   return new Promise((resolve) => {

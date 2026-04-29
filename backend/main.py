@@ -30,6 +30,7 @@ try:
     from .routes.shop import router as shop_router
     from . import database
     from .utils import local_store
+    from .utils.paths import UPLOAD_DIR, build_upload_api_path, build_upload_disk_path, build_upload_public_path
 except ImportError:
     from routes.auth import router as auth_router
     from routes.feedback import router as feedback_router
@@ -39,6 +40,7 @@ except ImportError:
     from routes.shop import router as shop_router
     import database
     from utils import local_store
+    from utils.paths import UPLOAD_DIR, build_upload_api_path, build_upload_disk_path, build_upload_public_path
 
 # ----------------- Firebase Push Notifications -----------------
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -67,9 +69,7 @@ else:
 app = FastAPI(title="Florana Backend")
 
 # Static files for uploaded images
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 # CORS
 app.add_middleware(
@@ -88,9 +88,9 @@ def startup_event():
     print("\n" + "=" * 60)
     print("FLORANA BACKEND STARTUP")
     print("=" * 60)
-    print("Server: http://127.0.0.1:8000")
-    print("Docs: http://127.0.0.1:8000/docs")
-    print("Health: http://127.0.0.1:8000/health")
+    print("Server: check the Uvicorn URL shown below")
+    print("Docs path: /docs")
+    print("Health path: /health")
     print(f"Database: {database.connection_status}")
 
     if database.connection_status == "disconnected":
@@ -147,6 +147,20 @@ def read_root():
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "ai", "plant_disease_model.keras")
 CLASS_PATH = os.path.join(BASE_DIR, "ai", "class_names.json")
+MIN_CONFIDENCE_THRESHOLD = 0.65
+
+
+def normalize_prediction_label(raw_label: str) -> str:
+    normalized = raw_label.replace("_", " ").strip()
+    lowered = normalized.lower()
+
+    if lowered in {"fresh leaf", "healthy", "healthy plant"}:
+        return "Healthy"
+
+    if not normalized:
+        return "Unknown"
+
+    return " ".join(word.capitalize() for word in normalized.split())
 
 try:
     if load_model is None:
@@ -212,7 +226,20 @@ def predict_image(file_bytes: bytes):
     prediction = model.predict(img_array)
     class_index = int(np.argmax(prediction))
     confidence = float(np.max(prediction))
-    return class_names.get(class_index, "Unknown"), confidence
+    top_indices = np.argsort(prediction[0])[::-1][:3]
+    top_predictions = [
+        {
+            "label": normalize_prediction_label(class_names.get(int(index), "Unknown")),
+            "confidence": float(prediction[0][int(index)]),
+        }
+        for index in top_indices
+    ]
+
+    predicted_label = normalize_prediction_label(class_names.get(class_index, "Unknown"))
+    if confidence < MIN_CONFIDENCE_THRESHOLD:
+        return "Needs closer inspection", confidence, top_predictions
+
+    return predicted_label, confidence, top_predictions
 
 
 def get_tracked_plant_records():
@@ -366,10 +393,10 @@ async def predict(file: UploadFile | None = File(None)):
     if not file.filename.lower().endswith((".jpg", ".jpeg", ".png")):
         raise HTTPException(status_code=400, detail="Invalid image format")
     file_bytes = await file.read()
-    prediction, confidence = predict_image(file_bytes)
+    prediction, confidence, top_predictions = predict_image(file_bytes)
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     filename = f"{timestamp}_{file.filename}"
-    file_path = os.path.join(UPLOAD_DIR, filename)
+    file_path = build_upload_disk_path(filename)
     with open(file_path, "wb") as f:
         f.write(file_bytes)
     save_prediction(filename, prediction, confidence)
@@ -378,7 +405,8 @@ async def predict(file: UploadFile | None = File(None)):
         "status": "success",
         "prediction": prediction,
         "confidence": confidence,
-        "image_url": f"/uploads/{filename}",
+        "top_predictions": top_predictions,
+        "image_url": build_upload_api_path(filename),
     }
 
 
@@ -411,7 +439,7 @@ def get_all_plants():
                 "info": p.get("disease", ""),
                 "badges": [p.get("disease")] if p.get("disease") else [],
                 "warning": True if p.get("confidence", 0) < 0.8 else False,
-                "image_path": p.get("image_path") or (f"uploads/{p.get('plant_name')}" if p.get("plant_name") else None),
+                "image_path": p.get("image_path") or (build_upload_public_path(p.get("plant_name")) if p.get("plant_name") else None),
                 "tracking": p.get("tracking", True),
             }
         )

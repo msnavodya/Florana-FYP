@@ -24,6 +24,7 @@ DATASET_CONFIG = {
 MODEL_CONFIG = {
     "epochs": 15,
     "learning_rate": 0.001,
+    "validation_split": 0.2,
     "model_save_path": "./model.h5",
     "log_dir": "./logs"
 }

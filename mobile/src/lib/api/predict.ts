@@ -4,6 +4,10 @@ export interface PredictionResponse {
   status: string;
   prediction: string;
   confidence: number | string;
+  top_predictions?: Array<{
+    label: string;
+    confidence: number;
+  }>;
   image_url?: string;
 }
 

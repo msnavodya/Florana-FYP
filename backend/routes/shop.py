@@ -7,15 +7,14 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 try:
     from .. import database
     from ..utils import local_store
+    from ..utils.paths import build_upload_disk_path, build_upload_public_path, resolve_uploaded_file_path
 except ImportError:
     import database
     from utils import local_store
+    from utils.paths import build_upload_disk_path, build_upload_public_path, resolve_uploaded_file_path
 
 
 router = APIRouter(prefix="/shop", tags=["Shop"])
-
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 @router.get("/products")
@@ -50,7 +49,7 @@ async def add_product(
         products_collection = database.get_products_collection()
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         filename = f"{timestamp}_{file.filename}"
-        filepath = os.path.join(UPLOAD_DIR, filename)
+        filepath = build_upload_disk_path(filename)
 
         with open(filepath, "wb") as file_handle:
             file_handle.write(await file.read())
@@ -59,7 +58,7 @@ async def add_product(
             "name": name,
             "price": price,
             "season": season,
-            "image": f"uploads/{filename}".replace("\\", "/"),
+            "image": build_upload_public_path(filename),
             "stock": 10,
             "created_at": local_store.now_iso(),
         }
@@ -92,8 +91,9 @@ def delete_product(product_id: str):
             raise HTTPException(status_code=404, detail="Product not found")
 
         image_path = product.get("image")
-        if image_path and os.path.exists(image_path):
-            os.remove(image_path)
+        resolved_image_path = resolve_uploaded_file_path(image_path)
+        if resolved_image_path and resolved_image_path.exists():
+            os.remove(resolved_image_path)
 
         if products_collection is None:
             local_store.delete_item(local_store.PRODUCTS_FILE, lambda item: item.get("_id") == product_id)

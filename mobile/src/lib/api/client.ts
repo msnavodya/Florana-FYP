@@ -1,6 +1,6 @@
 import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 
-import { API_URL } from "./config";
+import { API_URL, getApiUrl, getApiUrlCandidates, setApiUrl } from "./config";
 
 export class ApiError extends Error {
   status: number;
@@ -22,7 +22,6 @@ interface RequestOptions extends Omit<AxiosRequestConfig, "data" | "url" | "base
 }
 
 const api = axios.create({
-  baseURL: API_URL,
   timeout: 15000,
 });
 
@@ -99,39 +98,49 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     requestHeaders.Authorization = `Bearer ${token}`;
   }
 
-  try {
-    const response = await api.request<T>({
-      url: path,
-      method,
-      headers: requestHeaders,
-      data,
-      ...rest,
-    });
-    return response.data;
-  } catch (error) {
-    const axiosError = error as AxiosError<{ detail?: unknown; message?: unknown }>;
-    if (axiosError.code === "ECONNABORTED") {
-      throw new ApiError(
-        `The server took too long to respond at ${API_URL}. Check that the backend is running and reachable from your phone or emulator.`,
-        504,
-      );
+  const candidateUrls = [getApiUrl(), ...getApiUrlCandidates()].filter((value, index, items) => items.indexOf(value) === index);
+  let lastError: AxiosError<{ detail?: unknown; message?: unknown }> | null = null;
+
+  for (const baseURL of candidateUrls) {
+    try {
+      const response = await api.request<T>({
+        baseURL,
+        url: path,
+        method,
+        headers: requestHeaders,
+        data,
+        ...rest,
+      });
+      setApiUrl(baseURL);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError<{ detail?: unknown; message?: unknown }>;
+      lastError = axiosError;
+
+      if (axiosError.response) {
+        const detail =
+          normalizeApiErrorDetail(axiosError.response?.data?.detail) ||
+          normalizeApiErrorDetail(axiosError.response?.data?.message) ||
+          axiosError.message ||
+          "Request failed";
+
+        throw new ApiError(detail, axiosError.response?.status || 500, detail);
+      }
+
+      if (axiosError.code === "ECONNABORTED" && baseURL === candidateUrls[candidateUrls.length - 1]) {
+        throw new ApiError(
+          `The server took too long to respond. Tried: ${candidateUrls.join(", ")}`,
+          504,
+        );
+      }
     }
-
-    if (!axiosError.response) {
-      throw new ApiError(
-        `Cannot reach the backend at ${API_URL}. Start the FastAPI server and use your computer's LAN IP in EXPO_PUBLIC_API_URL when testing on a real phone.`,
-        503,
-      );
-    }
-
-    const detail =
-      normalizeApiErrorDetail(axiosError.response?.data?.detail) ||
-      normalizeApiErrorDetail(axiosError.response?.data?.message) ||
-      axiosError.message ||
-      "Request failed";
-
-    throw new ApiError(detail, axiosError.response?.status || 500, detail);
   }
-}
+
+  throw new ApiError(
+    `Cannot reach the backend. Tried: ${candidateUrls.join(", ")}. Current configured URL: ${API_URL}.`,
+    503,
+    lastError?.message,
+  );
+  }
 
 export { API_URL };

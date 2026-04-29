@@ -5,6 +5,7 @@ Trains a CNN model on downloaded images and saves it as model.h5
 
 import os
 import sys
+import json
 import numpy as np
 from pathlib import Path
 import tensorflow as tf
@@ -34,8 +35,10 @@ class ImageClassificationModel:
         self.image_size = config["image_size"]
         self.batch_size = config["batch_size"]
         self.epochs = config["epochs"]
+        self.validation_split = config.get("validation_split", 0.2)
         self.model = None
         self.history = None
+        self.class_indices = None
         
         print(f"✅ Model Configuration Loaded")
         print(f"   Image Size: {self.image_size}")
@@ -179,11 +182,15 @@ class ImageClassificationModel:
             horizontal_flip=True,
             zoom_range=0.2,
             shear_range=0.2,
-            fill_mode='nearest'
+            fill_mode='nearest',
+            validation_split=self.validation_split,
         )
         
         # Validation data generator (no augmentation, only rescaling)
-        validation_datagen = ImageDataGenerator(rescale=1.0 / 255)
+        validation_datagen = ImageDataGenerator(
+            rescale=1.0 / 255,
+            validation_split=self.validation_split,
+        )
         
         # Load training data
         train_generator = train_datagen.flow_from_directory(
@@ -191,16 +198,28 @@ class ImageClassificationModel:
             target_size=self.image_size,
             batch_size=self.batch_size,
             class_mode='categorical',
-            subset=None,
+            subset='training',
             seed=42
         )
+
+        validation_generator = validation_datagen.flow_from_directory(
+            dataset_dir,
+            target_size=self.image_size,
+            batch_size=self.batch_size,
+            class_mode='categorical',
+            subset='validation',
+            seed=42,
+            shuffle=False,
+        )
+
+        self.class_indices = train_generator.class_indices
         
         print(f"✅ Data generators created")
         print(f"   Batch Size: {self.batch_size}\n")
         
-        return train_generator, validation_datagen, dataset_dir
+        return train_generator, validation_generator
     
-    def train(self, train_generator, validation_datagen, dataset_dir: str) -> dict:
+    def train(self, train_generator, validation_generator) -> dict:
         """
         Train the model with error handling.
         
@@ -214,15 +233,6 @@ class ImageClassificationModel:
         """
         try:
             print("🚀 Starting Model Training...\n")
-            
-            # Create validation generator with same split
-            validation_generator = validation_datagen.flow_from_directory(
-                dataset_dir,
-                target_size=self.image_size,
-                batch_size=self.batch_size,
-                class_mode='categorical',
-                seed=42
-            )
             
             # Calculate steps per epoch
             steps_per_epoch = max(1, train_generator.samples // self.batch_size)
@@ -268,6 +278,24 @@ class ImageClassificationModel:
             print(f"\n❌ Training failed: {e}")
             return None
     
+    def save_class_names(self, model_save_path: str) -> bool:
+        """Persist the exact class mapping used by the training generator."""
+        try:
+            if not self.class_indices:
+                print("âš ï¸  No class indices available to export")
+                return False
+
+            output_path = Path(model_save_path).resolve().parent / "class_names.json"
+            with open(output_path, "w", encoding="utf-8") as file_handle:
+                json.dump(self.class_indices, file_handle, indent=2)
+
+            print(f"âœ… Class mapping saved: {output_path}")
+            return True
+
+        except Exception as e:
+            print(f"âŒ Error saving class mapping: {e}")
+            return False
+
     def save_model(self, save_path: str) -> bool:
         """Save trained model to disk."""
         try:
@@ -343,10 +371,10 @@ def main():
     model_trainer.build_model(num_classes)
     
     # Create data generators
-    train_gen, val_gen, dataset = model_trainer.create_data_generators(dataset_dir)
+    train_gen, val_gen = model_trainer.create_data_generators(dataset_dir)
     
     # Train model
-    history = model_trainer.train(train_gen, val_gen, dataset)
+    history = model_trainer.train(train_gen, val_gen)
     
     if history is None:
         print("\n❌ Training failed!")
@@ -355,6 +383,7 @@ def main():
     # Save model
     model_save_path = MODEL_CONFIG["model_save_path"]
     model_trainer.save_model(model_save_path)
+    model_trainer.save_class_names(model_save_path)
     
     # Plot training history
     model_trainer.plot_training_history()

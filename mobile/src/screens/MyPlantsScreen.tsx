@@ -72,12 +72,6 @@ const plantsCopy: Record<
   },
 };
 
-const fallbackPlants: Plant[] = [
-  { id: "1", name: "Monstera", info: "Healthy", warning: false, badges: ["Tropical", "Low fuss"] },
-  { id: "2", name: "Pothos", info: "Healthy", warning: false, badges: ["Vine", "Indoor"] },
-  { id: "3", name: "Snake Plant", info: "Good", warning: false, badges: ["Resilient", "Dry tolerant"] },
-];
-
 export function MyPlantsScreen() {
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
@@ -94,7 +88,7 @@ export function MyPlantsScreen() {
       const validPlants = (response || []).filter((plant) => plant && plant.tracking !== false && plant.name?.trim());
       setPlants(validPlants);
     } catch {
-      setPlants(fallbackPlants);
+      setPlants([]);
     } finally {
       setLoading(false);
     }

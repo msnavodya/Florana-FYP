@@ -1,6 +1,5 @@
 # routes/plant.py
 from datetime import datetime
-import os
 import shutil
 from typing import Optional
 
@@ -9,15 +8,14 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 try:
     from .. import database
     from ..utils import local_store
+    from ..utils.paths import build_upload_disk_path, build_upload_public_path
 except ImportError:
     import database
     from utils import local_store
+    from utils.paths import build_upload_disk_path, build_upload_public_path
 
 
 router = APIRouter()
-
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 @router.post("/plants/")
@@ -43,10 +41,10 @@ async def create_plant(
         if image:
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             filename = f"{timestamp}_{image.filename}"
-            file_path = os.path.join(UPLOAD_DIR, filename)
+            file_path = build_upload_disk_path(filename)
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(image.file, buffer)
-            image_path = file_path.replace("\\", "/")
+            image_path = build_upload_public_path(filename)
 
         plant = {
             "name": name,

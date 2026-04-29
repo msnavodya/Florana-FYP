@@ -4,10 +4,10 @@ This Expo app lives next to the existing web app and does not modify `../florana
 
 ## Run
 
-1. Start the backend from `../backend` on port `8000`.
-2. Optionally copy `.env.example` to `.env` and set `EXPO_PUBLIC_API_URL`.
+1. Optionally copy `.env.example` to `.env` and set `EXPO_PUBLIC_API_URL`.
+2. Start Expo with `npm start`. The helper script will try to start the backend on the same port configured in `EXPO_PUBLIC_API_URL`, or `8000` by default.
 3. Install dependencies with `npm install`.
-4. Start Expo with `npm start`.
+4. If the backend is already running, Expo will reuse it.
 5. Press `a` for Android, `i` for iOS, or scan the QR code with Expo Go.
 
 ## Backend URL notes
@@ -15,6 +15,7 @@ This Expo app lives next to the existing web app and does not modify `../florana
 - Android emulator default: `http://10.0.2.2:8000`
 - iOS simulator default: `http://127.0.0.1:8000`
 - Physical device: use your computer's LAN IP, for example `http://192.168.1.10:8000`
+- If you change the backend port, update `EXPO_PUBLIC_API_URL` so the mobile app and startup script stay aligned.
 
 ## Mobile coverage
 

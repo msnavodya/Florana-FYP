@@ -281,10 +281,15 @@ export function HomeScreen() {
       const response = await predictImage(formData);
       const healthy = isHealthyPrediction(response.prediction);
       const confidence = formatPredictionConfidence(response.confidence);
+      const alternatePrediction = response.top_predictions?.find((item) => item.label !== response.prediction);
+      const message =
+        response.prediction === "Needs closer inspection" && alternatePrediction
+          ? `${response.prediction} - Best guess: ${alternatePrediction.label} (${formatPredictionConfidence(alternatePrediction.confidence)}% confidence)`
+          : `${response.prediction} - ${confidence}% confidence`;
 
       setDiagnosis({
         title: healthy ? t("healthy_plant") : t("disease_detected"),
-        message: `${response.prediction} - ${confidence}% confidence`,
+        message,
         tone: healthy ? "healthy" : "warning",
       });
       setModelState({ loaded: true, status: "ready" });
