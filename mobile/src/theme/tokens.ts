@@ -26,6 +26,14 @@ export const spacing = {
   xxl: 40,
 } as const;
 
+export const viewport = {
+  compactWidth: 350,
+  phoneWidth: 390,
+  compactHeight: 600,
+  frameWidth: 350,
+  frameHeight: 600,
+} as const;
+
 export const radii = {
   sm: 10,
   md: 16,

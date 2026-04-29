@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
+import { clearFeedbacksApi, createFeedback, getFeedbacks } from "../lib/api/feedback";
 import { storageKeys } from "../lib/storage/keys";
 import type { AppSettings, FeedbackEntry, ReminderState } from "../types/app";
 
@@ -32,6 +33,7 @@ interface SettingsContextValue {
   reminders: ReminderState;
   feedbacks: FeedbackEntry[];
   ready: boolean;
+  refreshFeedbacks: () => Promise<void>;
   saveSettings: (partial: Partial<AppSettings>) => Promise<void>;
   resetSettings: () => Promise<void>;
   setReminders: (value: ReminderState) => Promise<void>;
@@ -47,13 +49,23 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [feedbacks, setFeedbacksState] = useState<FeedbackEntry[]>([]);
   const [ready, setReady] = useState(false);
 
+  const refreshFeedbacks = useCallback(async () => {
+    try {
+      const liveFeedbacks = await getFeedbacks();
+      setFeedbacksState(liveFeedbacks);
+      await AsyncStorage.setItem(storageKeys.feedbacks, JSON.stringify(liveFeedbacks));
+    } catch {
+      // Keep cached feedbacks when backend is unavailable.
+    }
+  }, []);
+
   useEffect(() => {
     Promise.all([
       AsyncStorage.getItem(storageKeys.settings),
       AsyncStorage.getItem(storageKeys.reminders),
       AsyncStorage.getItem(storageKeys.feedbacks),
     ])
-      .then(([settingsRaw, remindersRaw, feedbackRaw]) => {
+      .then(async ([settingsRaw, remindersRaw, feedbackRaw]) => {
         if (settingsRaw) {
           setSettingsState({ ...defaultSettings, ...(JSON.parse(settingsRaw) as Partial<AppSettings>) });
         }
@@ -63,9 +75,18 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         if (feedbackRaw) {
           setFeedbacksState(JSON.parse(feedbackRaw) as FeedbackEntry[]);
         }
+        await refreshFeedbacks();
       })
       .finally(() => setReady(true));
-  }, []);
+  }, [refreshFeedbacks]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      void refreshFeedbacks();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [refreshFeedbacks]);
 
   const saveSettings = async (partial: Partial<AppSettings>) => {
     const next = { ...settings, ...partial };
@@ -84,17 +105,28 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addFeedback = async (value: Omit<FeedbackEntry, "id" | "createdAt">) => {
-    const nextEntry: FeedbackEntry = {
-      id: Date.now(),
-      createdAt: new Date().toISOString(),
-      ...value,
-    };
-    const next = [nextEntry, ...feedbacks];
+    let nextEntry: FeedbackEntry;
+    try {
+      nextEntry = await createFeedback(value);
+    } catch {
+      nextEntry = {
+        id: Date.now(),
+        createdAt: new Date().toISOString(),
+        ...value,
+      };
+    }
+
+    const next = [nextEntry, ...feedbacks].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     setFeedbacksState(next);
     await AsyncStorage.setItem(storageKeys.feedbacks, JSON.stringify(next));
   };
 
   const clearFeedbacks = async () => {
+    try {
+      await clearFeedbacksApi();
+    } catch {
+      // Clear local cache even if backend is unavailable.
+    }
     setFeedbacksState([]);
     await AsyncStorage.removeItem(storageKeys.feedbacks);
   };
@@ -105,13 +137,14 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       reminders,
       feedbacks,
       ready,
+      refreshFeedbacks,
       saveSettings,
       resetSettings,
       setReminders,
       addFeedback,
       clearFeedbacks,
     }),
-    [settings, reminders, feedbacks, ready]
+    [settings, reminders, feedbacks, ready, refreshFeedbacks]
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

@@ -1,33 +1,27 @@
 import { router } from "expo-router";
-import { Image, ImageBackground, StyleSheet, Text, View } from "react-native";
+import { Image, ImageBackground, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
+import { useLanguage } from "../context/LanguageContext";
 import { brandAssets } from "../theme/brand";
-import { colors, radii, shadows, spacing } from "../theme/tokens";
+import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 
 export function WelcomeScreen() {
-  return (
-    <Screen contentStyle={styles.content}>
-      <Image source={brandAssets.logo} style={styles.logo} />
-      <ImageBackground imageStyle={styles.heroImage} source={brandAssets.welcome} style={styles.heroCard}>
-        <View style={styles.heroOverlay}>
-          <Text style={styles.title}>Grow healthier plants with Florana.</Text>
-          <Text style={styles.subtitle}>
-            Sign in, shop, track plants, scan diseases, manage reminders, and stay connected to the same Florana backend from a native Expo app.
-          </Text>
+  const { height, width } = useWindowDimensions();
+  const { t } = useLanguage();
+  const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
 
-          <View style={styles.featureList}>
-            <Text style={styles.featureItem}>Smart plant diagnosis</Text>
-            <Text style={styles.featureItem}>Native shopping and cart flow</Text>
-            <Text style={styles.featureItem}>Care reminders and growth tracking</Text>
-          </View>
-        </View>
-      </ImageBackground>
+  return (
+    <Screen contentStyle={[styles.content, compact ? styles.contentCompact : null]}>
+      <Image source={brandAssets.logo} style={[styles.logo, compact ? styles.logoCompact : null]} />
+      <ImageBackground imageStyle={styles.heroImage} source={brandAssets.welcome} style={[styles.heroCard, compact ? styles.heroCardCompact : null]}></ImageBackground>
+
+      <Text style={[styles.title, compact ? styles.titleCompact : null]}>{t("welcome_headline")}</Text>
 
       <View style={styles.actions}>
-        <PrimaryButton label="Get Started" onPress={() => router.push("/login")} />
-        <PrimaryButton label="Create a new account" onPress={() => router.push("/register")} variant="secondary" />
+        <PrimaryButton label={t("get_started")} onPress={() => router.push("/login")} />
+        <PrimaryButton label={t("create_new_account")} onPress={() => router.push("/register")} variant="secondary" />
       </View>
     </Screen>
   );
@@ -38,6 +32,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: spacing.xl,
   },
+  contentCompact: {
+    paddingVertical: spacing.lg,
+  },
   logo: {
     alignSelf: "center",
     borderRadius: 18,
@@ -45,31 +42,65 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     width: 120,
   },
+  logoCompact: {
+    height: 88,
+    width: 88,
+  },
   heroCard: {
     borderRadius: radii.lg,
-    minHeight: 380,
+    minHeight: 300,
     overflow: "hidden",
     ...shadows.card,
   },
+  heroCardCompact: {
+    minHeight: 300,
+  },
   heroImage: {
+    height: "100%",
+    width: "100%",
     borderRadius: radii.lg,
   },
   heroOverlay: {
-    backgroundColor: "rgba(38, 26, 58, 0.58)",
+    backgroundColor: "rgba(36, 24, 61, 0.34)",
     flex: 1,
-    gap: spacing.lg,
+    gap: spacing.sm,
     justifyContent: "flex-end",
     padding: spacing.lg,
   },
+  heroOverlayCompact: {
+    padding: spacing.md,
+  },
+  heroEyebrow: {
+    color: colors.white,
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  heroEyebrowCompact: {
+    fontSize: 11,
+  },
+  heroHeadline: {
+    color: colors.white,
+    fontSize: 24,
+    fontWeight: "800",
+    lineHeight: 32,
+    maxWidth: 260,
+  },
+  heroHeadlineCompact: {
+    fontSize: 20,
+    lineHeight: 26,
+    maxWidth: 220,
+  },
   title: {
     color: colors.white,
-    fontSize: 36,
-    fontWeight: "800",
-    lineHeight: 44,
+    fontSize: 20,
+    fontWeight: "700",
+    lineHeight: 20,
+    textAlign: "center",
   },
-  subtitle: {
-    color: "#EADDFC",
-    fontSize: 16,
+  titleCompact: {
+    fontSize: 18,
     lineHeight: 24,
   },
   featureList: {
@@ -80,6 +111,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     fontWeight: "700",
+  },
+  featureItemCompact: {
+    fontSize: 14,
+    lineHeight: 20,
   },
   actions: {
     gap: spacing.md,

@@ -23,6 +23,7 @@ except Exception as e:
 # ----------------- Import Routers -----------------
 try:
     from .routes.auth import router as auth_router
+    from .routes.feedback import router as feedback_router
     from .routes.plant import router as plant_router
     from .routes.growth import router as growth_router
     from .routes.payment import router as payment_router
@@ -31,6 +32,7 @@ try:
     from .utils import local_store
 except ImportError:
     from routes.auth import router as auth_router
+    from routes.feedback import router as feedback_router
     from routes.plant import router as plant_router
     from routes.growth import router as growth_router
     from routes.payment import router as payment_router
@@ -97,13 +99,14 @@ def startup_event():
         print("   Windows: net start MongoDB or mongod")
         print("   macOS: brew services start mongodb-community")
         print("   Linux: sudo systemctl start mongod")
-        print("\nAuth endpoints will return 503 until MongoDB is running.")
+        print("\nFlorana will fall back to local JSON storage for auth and plant data until MongoDB is available.")
 
     print("=" * 60 + "\n")
 
 
 # Routers
 app.include_router(auth_router)
+app.include_router(feedback_router)
 app.include_router(plant_router)
 app.include_router(growth_router)
 app.include_router(payment_router)
@@ -120,6 +123,10 @@ def health_check():
         "status": "ok" if db_status["status"] == "success" else "degraded",
         "server": "Florana Backend",
         "database": db_status,
+        "ai_model": {
+            "loaded": model is not None,
+            "status": "ready" if model is not None else "offline",
+        },
         "timestamp": datetime.now().isoformat(),
     }
 

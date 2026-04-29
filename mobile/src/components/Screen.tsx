@@ -1,30 +1,43 @@
 import {
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View,
   useWindowDimensions,
+  type StyleProp,
   type ViewStyle,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { colors, spacing } from "../theme/tokens";
+import { colors, spacing, viewport } from "../theme/tokens";
 
 interface ScreenProps {
   children: React.ReactNode;
   scroll?: boolean;
-  contentStyle?: ViewStyle;
+  contentStyle?: StyleProp<ViewStyle>;
 }
 
 export function Screen({ children, scroll = true, contentStyle }: ScreenProps) {
-  const { width } = useWindowDimensions();
-  const compact = width < 390;
+  const { height, width } = useWindowDimensions();
+  const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
   const framed = width >= 768;
+  const handsetFrame = !framed && width > viewport.frameWidth;
 
   const content = (
-    <View style={[styles.frame, framed ? styles.frameDesktop : null]}>
+    <View
+      style={[
+        styles.frame,
+        handsetFrame
+          ? {
+              maxWidth: viewport.frameWidth,
+              minHeight: viewport.frameHeight,
+            }
+          : null,
+        framed ? styles.frameDesktop : null,
+      ]}
+    >
       {framed ? (
         <>
           <View style={styles.notch} />
@@ -39,7 +52,7 @@ export function Screen({ children, scroll = true, contentStyle }: ScreenProps) {
           styles.content,
           framed ? styles.contentFramed : null,
           {
-            padding: compact ? spacing.md : spacing.lg,
+            padding: compact ? 14 : spacing.lg,
           },
           contentStyle,
         ]}
@@ -64,8 +77,8 @@ export function Screen({ children, scroll = true, contentStyle }: ScreenProps) {
             contentContainerStyle={[
               styles.scroll,
               {
-                paddingHorizontal: compact ? spacing.xs : spacing.sm,
-                paddingVertical: compact ? spacing.xs : spacing.sm,
+                paddingHorizontal: compact ? 6 : spacing.sm,
+                paddingVertical: compact ? 4 : spacing.sm,
               },
             ]}
             keyboardShouldPersistTaps="handled"
@@ -78,8 +91,8 @@ export function Screen({ children, scroll = true, contentStyle }: ScreenProps) {
             style={[
               styles.scroll,
               {
-                paddingHorizontal: compact ? spacing.xs : spacing.sm,
-                paddingVertical: compact ? spacing.xs : spacing.sm,
+                paddingHorizontal: compact ? 6 : spacing.sm,
+                paddingVertical: compact ? 4 : spacing.sm,
               },
             ]}
           >

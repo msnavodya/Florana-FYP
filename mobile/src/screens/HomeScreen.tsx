@@ -1,84 +1,273 @@
+import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import { useEffect, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Image,
+  PanResponder,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 import { AppMenu } from "../components/AppMenu";
 import { BottomNav } from "../components/BottomNav";
+import { LanguageSelector } from "../components/LanguageSelector";
 import { Screen } from "../components/Screen";
-import { TopBar } from "../components/TopBar";
 import { useAuth } from "../context/AuthContext";
-import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useSettings } from "../context/SettingsContext";
+import { getBackendHealth } from "../lib/api/health";
 import { predictImage } from "../lib/api/predict";
-import { getProducts } from "../lib/api/shop";
+import { brandAssets } from "../theme/brand";
 import { colors, radii, shadows, spacing } from "../theme/tokens";
+import type { FeedbackEntry } from "../types/app";
 import { formatPredictionConfidence } from "../utils/predict";
 
-const insightCards = [
-  { key: "diagnose", tone: "yellow", route: null },
-  { key: "feedback", tone: "purple", route: "/feedback" },
-  { key: "care", tone: "green", route: "/care" },
-  { key: "quicktip", tone: "blue", route: "/quicktip" },
-] as const;
+type ModelState = {
+  loaded: boolean;
+  status: "checking" | "ready" | "offline";
+};
+
+type DiagnosisState = {
+  title: string;
+  message: string;
+  tone: "healthy" | "warning" | "error";
+};
+
+function formatRelativeTime(dateString?: string | null) {
+  if (!dateString) {
+    return "Just now";
+  }
+
+  const created = new Date(dateString).getTime();
+  if (Number.isNaN(created)) {
+    return "Just now";
+  }
+
+  const diffMs = Date.now() - created;
+  const diffMin = Math.max(0, Math.floor(diffMs / 60000));
+
+  if (diffMin < 1) {
+    return "Just now";
+  }
+
+  if (diffMin < 60) {
+    return `${diffMin} min ago`;
+  }
+
+  const diffHours = Math.floor(diffMin / 60);
+  if (diffHours < 24) {
+    return `${diffHours} hr ago`;
+  }
+
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
+}
+
+function isHealthyPrediction(prediction: string) {
+  const normalized = prediction.trim().toLowerCase();
+  return normalized.includes("healthy") || normalized.includes("fresh leaf");
+}
+
+function getDiagnosisToneColors(tone: DiagnosisState["tone"]) {
+  if (tone === "healthy") {
+    return {
+      bg: "#E0F5E9",
+      iconBg: "#CBEAD8",
+      iconColor: "#1C6B47",
+      title: "#1F5A3F",
+      body: "#2F7251",
+    };
+  }
+
+  if (tone === "warning") {
+    return {
+      bg: "#FFF0E2",
+      iconBg: "#FFE0BD",
+      iconColor: "#A65A16",
+      title: "#7F4410",
+      body: "#95531A",
+    };
+  }
+
+  return {
+    bg: "#FBE5EA",
+    iconBg: "#F6CED7",
+    iconColor: "#8F2D56",
+    title: "#742245",
+    body: "#8F2D56",
+  };
+}
+
+function FeedbackCard({ feedback }: { feedback: FeedbackEntry }) {
+  return (
+    <View style={styles.feedbackCard}>
+      <View style={styles.feedbackContent}>
+        <Text style={styles.feedbackMessage}>{feedback.message}</Text>
+        {feedback.rating ? (
+          <View style={styles.feedbackStars}>
+            <Text style={styles.feedbackStarsText}>{"*".repeat(feedback.rating)}</Text>
+          </View>
+        ) : null}
+      </View>
+      <Text style={styles.feedbackDate}>{formatRelativeTime(feedback.createdAt)}</Text>
+    </View>
+  );
+}
 
 export function HomeScreen() {
-  const { ready, user } = useAuth();
-  const { totalItems } = useCart();
-  const { feedbacks } = useSettings();
+  const { user } = useAuth();
+  const { feedbacks, refreshFeedbacks } = useSettings();
   const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [productCount, setProductCount] = useState<number | null>(null);
-  const [backendMessage, setBackendMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [diagnosis, setDiagnosis] = useState<string | null>(null);
+  const [diagnosis, setDiagnosis] = useState<DiagnosisState | null>(null);
+  const [modelState, setModelState] = useState<ModelState>({ loaded: false, status: "checking" });
   const [feedbackIndex, setFeedbackIndex] = useState(0);
+  const [hasMediaPermission, setHasMediaPermission] = useState<boolean | null>(null);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const greeting = user?.full_name ? t("hello_user", { name: user.full_name }) : t("hello_guest");
+
+  const modelLabel = useMemo(() => {
+    if (modelState.loaded) {
+      return t("model_live");
+    }
+
+    return modelState.status === "checking" ? t("checking") : t("model_offline");
+  }, [modelState.loaded, modelState.status, t]);
 
   useEffect(() => {
-    getProducts()
-      .then((products) => {
-        setProductCount(products.length);
-        setBackendMessage("Connected to the live Florana backend.");
-      })
-      .catch(() => {
-        setProductCount(null);
-        setBackendMessage("Authentication is available, but shop data could not be loaded right now.");
-      });
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 400,
+      useNativeDriver: true,
+    }).start();
+  }, [fadeAnim]);
+
+  useEffect(() => {
+    let active = true;
+
+    const syncModelState = async () => {
+      try {
+        const response = await getBackendHealth();
+        const aiModel = response.ai_model;
+
+        if (!active) {
+          return;
+        }
+
+        setModelState({
+          loaded: Boolean(aiModel?.loaded),
+          status: aiModel?.status === "ready" ? "ready" : aiModel?.status === "offline" ? "offline" : "checking",
+        });
+      } catch {
+        if (!active) {
+          return;
+        }
+
+        setModelState({ loaded: false, status: "offline" });
+      }
+    };
+
+    void syncModelState();
+    const intervalId = setInterval(() => {
+      void syncModelState();
+    }, 30000);
+
+    return () => {
+      active = false;
+      clearInterval(intervalId);
+    };
   }, []);
+
+  useEffect(() => {
+    void refreshFeedbacks();
+    const intervalId = setInterval(() => {
+      void refreshFeedbacks();
+    }, 30000);
+
+    return () => clearInterval(intervalId);
+  }, [refreshFeedbacks]);
 
   useEffect(() => {
     if (feedbacks.length === 0) {
       setFeedbackIndex(0);
-      return;
-    }
-
-    if (feedbackIndex >= feedbacks.length) {
+    } else if (feedbackIndex >= feedbacks.length) {
       setFeedbackIndex(feedbacks.length - 1);
     }
   }, [feedbackIndex, feedbacks]);
 
-  const activeFeedback = feedbacks[feedbackIndex];
-  const greeting = user?.full_name ? t("hello_user", { name: user.full_name }) : ready ? "Hello, grower" : "Loading...";
-  const statusSummary = useMemo(
-    () => `${productCount ?? "--"} plants live | ${feedbacks.length} reviews | ${totalItems} cart items`,
-    [feedbacks.length, productCount, totalItems]
+  const nextFeedback = () => {
+    setFeedbackIndex((current) => (current < feedbacks.length - 1 ? current + 1 : 0));
+  };
+
+  const prevFeedback = () => {
+    setFeedbackIndex((current) => (current > 0 ? current - 1 : feedbacks.length - 1));
+  };
+
+  const feedbackPanResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gestureState) =>
+          Math.abs(gestureState.dx) > 12 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy),
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dx <= -50 && feedbackIndex < feedbacks.length - 1) {
+            setFeedbackIndex((current) => current + 1);
+            return;
+          }
+
+          if (gestureState.dx >= 50 && feedbackIndex > 0) {
+            setFeedbackIndex((current) => current - 1);
+          }
+        },
+      }),
+    [feedbackIndex, feedbacks.length]
   );
-  const wellnessMessage = diagnosis
-    ? diagnosis
-    : loading
-      ? "Analyzing your latest leaf scan..."
-      : "Scan a leaf to get a live health prediction from the Florana model.";
+
+  const handleSearch = () => {
+    if (!search.trim()) {
+      return;
+    }
+
+    Alert.alert(t("search_action"), search.trim());
+  };
 
   const handleScan = async () => {
+    const permission =
+      hasMediaPermission == null
+        ? await ImagePicker.requestMediaLibraryPermissionsAsync()
+        : { granted: hasMediaPermission };
+
+    if (hasMediaPermission == null) {
+      setHasMediaPermission(permission.granted);
+    }
+
+    if (!permission.granted) {
+      const message = t("media_permission_message");
+      setDiagnosis({
+        title: t("diagnosis_unavailable"),
+        message,
+        tone: "error",
+      });
+      Alert.alert(t("permission_required"), message);
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: true,
-      quality: 0.8,
+      quality: 0.85,
     });
 
-    if (result.canceled) {
+    if (result.canceled || !result.assets?.length) {
       return;
     }
 
@@ -91,297 +280,215 @@ export function HomeScreen() {
     } as unknown as Blob);
 
     setLoading(true);
+
     try {
       const response = await predictImage(formData);
-      const percent = formatPredictionConfidence(response.confidence);
-      const isHealthy = response.prediction === "Healthy Plant";
-      const status = isHealthy ? "Healthy Plant" : "Unhealthy Plant - Disease Detected";
-      setDiagnosis(`${status} (${response.prediction}) - Confidence: ${percent}%`);
+      const healthy = isHealthyPrediction(response.prediction);
+      const confidence = formatPredictionConfidence(response.confidence);
+
+      setDiagnosis({
+        title: healthy ? t("healthy_plant") : t("disease_detected"),
+        message: `${response.prediction} • ${confidence}% confidence`,
+        tone: healthy ? "healthy" : "warning",
+      });
+      setModelState({ loaded: true, status: "ready" });
     } catch (error) {
-      setDiagnosis(error instanceof Error ? `Error: ${error.message}` : "Error: Backend not reachable");
+      setDiagnosis({
+        title: t("diagnosis_unavailable"),
+        message: error instanceof Error ? error.message : t("diagnosis_failed"),
+        tone: "error",
+      });
+      setModelState({ loaded: false, status: "offline" });
     } finally {
       setLoading(false);
     }
   };
 
-  const goToFeedback = (direction: "next" | "prev") => {
-    if (feedbacks.length <= 1) {
-      return;
-    }
-
-    setFeedbackIndex((current) => {
-      if (direction === "next") {
-        return current < feedbacks.length - 1 ? current + 1 : 0;
-      }
-
-      return current > 0 ? current - 1 : feedbacks.length - 1;
-    });
-  };
+  const diagnosisColors = diagnosis ? getDiagnosisToneColors(diagnosis.tone) : null;
 
   return (
-    <Screen>
-      <TopBar title={greeting} subtitle="Florana Mobile" onMenuPress={() => setMenuOpen(true)} stackBrand />
+    <Screen contentStyle={styles.screenContent}>
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
 
-      <View style={styles.headerActions}>
-        <View style={styles.statPill}>
-          <Text style={styles.statPillText}>{statusSummary}</Text>
-        </View>
-      </View>
+      <Animated.View style={{ opacity: fadeAnim }}>
+        <View style={styles.headerCard}>
+          <View style={styles.headerLeft}>
+            <Image source={brandAssets.logo} style={styles.logo} />
+            <Text style={styles.headerTitle}>{greeting}</Text>
+          </View>
 
-      <View style={styles.heroCard}>
-        <View style={styles.heroBadge}>
-          <Text style={styles.heroBadgeText}>REAL-TIME PLANT CARE</Text>
-        </View>
-        <Text style={styles.heroTitle}>A cleaner mobile workspace for diagnosis, care, and shopping.</Text>
-        <Text style={styles.heroBody}>
-          Florana brings the model, reminders, catalog, and community feedback into one focused dashboard.
-        </Text>
-        <View style={styles.heroActionRow}>
-          <Pressable onPress={() => void handleScan()} style={styles.heroPrimaryAction}>
-            <Text style={styles.heroPrimaryActionText}>{loading ? "Scanning..." : "Scan a leaf"}</Text>
-          </Pressable>
-          <Pressable onPress={() => router.push("/myplants")} style={styles.heroSecondaryAction}>
-            <Text style={styles.heroSecondaryActionText}>My plants</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      <View style={styles.searchBox}>
-        <TextInput
-          onChangeText={setSearch}
-          placeholder={t("search_placeholder")}
-          placeholderTextColor={colors.textMuted}
-          style={styles.searchInput}
-          value={search}
-        />
-        <Pressable onPress={() => router.push("/catalog")} style={styles.searchButton}>
-          <Text style={styles.searchButtonText}>Search</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.wellnessPanel}>
-        <View style={styles.wellnessHeader}>
-          <Text style={styles.wellnessTitle}>Plant wellness</Text>
-          {diagnosis ? (
-            <Pressable onPress={() => setDiagnosis(null)} style={styles.dismissButton}>
-              <Text style={styles.dismissButtonText}>x</Text>
+          <View style={styles.headerActions}>
+            <LanguageSelector />
+            <Pressable accessibilityLabel={t("open_menu")} onPress={() => setMenuOpen(true)} style={styles.menuButton}>
+              <MaterialIcons name="menu" size={18} color={colors.text} />
             </Pressable>
-          ) : null}
+          </View>
         </View>
-        <Text style={styles.wellnessText}>{wellnessMessage}</Text>
-      </View>
 
-      <Text style={styles.sectionTitle}>{t("todays_insights")}</Text>
+        <View style={styles.searchBox}>
+          <TextInput
+            placeholder={t("search_placeholder")}
+            placeholderTextColor="#907FAD"
+            style={styles.searchInput}
+            value={search}
+            onChangeText={setSearch}
+          />
+          <Pressable onPress={handleSearch} style={styles.searchButton}>
+            <Text style={styles.searchButtonText}>{t("search_action")}</Text>
+          </Pressable>
+        </View>
 
-      <View style={styles.cardGrid}>
-        {insightCards.map((card) => {
-          const onPress =
-            card.key === "diagnose"
-              ? () => void handleScan()
-              : () => router.push(card.route as "/feedback" | "/care" | "/quicktip");
-
-          const title =
-            card.key === "diagnose"
-              ? t("diagnose")
-              : card.key === "feedback"
-                ? t("feedback_card")
-                : card.key === "care"
-                  ? t("care_reminder_card")
-                  : t("quick_tip_card");
-
-          const body =
-            card.key === "diagnose"
-              ? loading
-                ? t("analyzing")
-                : t("tap_to_scan_leaf")
-              : card.key === "feedback"
-                ? t("reviews", { count: feedbacks.length })
-                : card.key === "care"
-                  ? "Water Monstera."
-                  : "Use well-draining soil.";
-
-          return (
-            <Pressable
-              key={card.key}
-              onPress={onPress}
-              style={[
-                styles.insightCard,
-                card.tone === "yellow"
-                  ? styles.yellowCard
-                  : card.tone === "purple"
-                    ? styles.purpleCard
-                    : card.tone === "green"
-                      ? styles.greenCard
-                      : styles.blueCard,
-              ]}
-            >
-              <Text style={styles.insightTitle}>{title}</Text>
-              <Text style={styles.insightBody}>{body}</Text>
+        {diagnosis && diagnosisColors ? (
+          <View style={[styles.diagnosisAlert, { backgroundColor: diagnosisColors.bg }]}>
+            <View style={styles.diagnosisCopyRow}>
+              <MaterialIcons
+                name={diagnosis.tone === "healthy" ? "verified" : "warning-amber"}
+                size={18}
+                color={diagnosisColors.iconColor}
+              />
+              <View style={styles.diagnosisCopy}>
+                <Text style={[styles.diagnosisTitle, { color: diagnosisColors.title }]}>{diagnosis.title}</Text>
+                <Text style={[styles.diagnosisBody, { color: diagnosisColors.body }]}>{diagnosis.message}</Text>
+              </View>
+            </View>
+            <Pressable onPress={() => setDiagnosis(null)} style={styles.diagnosisClose}>
+              <MaterialIcons name="close" size={16} color={diagnosisColors.iconColor} />
             </Pressable>
-          );
-        })}
-      </View>
+          </View>
+        ) : null}
 
-      <View style={styles.feedbackBox}>
-        <View style={styles.feedbackHeader}>
-          <Text style={styles.feedbackHeading}>User Feedback</Text>
-          {feedbacks.length > 0 ? (
-            <Text style={styles.feedbackCount}>
-              {feedbackIndex + 1}/{feedbacks.length}
-            </Text>
-          ) : null}
+        <Text style={styles.sectionTitle}>{t("todays_insights")}</Text>
+
+        <View style={styles.cardsGrid}>
+          <Pressable onPress={() => void handleScan()} style={[styles.insightCard, styles.yellowCard]}>
+            <View style={styles.cardIconRow}>
+              <View style={styles.cardIcon}>
+                <MaterialIcons name="eco" size={18} color={colors.text} />
+              </View>
+              <View style={[styles.modelPill, modelState.loaded ? styles.modelPillReady : styles.modelPillOffline]}>
+                <MaterialIcons name="show-chart" size={14} color={colors.white} />
+                <Text style={styles.modelPillText}>{modelLabel}</Text>
+              </View>
+            </View>
+            <Text style={styles.cardTitle}>{t("diagnose")}</Text>
+            <Text style={styles.cardText}>{loading ? t("analyzing_realtime") : t("tap_to_scan_leaf")}</Text>
+          </Pressable>
+
+          <Pressable onPress={() => router.push("/feedback")} style={[styles.insightCard, styles.purpleCard]}>
+            <Text style={styles.cardTitle}>{t("feedback_card")}</Text>
+            <Text style={styles.cardText}>{t("reviews", { count: feedbacks.length })}</Text>
+          </Pressable>
+
+          <Pressable onPress={() => router.push("/care")} style={[styles.insightCard, styles.greenCard]}>
+            <Text style={styles.cardTitle}>{t("care_reminder_card")}</Text>
+            <Text style={styles.cardText}>Water Monstera.</Text>
+          </Pressable>
+
+          <Pressable onPress={() => router.push("/quicktip")} style={[styles.insightCard, styles.blueCard]}>
+            <Text style={styles.cardTitle}>{t("quick_tip_card")}</Text>
+            <Text style={styles.cardText}>Use well-draining soil.</Text>
+          </Pressable>
         </View>
 
-        {activeFeedback ? (
-          <>
-            <View style={styles.feedbackSlideRow}>
-              <Pressable onPress={() => goToFeedback("prev")} style={styles.slideButton}>
+        <View style={styles.feedbackSection}>
+          <View style={styles.feedbackHeader}>
+            <Text style={styles.feedbackHeading}>{t("user_feedback")}</Text>
+            {feedbacks.length > 0 ? (
+              <Text style={styles.feedbackCount}>
+                {feedbackIndex + 1}/{feedbacks.length}
+              </Text>
+            ) : null}
+          </View>
+
+          {feedbacks.length === 0 ? (
+            <View style={styles.emptyFeedbackBox}>
+              <Text style={styles.emptyFeedbackText}>{t("no_feedback_yet")}</Text>
+            </View>
+          ) : (
+            <View style={styles.feedbackSlideshow}>
+              <Pressable onPress={prevFeedback} disabled={feedbacks.length <= 1} style={styles.slideButton}>
                 <Text style={styles.slideButtonText}>{"<"}</Text>
               </Pressable>
 
-              <View style={styles.feedbackCard}>
-                <Text style={styles.feedbackMessage}>{activeFeedback.message}</Text>
-                <Text style={styles.feedbackStars}>{"*".repeat(activeFeedback.rating || 0)}</Text>
-                <Text style={styles.feedbackDate}>{activeFeedback.createdAt || "Just now"}</Text>
+              <View style={styles.slideshowContainer}>
+                <View style={styles.feedbackTrack} {...feedbackPanResponder.panHandlers}>
+                  <FeedbackCard feedback={feedbacks[feedbackIndex]} />
+                </View>
               </View>
 
-              <Pressable onPress={() => goToFeedback("next")} style={styles.slideButton}>
+              <Pressable onPress={nextFeedback} disabled={feedbacks.length <= 1} style={styles.slideButton}>
                 <Text style={styles.slideButtonText}>{">"}</Text>
               </Pressable>
             </View>
+          )}
 
-            {feedbacks.length > 1 ? (
-              <View style={styles.dotRow}>
-                {feedbacks.map((entry, index) => (
-                  <Pressable
-                    key={`${entry.id}-${index}`}
-                    onPress={() => setFeedbackIndex(index)}
-                    style={[styles.dot, index === feedbackIndex ? styles.activeDot : null]}
-                  />
-                ))}
-              </View>
-            ) : null}
-          </>
-        ) : (
-          <View style={styles.emptyFeedbackBox}>
-            <Text style={styles.emptyFeedbackText}>No feedback yet</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.infoCard}>
-        <Text style={styles.infoTitle}>Backend status</Text>
-        <Text style={styles.infoText}>{backendMessage || "Checking Florana services..."}</Text>
-      </View>
-
-      {search.trim() ? (
-        <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>Quick search</Text>
-          <Text style={styles.infoText}>Search for "{search}" in the catalog to browse matching plants.</Text>
+          {feedbacks.length > 1 ? (
+            <View style={styles.feedbackDots}>
+              {feedbacks.map((entry, index) => (
+                <Pressable
+                  key={`${entry.id}-${index}`}
+                  onPress={() => setFeedbackIndex(index)}
+                  style={[styles.dot, index === feedbackIndex ? styles.dotActive : null]}
+                />
+              ))}
+            </View>
+          ) : null}
         </View>
-      ) : null}
 
-      <BottomNav />
+        <BottomNav />
+      </Animated.View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  screenContent: {
+    paddingBottom: spacing.sm,
+  },
+  headerCard: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: spacing.md,
+  },
+  headerLeft: {
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginRight: spacing.sm,
+  },
+  logo: {
+    borderRadius: 18,
+    height: 52,
+    width: 52,
+  },
+  headerTitle: {
+    color: colors.white,
+    flex: 1,
+    fontSize: 20,
+    fontWeight: "800",
+  },
   headerActions: {
     alignItems: "center",
     flexDirection: "row",
-    gap: spacing.sm,
-    marginBottom: spacing.md,
+    gap: spacing.xs,
   },
-  statPill: {
-    backgroundColor: "rgba(255,255,255,0.18)",
-    borderColor: "rgba(255,255,255,0.26)",
-    borderRadius: radii.md,
-    borderWidth: 1,
-    flex: 1,
-    minHeight: 44,
-    justifyContent: "center",
-    paddingHorizontal: spacing.md,
-  },
-  statPillText: {
-    color: colors.white,
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  heroCard: {
-    backgroundColor: colors.backgroundDeep,
-    borderRadius: radii.xl,
-    marginBottom: spacing.md,
-    overflow: "hidden",
-    padding: spacing.lg,
-    ...shadows.card,
-  },
-  heroBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: "rgba(255,255,255,0.12)",
-    borderRadius: radii.pill,
-    marginBottom: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-  },
-  heroBadgeText: {
-    color: "#E9DDFF",
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 0.8,
-  },
-  heroTitle: {
-    color: colors.white,
-    fontSize: 24,
-    fontWeight: "800",
-    lineHeight: 31,
-  },
-  heroBody: {
-    color: "#D8CAEF",
-    fontSize: 14,
-    lineHeight: 22,
-    marginTop: spacing.sm,
-  },
-  heroActionRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  heroPrimaryAction: {
+  menuButton: {
     alignItems: "center",
     backgroundColor: colors.white,
-    borderRadius: radii.pill,
-    flex: 1,
-    justifyContent: "center",
-    minHeight: 46,
-    paddingHorizontal: spacing.md,
-  },
-  heroPrimaryActionText: {
-    color: colors.backgroundDeep,
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  heroSecondaryAction: {
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.12)",
-    borderColor: "rgba(255,255,255,0.18)",
-    borderRadius: radii.pill,
+    borderColor: colors.border,
+    borderRadius: 14,
     borderWidth: 1,
-    flex: 1,
+    height: 44,
     justifyContent: "center",
-    minHeight: 46,
-    paddingHorizontal: spacing.md,
-  },
-  heroSecondaryActionText: {
-    color: colors.white,
-    fontSize: 14,
-    fontWeight: "700",
+    width: 44,
+    ...shadows.soft,
   },
   searchBox: {
     alignItems: "center",
     backgroundColor: colors.white,
-    borderRadius: radii.md,
+    borderRadius: 18,
     flexDirection: "row",
     marginBottom: spacing.md,
     padding: 6,
@@ -396,226 +503,236 @@ const styles = StyleSheet.create({
   },
   searchButton: {
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.94)",
-    borderColor: colors.border,
+    backgroundColor: colors.primary,
     borderRadius: 14,
-    borderWidth: 1,
     justifyContent: "center",
     minHeight: 42,
-    minWidth: 84,
+    minWidth: 86,
     paddingHorizontal: spacing.md,
   },
   searchButtonText: {
-    color: colors.text,
+    color: colors.white,
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "800",
   },
-  wellnessPanel: {
-    backgroundColor: "rgba(255,255,255,0.94)",
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    marginBottom: spacing.md,
-    padding: spacing.md,
-    ...shadows.soft,
-  },
-  wellnessHeader: {
+  diagnosisAlert: {
     alignItems: "center",
+    borderRadius: 22,
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: spacing.xs,
+    marginBottom: spacing.md,
+    padding: spacing.md,
   },
-  wellnessTitle: {
-    color: colors.text,
+  diagnosisCopyRow: {
+    alignItems: "center",
+    flex: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginRight: spacing.sm,
+  },
+  diagnosisCopy: {
+    flex: 1,
+  },
+  diagnosisTitle: {
     fontSize: 15,
     fontWeight: "800",
   },
-  wellnessText: {
-    color: colors.text,
+  diagnosisBody: {
     fontSize: 13,
-    lineHeight: 20,
+    lineHeight: 18,
+    marginTop: 4,
   },
-  dismissButton: {
+  diagnosisClose: {
     alignItems: "center",
-    backgroundColor: colors.primaryDark,
     borderRadius: radii.pill,
     height: 28,
     justifyContent: "center",
     width: 28,
   },
-  dismissButtonText: {
-    color: colors.white,
-    fontSize: 14,
-    fontWeight: "800",
-  },
   sectionTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "800",
-    marginBottom: spacing.sm,
+    color: colors.white,
+    fontSize: 22,
+    fontWeight: "900",
+    marginBottom: spacing.md,
   },
-  cardGrid: {
+  cardsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: spacing.sm,
+    justifyContent: "space-between",
     marginBottom: spacing.md,
   },
   insightCard: {
-    borderRadius: 18,
-    minHeight: 118,
+    borderRadius: 22,
+    marginBottom: spacing.sm,
+    minHeight: 132,
     padding: spacing.md,
-    width: "48%",
+    width: "48.2%",
+    ...shadows.soft,
   },
   yellowCard: {
-    backgroundColor: "#FFEAB6",
+    backgroundColor: "#FFE7A7",
   },
   purpleCard: {
     backgroundColor: "#E6D7FF",
   },
   greenCard: {
-    backgroundColor: "#D8F9D2",
+    backgroundColor: "#D7F4D6",
   },
   blueCard: {
     backgroundColor: "#D9F1FF",
   },
-  insightTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  insightBody: {
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: spacing.xs,
-  },
-  feedbackBox: {
-    backgroundColor: "#E0CBE5",
-    borderColor: "rgba(176,145,182,0.8)",
-    borderRadius: radii.md,
-    borderWidth: 1,
-    marginBottom: spacing.md,
-    padding: spacing.md,
-    ...shadows.soft,
-  },
-  feedbackHeader: {
+  cardIconRow: {
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: spacing.sm,
   },
-  feedbackHeading: {
-    color: "#2D1E53",
+  cardIcon: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.68)",
+    borderRadius: 14,
+    height: 34,
+    justifyContent: "center",
+    width: 34,
+  },
+  modelPill: {
+    alignItems: "center",
+    borderRadius: radii.pill,
+    flexDirection: "row",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  modelPillReady: {
+    backgroundColor: colors.success,
+  },
+  modelPillOffline: {
+    backgroundColor: colors.danger,
+  },
+  modelPillText: {
+    color: colors.white,
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  cardTitle: {
+    color: colors.text,
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "800",
+  },
+  cardText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: spacing.xs,
+  },
+  feedbackSection: {
+    backgroundColor: "#E6D0F3",
+    borderRadius: radii.xl,
+    padding: spacing.md,
+    ...shadows.card,
+  },
+  feedbackHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: spacing.md,
+  },
+  feedbackHeading: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: "800",
   },
   feedbackCount: {
-    backgroundColor: "rgba(123,91,154,0.2)",
-    borderRadius: 8,
-    color: "#2D1E53",
+    backgroundColor: colors.white,
+    borderRadius: radii.pill,
+    color: colors.primaryDark,
     fontSize: 12,
-    fontWeight: "700",
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
+    fontWeight: "800",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
-  feedbackSlideRow: {
+  emptyFeedbackBox: {
+    alignItems: "center",
+    backgroundColor: colors.white,
+    borderRadius: 18,
+    justifyContent: "center",
+    minHeight: 110,
+    padding: spacing.md,
+  },
+  emptyFeedbackText: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  feedbackSlideshow: {
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.sm,
   },
   slideButton: {
     alignItems: "center",
-    backgroundColor: "rgba(123,91,154,0.85)",
-    borderColor: "rgba(255,255,255,0.5)",
+    backgroundColor: colors.primary,
     borderRadius: radii.pill,
-    borderWidth: 2,
-    height: 32,
+    height: 38,
     justifyContent: "center",
-    width: 32,
+    width: 38,
   },
   slideButtonText: {
     color: colors.white,
     fontSize: 16,
     fontWeight: "800",
   },
+  slideshowContainer: {
+    flex: 1,
+  },
+  feedbackTrack: {
+    flex: 1,
+  },
   feedbackCard: {
     backgroundColor: colors.white,
-    borderColor: "rgba(217,196,229,0.6)",
-    borderRadius: 12,
-    borderWidth: 1,
-    flex: 1,
-    minHeight: 110,
+    borderRadius: 20,
+    minHeight: 145,
     padding: spacing.md,
-    ...shadows.soft,
+  },
+  feedbackContent: {
+    flex: 1,
   },
   feedbackMessage: {
-    color: "#2D1E53",
-    fontSize: 13,
-    fontWeight: "500",
-    lineHeight: 19,
-  },
-  feedbackStars: {
-    color: "#FFD700",
-    fontSize: 12,
-    letterSpacing: 2,
-    marginTop: spacing.xs,
-  },
-  feedbackDate: {
-    color: "#8C72A6",
-    fontSize: 11,
-    marginTop: spacing.sm,
-    textAlign: "right",
-  },
-  dotRow: {
-    flexDirection: "row",
-    gap: 6,
-    justifyContent: "center",
-    marginTop: spacing.sm,
-  },
-  dot: {
-    backgroundColor: "rgba(123,91,154,0.3)",
-    borderColor: "rgba(123,91,154,0.5)",
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    height: 7,
-    width: 7,
-  },
-  activeDot: {
-    backgroundColor: "#7A5B9A",
-    borderColor: "#7A5B9A",
-    height: 8,
-    width: 8,
-  },
-  emptyFeedbackBox: {
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.6)",
-    borderRadius: 12,
-    justifyContent: "center",
-    minHeight: 100,
-  },
-  emptyFeedbackText: {
-    color: "#5F4175",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  infoCard: {
-    backgroundColor: "rgba(255,255,255,0.92)",
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    gap: spacing.xs,
-    marginBottom: spacing.md,
-    padding: spacing.md,
-    ...shadows.soft,
-  },
-  infoTitle: {
     color: colors.text,
     fontSize: 15,
     fontWeight: "700",
+    lineHeight: 22,
   },
-  infoText: {
+  feedbackStars: {
+    marginTop: spacing.md,
+  },
+  feedbackStarsText: {
+    color: "#A07C00",
+    fontSize: 16,
+    fontWeight: "800",
+    letterSpacing: 2,
+  },
+  feedbackDate: {
     color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 12,
+    fontWeight: "700",
+    marginTop: spacing.md,
+    textAlign: "right",
+  },
+  feedbackDots: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: spacing.md,
+  },
+  dot: {
+    backgroundColor: "rgba(124, 92, 255, 0.26)",
+    borderRadius: radii.pill,
+    height: 8,
+    marginHorizontal: 4,
+    width: 8,
+  },
+  dotActive: {
+    backgroundColor: colors.primaryDark,
+    width: 20,
   },
 });

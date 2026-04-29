@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { Alert, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { AppMenu } from "../components/AppMenu";
 import { PlantCard } from "../components/PlantCard";
 import { Screen } from "../components/Screen";
 import { TopBar } from "../components/TopBar";
 import { deletePlant, getPlants } from "../lib/api/plants";
-import { colors, radii, spacing } from "../theme/tokens";
+import { colors, radii, spacing, viewport } from "../theme/tokens";
 import type { Plant } from "../types/plants";
 
 const fallbackPlants: Plant[] = [
@@ -16,6 +16,8 @@ const fallbackPlants: Plant[] = [
 ];
 
 export function MyPlantsScreen() {
+  const { height, width } = useWindowDimensions();
+  const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
   const [menuOpen, setMenuOpen] = useState(false);
   const [plants, setPlants] = useState<Plant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,8 +74,8 @@ export function MyPlantsScreen() {
       <TopBar title="My Plants" subtitle="Your flower dashboard" onMenuPress={() => setMenuOpen(true)} />
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
 
-      <View style={styles.headerCard}>
-        <Text style={styles.hello}>Hello Gardener!</Text>
+      <View style={[styles.headerCard, compact ? styles.headerCardCompact : null]}>
+        <Text style={[styles.hello, compact ? styles.helloCompact : null]}>Hello Gardener!</Text>
         <Text style={styles.summary}>{`${plants.length} Plants - ${warnings} Need Attention`}</Text>
       </View>
 
@@ -107,10 +109,18 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     padding: spacing.lg,
   },
+  headerCardCompact: {
+    borderRadius: 22,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+  },
   hello: {
     color: colors.text,
     fontSize: 22,
     fontWeight: "800",
+  },
+  helloCompact: {
+    fontSize: 19,
   },
   summary: {
     color: colors.textMuted,

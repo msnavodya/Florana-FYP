@@ -1,23 +1,31 @@
 import { StyleSheet, Text, TextInput, View, useWindowDimensions, type TextInputProps } from "react-native";
 
-import { colors, radii, shadows, spacing } from "../theme/tokens";
+import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 
 interface TextFieldProps extends TextInputProps {
   label: string;
+  error?: string;
+  helperText?: string;
 }
 
-export function TextField({ label, ...props }: TextFieldProps) {
-  const { width } = useWindowDimensions();
-  const compact = width < 390;
+export function TextField({ label, error, helperText, ...props }: TextFieldProps) {
+  const { height, width } = useWindowDimensions();
+  const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
+  const message = error || helperText;
 
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, compact ? styles.labelCompact : null]}>{label}</Text>
       <TextInput
         placeholderTextColor={colors.textMuted}
-        style={[styles.input, compact ? styles.inputCompact : null]}
+        style={[styles.input, compact ? styles.inputCompact : null, error ? styles.inputError : null]}
         {...props}
       />
+      {message ? (
+        <Text style={[styles.message, error ? styles.messageError : styles.messageHelper]}>
+          {message}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -30,6 +38,9 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 14,
     fontWeight: "700",
+  },
+  labelCompact: {
+    fontSize: 13,
   },
   input: {
     backgroundColor: "rgba(255, 255, 255, 0.94)",
@@ -44,5 +55,21 @@ const styles = StyleSheet.create({
   },
   inputCompact: {
     minHeight: 48,
+    fontSize: 15,
+  },
+  inputError: {
+    borderColor: colors.danger,
+  },
+  message: {
+    fontSize: 12,
+    lineHeight: 18,
+    paddingHorizontal: 2,
+  },
+  messageHelper: {
+    color: colors.textMuted,
+  },
+  messageError: {
+    color: colors.danger,
+    fontWeight: "600",
   },
 });

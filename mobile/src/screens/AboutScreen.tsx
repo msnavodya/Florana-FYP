@@ -46,22 +46,22 @@ export function AboutScreen() {
 
 const styles = StyleSheet.create({
   heroCard: {
-    backgroundColor: colors.backgroundDeep,
-    borderRadius: radii.lg,
+    backgroundColor: "#E7D7FF",
+    borderRadius: radii.xl,
     gap: spacing.sm,
     marginBottom: spacing.md,
     padding: spacing.lg,
     ...shadows.card,
   },
   heroEyebrow: {
-    color: "#D8C2FF",
+    color: "#7E62B2",
     fontSize: 12,
     fontWeight: "800",
     letterSpacing: 0.8,
     textTransform: "uppercase",
   },
   heroTitle: {
-    color: colors.white,
+    color: colors.text,
     fontSize: 22,
     fontWeight: "800",
     lineHeight: 30,
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: radii.lg,
+    borderRadius: radii.xl,
     borderWidth: 1,
     gap: spacing.md,
     marginBottom: spacing.md,

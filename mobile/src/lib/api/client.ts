@@ -57,6 +57,20 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     return response.data;
   } catch (error) {
     const axiosError = error as AxiosError<{ detail?: string; message?: string }>;
+    if (axiosError.code === "ECONNABORTED") {
+      throw new ApiError(
+        `The server took too long to respond at ${API_URL}. Check that the backend is running and reachable from your phone or emulator.`,
+        504,
+      );
+    }
+
+    if (!axiosError.response) {
+      throw new ApiError(
+        `Cannot reach the backend at ${API_URL}. Start the FastAPI server and use your computer's LAN IP in EXPO_PUBLIC_API_URL when testing on a real phone.`,
+        503,
+      );
+    }
+
     const detail =
       axiosError.response?.data?.detail ||
       axiosError.response?.data?.message ||

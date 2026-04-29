@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
 import { router } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { AppMenu } from "../components/AppMenu";
 import { BottomNav } from "../components/BottomNav";
@@ -13,14 +13,22 @@ import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useSettings } from "../context/SettingsContext";
 import { storageKeys } from "../lib/storage/keys";
-import { colors, radii, shadows, spacing } from "../theme/tokens";
+import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 
 export function SettingsScreen() {
+  const { height, width } = useWindowDimensions();
+  const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
   const [menuOpen, setMenuOpen] = useState(false);
   const [status, setStatus] = useState("");
   const { user, signOut } = useAuth();
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const { settings, saveSettings, resetSettings, clearFeedbacks } = useSettings();
+
+  const nextLanguage = language === "English" ? "Sinhala" : language === "Sinhala" ? "Tamil" : "English";
+  const fontSizeLabel =
+    settings.fontSize === "Small" ? t("font_small") : settings.fontSize === "Medium" ? t("font_medium") : t("font_large");
+  const languageLabel =
+    language === "English" ? t("language_english") : language === "Sinhala" ? t("language_sinhala") : t("language_tamil");
 
   const showStatus = (message: string) => {
     setStatus(message);
@@ -38,7 +46,7 @@ export function SettingsScreen() {
 
     const path = `${FileSystem.cacheDirectory}florana-data-export.json`;
     await FileSystem.writeAsStringAsync(path, JSON.stringify(payload, null, 2));
-    showStatus(`Exported app data to ${path}`);
+    showStatus(t("status_exported_path", { path }));
   };
 
   const handleClearKey = async (storageKey: string, successMessage: string) => {
@@ -50,7 +58,7 @@ export function SettingsScreen() {
     await resetSettings();
     await AsyncStorage.removeItem(storageKeys.appLanguage);
     await setLanguage("English");
-    showStatus("Preferences reset to default.");
+    showStatus(t("status_preferences_reset"));
   };
 
   const handleLogout = async () => {
@@ -60,30 +68,30 @@ export function SettingsScreen() {
 
   return (
     <Screen>
-      <TopBar title="Settings" subtitle="Florana Workspace" onMenuPress={() => setMenuOpen(true)} />
+      <TopBar title={t("settings_title")} subtitle={t("settings_subtitle")} onMenuPress={() => setMenuOpen(true)} />
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
 
-      <View style={styles.heroCard}>
-        <Text style={styles.heroEyebrow}>Florana Workspace</Text>
-        <Text style={styles.heroTitle}>Adjust your app experience, reminders, and saved device data in one place.</Text>
+      <View style={[styles.heroCard, compact ? styles.heroCardCompact : null]}>
+        <Text style={styles.heroEyebrow}>{t("settings_hero_eyebrow")}</Text>
+        <Text style={[styles.heroTitle, compact ? styles.heroTitleCompact : null]}>{t("settings_hero_title")}</Text>
 
-        <View style={styles.profileCard}>
+        <View style={[styles.profileCard, compact ? styles.profileCardCompact : null]}>
           <View style={styles.profileContent}>
-            <Text style={styles.profileLabel}>Signed in as</Text>
-            <Text style={styles.profileName}>{user?.full_name || "Guest Gardener"}</Text>
-            <Text style={styles.profileEmail}>{user?.email || "No account email found on this device."}</Text>
+            <Text style={styles.profileLabel}>{t("signed_in_as")}</Text>
+            <Text style={[styles.profileName, compact ? styles.profileNameCompact : null]}>{user?.full_name || t("guest_gardener")}</Text>
+            <Text style={styles.profileEmail}>{user?.email || t("no_account_email")}</Text>
           </View>
-          <PrimaryButton label="View Profile" onPress={() => router.push("/profile")} variant="secondary" />
+          <PrimaryButton label={t("view_profile")} onPress={() => router.push("/profile")} variant="secondary" />
         </View>
       </View>
 
       {status ? <View style={styles.statusCard}><Text style={styles.statusText}>{status}</Text></View> : null}
 
-      <View style={styles.panel}>
-        <Text style={styles.panelEyebrow}>Display</Text>
-        <Text style={styles.panelTitle}>Look and language</Text>
+      <View style={[styles.panel, compact ? styles.panelCompact : null]}>
+        <Text style={styles.panelEyebrow}>{t("display")}</Text>
+        <Text style={styles.panelTitle}>{t("look_and_language")}</Text>
         <PrimaryButton
-          label={`Font Size: ${settings.fontSize}`}
+          label={`${t("font_size")}: ${fontSizeLabel}`}
           onPress={() =>
             void saveSettings({
               fontSize:
@@ -93,43 +101,43 @@ export function SettingsScreen() {
           variant="secondary"
         />
         <PrimaryButton
-          label={`Language: ${language}`}
-          onPress={() => void setLanguage(language === "English" ? "Sinhala" : language === "Sinhala" ? "Tamil" : "English")}
+          label={`${t("language")}: ${languageLabel}`}
+          onPress={() => void setLanguage(nextLanguage)}
           variant="secondary"
         />
       </View>
 
-      <View style={styles.panel}>
-        <Text style={styles.panelEyebrow}>Notifications</Text>
-        <Text style={styles.panelTitle}>Reminder controls</Text>
-        <PrimaryButton label={`Watering Reminders: ${settings.wateringReminders ? "On" : "Off"}`} onPress={() => void saveSettings({ wateringReminders: !settings.wateringReminders })} variant="secondary" />
-        <PrimaryButton label={`Disease Alerts: ${settings.diseaseAlerts ? "On" : "Off"}`} onPress={() => void saveSettings({ diseaseAlerts: !settings.diseaseAlerts })} variant="secondary" />
-        <PrimaryButton label={`Weekly Summary: ${settings.weeklySummary ? "On" : "Off"}`} onPress={() => void saveSettings({ weeklySummary: !settings.weeklySummary })} variant="secondary" />
+      <View style={[styles.panel, compact ? styles.panelCompact : null]}>
+        <Text style={styles.panelEyebrow}>{t("notifications")}</Text>
+        <Text style={styles.panelTitle}>{t("reminder_controls")}</Text>
+        <PrimaryButton label={`${t("watering_reminders")}: ${settings.wateringReminders ? t("on") : t("off")}`} onPress={() => void saveSettings({ wateringReminders: !settings.wateringReminders })} variant="secondary" />
+        <PrimaryButton label={`${t("disease_alerts")}: ${settings.diseaseAlerts ? t("on") : t("off")}`} onPress={() => void saveSettings({ diseaseAlerts: !settings.diseaseAlerts })} variant="secondary" />
+        <PrimaryButton label={`${t("weekly_summary")}: ${settings.weeklySummary ? t("on") : t("off")}`} onPress={() => void saveSettings({ weeklySummary: !settings.weeklySummary })} variant="secondary" />
       </View>
 
-      <View style={styles.panel}>
-        <Text style={styles.panelEyebrow}>Shortcuts</Text>
-        <Text style={styles.panelTitle}>Open real app screens</Text>
-        <PrimaryButton label="Register new plant" onPress={() => router.push("/register")} variant="secondary" />
-        <PrimaryButton label="Open care reminder" onPress={() => router.push("/care")} variant="secondary" />
-        <PrimaryButton label="Send feedback" onPress={() => router.push("/feedback")} variant="secondary" />
-        <PrimaryButton label="Help center" onPress={() => router.push("/help")} variant="secondary" />
+      <View style={[styles.panel, compact ? styles.panelCompact : null]}>
+        <Text style={styles.panelEyebrow}>{t("shortcuts")}</Text>
+        <Text style={styles.panelTitle}>{t("open_real_app_screens")}</Text>
+        <PrimaryButton label={t("register_new_plant")} onPress={() => router.push("/plant-register")} variant="secondary" />
+        <PrimaryButton label={t("open_care_reminder")} onPress={() => router.push("/care")} variant="secondary" />
+        <PrimaryButton label={t("send_feedback")} onPress={() => router.push("/feedback")} variant="secondary" />
+        <PrimaryButton label={t("help_center")} onPress={() => router.push("/help")} variant="secondary" />
       </View>
 
-      <View style={styles.panel}>
-        <Text style={styles.panelEyebrow}>Privacy & Security</Text>
-        <Text style={styles.panelTitle}>Stored data</Text>
-        <PrimaryButton label="Export my data" onPress={() => void handleExportData()} />
-        <PrimaryButton label="Clear cart" onPress={() => void handleClearKey(storageKeys.cart, "Cart cleared from this device.")} variant="secondary" />
-        <PrimaryButton label="Clear feedback history" onPress={() => void clearFeedbacks().then(() => showStatus("Saved feedback history removed."))} variant="secondary" />
-        <PrimaryButton label="Clear search history" onPress={() => void handleClearKey(storageKeys.searchHistory, "Search history cleared.")} variant="secondary" />
+      <View style={[styles.panel, compact ? styles.panelCompact : null]}>
+        <Text style={styles.panelEyebrow}>{t("privacy_security")}</Text>
+        <Text style={styles.panelTitle}>{t("stored_data")}</Text>
+        <PrimaryButton label={t("export_my_data")} onPress={() => void handleExportData()} />
+        <PrimaryButton label={t("clear_cart")} onPress={() => void handleClearKey(storageKeys.cart, t("status_cart_cleared"))} variant="secondary" />
+        <PrimaryButton label={t("clear_feedback_history")} onPress={() => void clearFeedbacks().then(() => showStatus(t("status_feedback_cleared")))} variant="secondary" />
+        <PrimaryButton label={t("clear_search_history")} onPress={() => void handleClearKey(storageKeys.searchHistory, t("status_search_cleared"))} variant="secondary" />
       </View>
 
-      <View style={[styles.panel, styles.dangerPanel]}>
-        <Text style={styles.panelEyebrow}>Account</Text>
-        <Text style={styles.panelTitle}>Reset or sign out</Text>
-        <PrimaryButton label="Reset preferences" onPress={() => void handleResetPreferences()} variant="secondary" />
-        <PrimaryButton label="Sign out" onPress={() => void handleLogout()} />
+      <View style={[styles.panel, compact ? styles.panelCompact : null, styles.dangerPanel]}>
+        <Text style={styles.panelEyebrow}>{t("account")}</Text>
+        <Text style={styles.panelTitle}>{t("reset_or_sign_out")}</Text>
+        <PrimaryButton label={t("reset_preferences")} onPress={() => void handleResetPreferences()} variant="secondary" />
+        <PrimaryButton label={t("sign_out")} onPress={() => void handleLogout()} />
       </View>
 
       <BottomNav />
@@ -146,6 +154,10 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     ...shadows.card,
   },
+  heroCardCompact: {
+    borderRadius: 22,
+    padding: spacing.md,
+  },
   heroEyebrow: {
     color: colors.primary,
     fontSize: 12,
@@ -159,12 +171,20 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     lineHeight: 28,
   },
+  heroTitleCompact: {
+    fontSize: 18,
+    lineHeight: 24,
+  },
   profileCard: {
     backgroundColor: "#F7F1FC",
     borderRadius: radii.lg,
     gap: spacing.md,
     marginTop: spacing.sm,
     padding: spacing.md,
+  },
+  profileCardCompact: {
+    gap: spacing.sm,
+    padding: 12,
   },
   profileContent: {
     gap: spacing.xs,
@@ -179,6 +199,9 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 22,
     fontWeight: "800",
+  },
+  profileNameCompact: {
+    fontSize: 19,
   },
   profileEmail: {
     color: colors.textMuted,
@@ -203,6 +226,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     padding: spacing.lg,
     ...shadows.soft,
+  },
+  panelCompact: {
+    borderRadius: 22,
+    gap: spacing.sm,
+    padding: spacing.md,
   },
   panelEyebrow: {
     color: colors.textMuted,

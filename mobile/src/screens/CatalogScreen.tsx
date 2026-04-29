@@ -1,7 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Alert, FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
 
 import { AppMenu } from "../components/AppMenu";
 import { BottomNav } from "../components/BottomNav";
@@ -12,7 +12,7 @@ import { TopBar } from "../components/TopBar";
 import { useCart } from "../context/CartContext";
 import { createProduct, deleteProduct, getProducts } from "../lib/api/shop";
 import { brandAssets } from "../theme/brand";
-import { colors, radii, shadows, spacing } from "../theme/tokens";
+import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 import type { Product } from "../types/shop";
 import { seasons } from "../utils/shop";
 
@@ -26,6 +26,8 @@ const seasonImages = {
 } as const;
 
 export function CatalogScreen() {
+  const { height, width } = useWindowDimensions();
+  const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
   const { totalItems } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<BuySellTab>("buy");
@@ -137,9 +139,9 @@ export function CatalogScreen() {
         </Pressable>
       </View>
 
-      <View style={styles.heroCard}>
+      <View style={[styles.heroCard, compact ? styles.heroCardCompact : null]}>
         <Text style={styles.heroEyebrow}>Florana Shop</Text>
-        <Text style={styles.heroTitle}>Browse plants, switch currency instantly, and manage what you want to buy or sell.</Text>
+        <Text style={[styles.heroTitle, compact ? styles.heroTitleCompact : null]}>Browse plants, switch currency instantly, and manage what you want to buy or sell.</Text>
         <View style={styles.heroMeta}>
           <Text style={styles.heroMetaText}>{products.length} plants listed</Text>
         </View>
@@ -155,23 +157,23 @@ export function CatalogScreen() {
         value={search}
       />
 
-      <View style={styles.toggleBar}>
+      <View style={[styles.toggleBar, compact ? styles.toggleBarCompact : null]}>
         <PrimaryButton label="Buy Plants" onPress={() => setActiveTab("buy")} variant={activeTab === "buy" ? "primary" : "secondary"} />
         <PrimaryButton label="Sell Plants" onPress={() => setActiveTab("sell")} variant={activeTab === "sell" ? "primary" : "secondary"} />
       </View>
 
       {activeTab === "buy" ? (
         <>
-          <View style={styles.seasonGrid}>
+          <View style={[styles.seasonGrid, compact ? styles.seasonGridCompact : null]}>
             {seasons.map((item) => (
-              <Pressable key={item} onPress={() => setSearch(item.toLowerCase())} style={styles.seasonCard}>
-                <Image source={seasonImages[item as keyof typeof seasonImages]} style={styles.seasonImage} />
-                <Text style={styles.seasonName}>{item}</Text>
+              <Pressable key={item} onPress={() => setSearch(item.toLowerCase())} style={[styles.seasonCard, compact ? styles.seasonCardCompact : null]}>
+                <Image source={seasonImages[item as keyof typeof seasonImages]} style={[styles.seasonImage, compact ? styles.seasonImageCompact : null]} />
+                <Text style={[styles.seasonName, compact ? styles.seasonNameCompact : null]}>{item}</Text>
               </Pressable>
             ))}
 
-            <Pressable onPress={() => setSearch("")} style={[styles.seasonCard, styles.allCard]}>
-              <Text style={styles.seasonName}>All Plants</Text>
+            <Pressable onPress={() => setSearch("")} style={[styles.seasonCard, compact ? styles.seasonCardCompact : null, styles.allCard]}>
+              <Text style={[styles.seasonName, compact ? styles.seasonNameCompact : null]}>All Plants</Text>
             </Pressable>
           </View>
 
@@ -284,6 +286,10 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     ...shadows.card,
   },
+  heroCardCompact: {
+    borderRadius: 22,
+    padding: spacing.md,
+  },
   heroEyebrow: {
     color: "rgba(255,255,255,0.88)",
     fontSize: 12,
@@ -296,6 +302,10 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "800",
     lineHeight: 30,
+  },
+  heroTitleCompact: {
+    fontSize: 19,
+    lineHeight: 26,
   },
   heroMeta: {
     alignSelf: "flex-start",
@@ -338,10 +348,16 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.md,
   },
+  toggleBarCompact: {
+    gap: spacing.xs,
+  },
   seasonGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.sm,
+  },
+  seasonGridCompact: {
+    gap: 10,
   },
   seasonCard: {
     backgroundColor: "rgba(255,255,255,0.94)",
@@ -350,15 +366,25 @@ const styles = StyleSheet.create({
     width: "48%",
     ...shadows.soft,
   },
+  seasonCardCompact: {
+    borderRadius: 18,
+  },
   seasonImage: {
     height: 124,
     width: "100%",
+  },
+  seasonImageCompact: {
+    height: 108,
   },
   seasonName: {
     color: colors.text,
     fontSize: 15,
     fontWeight: "700",
     padding: spacing.md,
+  },
+  seasonNameCompact: {
+    fontSize: 14,
+    padding: 12,
   },
   allCard: {
     alignItems: "center",

@@ -1,4 +1,5 @@
-import { router } from "expo-router";
+import { MaterialIcons } from "@expo/vector-icons";
+import { router, usePathname } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
@@ -19,17 +20,17 @@ import { brandAssets } from "../theme/brand";
 import { colors, radii, shadows, spacing } from "../theme/tokens";
 
 const menuItems = [
-  { label: "Home", route: "/home" },
-  { label: "Profile", route: "/profile" },
-  { label: "Catalog", route: "/catalog" },
-  { label: "My Plants", route: "/myplants" },
-  { label: "Care Reminder", route: "/care" },
-  { label: "Quick Tip", route: "/quicktip" },
-  { label: "Settings", route: "/settings" },
-  { label: "About", route: "/about" },
-  { label: "Help", route: "/help" },
-  { label: "Feedback", route: "/feedback" },
-];
+  { path: "/home", label: "Home", icon: "home" },
+  { path: "/profile", label: "Profile", icon: "person" },
+  { path: "/catalog", label: "Catalog", icon: "shopping-bag" },
+  { path: "/myplants", label: "My Plants", icon: "eco" },
+  { path: "/care", label: "Care Reminder", icon: "alarm" },
+  { path: "/quicktip", label: "Quick Tip", icon: "lightbulb" },
+  { path: "/settings", label: "Settings", icon: "settings" },
+  { path: "/about", label: "About", icon: "info" },
+  { path: "/help", label: "Help", icon: "help" },
+  { path: "/feedback", label: "Feedback", icon: "chat" },
+] as const;
 
 interface AppMenuProps {
   visible: boolean;
@@ -38,13 +39,14 @@ interface AppMenuProps {
 
 export function AppMenu({ visible, onClose }: AppMenuProps) {
   const { signOut } = useAuth();
+  const pathname = usePathname();
   const { width } = useWindowDimensions();
   const [mounted, setMounted] = useState(visible);
-  const drawerWidth = Math.min(340, Math.max(280, width * 0.84));
+  const drawerWidth = Math.min(348, Math.max(288, width * 0.86));
   const translateX = useRef(new Animated.Value(360)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
 
-  const closeDrawer = () => {
+  const closeDrawer = (afterClose?: () => void) => {
     Animated.parallel([
       Animated.timing(translateX, {
         toValue: drawerWidth + spacing.lg,
@@ -62,14 +64,20 @@ export function AppMenu({ visible, onClose }: AppMenuProps) {
       if (finished) {
         setMounted(false);
         onClose();
+        afterClose?.();
       }
+    });
+  };
+
+  const goTo = (path: string) => {
+    closeDrawer(() => {
+      router.replace(path);
     });
   };
 
   const handleLogout = async () => {
     await signOut();
-    closeDrawer();
-    router.replace("/");
+    closeDrawer(() => router.replace("/"));
   };
 
   useEffect(() => {
@@ -165,10 +173,10 @@ export function AppMenu({ visible, onClose }: AppMenuProps) {
   }
 
   return (
-    <Modal transparent animationType="none" visible={mounted} onRequestClose={closeDrawer}>
-      <View style={styles.modalRoot}>
+    <Modal transparent animationType="none" visible={mounted} onRequestClose={() => closeDrawer()}>
+      <View style={styles.overlayRoot}>
         <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={closeDrawer} />
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => closeDrawer()} />
         </Animated.View>
 
         <View style={styles.drawerStage} pointerEvents="box-none">
@@ -182,38 +190,53 @@ export function AppMenu({ visible, onClose }: AppMenuProps) {
             ]}
             {...panResponder.panHandlers}
           >
-            <View style={styles.sheet}>
-              <View style={styles.grabber} />
-
-              <View style={styles.header}>
-                <Image source={brandAssets.logo} style={styles.logo} />
-                <View style={styles.headerText}>
-                  <Text style={styles.eyebrow}>Florana</Text>
-                  <Text style={styles.heading}>Menu</Text>
-                  <Text style={styles.subheading}>Swipe right or scroll to view all items</Text>
-                </View>
-              </View>
+            <View style={styles.container}>
+              <Pressable accessibilityLabel="Close menu" onPress={() => closeDrawer()} style={styles.closeButton}>
+                <MaterialIcons name="close" size={18} color={colors.text} />
+              </Pressable>
 
               <ScrollView
-                contentContainerStyle={styles.list}
+                style={styles.menuScroll}
+                contentContainerStyle={styles.menuScrollContent}
                 showsVerticalScrollIndicator={false}
               >
-                {menuItems.map((item) => (
-                  <Pressable
-                    key={item.route}
-                    onPress={() => {
-                      closeDrawer();
-                      router.push(item.route);
-                    }}
-                    style={styles.item}
-                  >
-                    <Text style={styles.itemText}>{item.label}</Text>
-                  </Pressable>
-                ))}
+                <View style={styles.header}>
+                  <Image source={brandAssets.logo} style={styles.logo} />
+                  <View style={styles.headerText}>
+                    <Text style={styles.headerBrand}>Florana</Text>
+                    <Text style={styles.headerTitle}>Navigation</Text>
+                  </View>
+                </View>
 
-                <Pressable onPress={() => void handleLogout()} style={[styles.item, styles.logoutItem]}>
-                  <Text style={[styles.itemText, styles.logoutText]}>Logout</Text>
-                </Pressable>
+                <View style={styles.items}>
+                  {menuItems.map((item) => {
+                    const active = pathname === item.path;
+
+                    return (
+                      <Pressable
+                        key={item.path}
+                        onPress={() => goTo(item.path)}
+                        style={[styles.item, active ? styles.itemActive : null]}
+                      >
+                        <View style={[styles.iconShell, active ? styles.iconShellActive : null]}>
+                          <MaterialIcons
+                            name={item.icon}
+                            size={18}
+                            color={active ? colors.white : colors.text}
+                          />
+                        </View>
+                        <Text style={[styles.itemLabel, active ? styles.itemLabelActive : null]}>{item.label}</Text>
+                      </Pressable>
+                    );
+                  })}
+
+                  <Pressable onPress={() => void handleLogout()} style={[styles.item, styles.logoutItem]}>
+                    <View style={[styles.iconShell, styles.logoutIconShell]}>
+                      <MaterialIcons name="logout" size={18} color={colors.white} />
+                    </View>
+                    <Text style={[styles.itemLabel, styles.logoutLabel]}>Logout</Text>
+                  </Pressable>
+                </View>
               </ScrollView>
             </View>
           </Animated.View>
@@ -224,7 +247,7 @@ export function AppMenu({ visible, onClose }: AppMenuProps) {
 }
 
 const styles = StyleSheet.create({
-  modalRoot: {
+  overlayRoot: {
     flex: 1,
   },
   overlay: {
@@ -240,83 +263,106 @@ const styles = StyleSheet.create({
   },
   drawerWrap: {
     height: "100%",
-    maxWidth: 340,
+    maxWidth: 348,
   },
-  sheet: {
+  container: {
     backgroundColor: "#F0D7FF",
     borderBottomLeftRadius: radii.xl,
     borderTopLeftRadius: radii.xl,
-    gap: spacing.md,
     height: "100%",
     padding: spacing.lg,
     ...shadows.card,
   },
-  grabber: {
-    alignSelf: "center",
-    backgroundColor: "rgba(74, 56, 110, 0.22)",
-    borderRadius: radii.pill,
-    height: 5,
-    marginBottom: spacing.xs,
-    width: 52,
+  menuScroll: {
+    flex: 1,
+  },
+  menuScrollContent: {
+    paddingBottom: spacing.lg,
+  },
+  closeButton: {
+    alignItems: "center",
+    alignSelf: "flex-end",
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    height: 38,
+    justifyContent: "center",
+    marginBottom: spacing.md,
+    width: 38,
   },
   header: {
     alignItems: "center",
-    borderBottomColor: "rgba(94, 78, 126, 0.12)",
-    borderBottomWidth: 1,
     flexDirection: "row",
     gap: spacing.md,
-    paddingBottom: spacing.md,
-  },
-  headerText: {
-    flex: 1,
+    marginBottom: spacing.lg,
   },
   logo: {
     borderRadius: 18,
     height: 52,
     width: 52,
   },
-  eyebrow: {
+  headerText: {
+    flex: 1,
+  },
+  headerBrand: {
     color: "#8A72B0",
     fontSize: 12,
     fontWeight: "700",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
   },
-  heading: {
+  headerTitle: {
     color: colors.text,
     fontSize: 22,
     fontWeight: "800",
-  },
-  subheading: {
-    color: colors.textMuted,
-    fontSize: 12,
-    lineHeight: 18,
     marginTop: 2,
   },
-  list: {
+  items: {
     gap: spacing.sm,
-    paddingBottom: spacing.xl,
   },
   item: {
-    backgroundColor: "rgba(255,255,255,0.88)",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.9)",
     borderColor: "rgba(115, 94, 153, 0.12)",
     borderRadius: 18,
     borderWidth: 1,
-    justifyContent: "center",
-    minHeight: 48,
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: 52,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
   },
-  itemText: {
+  itemActive: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "#D4B9FF",
+  },
+  iconShell: {
+    alignItems: "center",
+    backgroundColor: "#F6EEFF",
+    borderRadius: 14,
+    height: 36,
+    justifyContent: "center",
+    width: 36,
+  },
+  iconShellActive: {
+    backgroundColor: colors.primaryDark,
+  },
+  itemLabel: {
     color: colors.text,
     fontSize: 15,
     fontWeight: "700",
   },
+  itemLabelActive: {
+    color: colors.primaryDark,
+  },
   logoutItem: {
     backgroundColor: colors.backgroundDeep,
     borderWidth: 0,
+    marginTop: spacing.sm,
   },
-  logoutText: {
+  logoutIconShell: {
+    backgroundColor: "rgba(255,255,255,0.16)",
+  },
+  logoutLabel: {
     color: colors.white,
   },
 });

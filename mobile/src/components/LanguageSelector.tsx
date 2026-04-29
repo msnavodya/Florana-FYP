@@ -5,20 +5,20 @@ import { useLanguage } from "../context/LanguageContext";
 import { colors, radii, shadows, spacing } from "../theme/tokens";
 
 const options = [
-  { code: "EN", label: "English" },
-  { code: "SI", label: "Sinhala" },
-  { code: "TA", label: "Tamil" },
+  { code: "EN", label: "English", key: "language_english" },
+  { code: "SI", label: "Sinhala", key: "language_sinhala" },
+  { code: "TA", label: "Tamil", key: "language_tamil" },
 ] as const;
 
 export function LanguageSelector() {
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const [open, setOpen] = useState(false);
 
   const selected = options.find((item) => item.label === language) || options[0];
 
   return (
     <>
-      <Pressable onPress={() => setOpen(true)} style={styles.selector}>
+      <Pressable accessibilityLabel={t("language")} onPress={() => setOpen(true)} style={styles.selector}>
         <Text style={styles.icon}>A</Text>
         <View style={styles.codeBadge}>
           <Text style={styles.codeText}>{selected.code}</Text>
@@ -41,7 +41,7 @@ export function LanguageSelector() {
                   style={[styles.option, active ? styles.activeOption : null]}
                 >
                   <Text style={styles.optionCode}>{item.code}</Text>
-                  <Text style={[styles.optionText, active ? styles.activeOptionText : null]}>{item.label}</Text>
+                  <Text style={[styles.optionText, active ? styles.activeOptionText : null]}>{t(item.key)}</Text>
                 </Pressable>
               );
             })}

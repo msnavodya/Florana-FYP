@@ -1,5 +1,5 @@
 import * as Device from "expo-device";
-import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
@@ -19,6 +19,20 @@ const defaultOptions = [
   { key: "sunlight", title: "Sunlight", info: "Suggest moving plants for better light" },
 ];
 
+const isExpoGo = Constants.executionEnvironment === "storeClient";
+
+const getNotificationsModule = () => {
+  if (isExpoGo) {
+    return null;
+  }
+
+  try {
+    return require("expo-notifications") as typeof import("expo-notifications");
+  } catch {
+    return null;
+  }
+};
+
 export function CareReminderScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [newCustomNote, setNewCustomNote] = useState("");
@@ -26,6 +40,15 @@ export function CareReminderScreen() {
   const { reminders, setReminders } = useSettings();
 
   useEffect(() => {
+    if (isExpoGo) {
+      return;
+    }
+
+    const Notifications = getNotificationsModule();
+    if (!Notifications) {
+      return;
+    }
+
     void Notifications.requestPermissionsAsync();
   }, []);
 
@@ -34,6 +57,13 @@ export function CareReminderScreen() {
   };
 
   const scheduleWateringNotification = async () => {
+    const Notifications = getNotificationsModule();
+
+    if (isExpoGo || !Notifications) {
+      setStatus("Push notifications need a development build or production app. Expo Go does not support this flow.");
+      return;
+    }
+
     if (!Device.isDevice) {
       setStatus("Notifications work best on a real device.");
     }
@@ -180,6 +210,7 @@ export function CareReminderScreen() {
           </View>
           <Text style={styles.optionState}>{reminders.notifications.email ? "On" : "Off"}</Text>
         </Pressable>
+        {isExpoGo ? <Text style={styles.helperText}>Push notifications are disabled in Expo Go. Use a development build for real device push testing.</Text> : null}
         <PrimaryButton label="Test Notification" onPress={() => void sendNotification()} />
       </View>
 
@@ -300,6 +331,11 @@ const styles = StyleSheet.create({
   },
   summaryRow: {
     gap: spacing.sm,
+  },
+  helperText: {
+    color: colors.textMuted,
+    fontSize: 12,
+    lineHeight: 18,
   },
   messageBox: {
     backgroundColor: colors.background,

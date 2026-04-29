@@ -1,5 +1,5 @@
 export interface FeedbackEntry {
-  id: number;
+  id: number | string;
   rating: number;
   message: string;
   createdAt: string;

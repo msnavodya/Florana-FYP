@@ -39,8 +39,8 @@ export function HelpScreen() {
 
 const styles = StyleSheet.create({
   heroCard: {
-    backgroundColor: colors.backgroundAccent,
-    borderRadius: radii.lg,
+    backgroundColor: "#E7D7FF",
+    borderRadius: radii.xl,
     gap: spacing.sm,
     marginBottom: spacing.md,
     padding: spacing.lg,
@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: radii.lg,
+    borderRadius: radii.xl,
     borderWidth: 1,
     gap: spacing.sm,
     marginBottom: spacing.md,
