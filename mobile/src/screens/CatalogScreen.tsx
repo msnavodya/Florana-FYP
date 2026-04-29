@@ -1,22 +1,105 @@
+import { MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
-import { Alert, FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
 
 import { AppMenu } from "../components/AppMenu";
 import { BottomNav } from "../components/BottomNav";
-import { ProductCard } from "../components/ProductCard";
+import { CurrencySwitcher } from "../components/CurrencySwitcher";
+import { LanguageSelector } from "../components/LanguageSelector";
 import { PrimaryButton } from "../components/PrimaryButton";
+import { ProductCard } from "../components/ProductCard";
 import { Screen } from "../components/Screen";
-import { TopBar } from "../components/TopBar";
 import { useCart } from "../context/CartContext";
+import { useLanguage } from "../context/LanguageContext";
+import { buildApiUrl } from "../lib/api/config";
 import { createProduct, deleteProduct, getProducts } from "../lib/api/shop";
+import { appendImageAsset } from "../lib/api/upload";
 import { brandAssets } from "../theme/brand";
 import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 import type { Product } from "../types/shop";
 import { seasons } from "../utils/shop";
 
 type BuySellTab = "buy" | "sell";
+type LanguageCode = "en" | "si" | "ta";
+
+const catalogCopy: Record<
+  LanguageCode,
+  {
+    shop: string;
+    title: string;
+    subtitle: string;
+    listed: string;
+    buy: string;
+    sell: string;
+    allPlants: string;
+    available: string;
+    addToCart: string;
+    noPlants: string;
+    listForSale: string;
+    plantName: string;
+    price: string;
+    listPlant: string;
+    yourListed: string;
+    remove: string;
+  }
+> = {
+  en: {
+    shop: "Florana Shop",
+    title: "Season Catalog",
+    subtitle: "Browse plants, switch currency instantly, and manage what you want to buy or sell.",
+    listed: "{count} plants listed",
+    buy: "Buy Plants",
+    sell: "Sell Plants",
+    allPlants: "All Plants",
+    available: "Available Plants",
+    addToCart: "Add to Cart",
+    noPlants: "No plants found for that search.",
+    listForSale: "List a Plant for Sale",
+    plantName: "Plant Name",
+    price: "Price",
+    listPlant: "List Plant",
+    yourListed: "Your Listed Plants",
+    remove: "Delete",
+  },
+  si: {
+    shop: "ෆ්ලෝරානා වෙළඳසැල",
+    title: "සමය අනුව පැල එකතුව",
+    subtitle: "පැල බලන්න, මුදල් ඒකකය වහාම මාරු කරන්න, සහ ඔබ මිලදී ගැනීමට හෝ විකිණීමට කැමති දේ කළමනාකරණය කරන්න.",
+    listed: "පැල {count}ක් ලැයිස්තුගතයි",
+    buy: "පැල මිලදී ගන්න",
+    sell: "පැල විකුණන්න",
+    allPlants: "සියලු පැල",
+    available: "පවතින පැල",
+    addToCart: "කරත්තයට දමන්න",
+    noPlants: "එම සෙවුම සඳහා පැල හමු නොවීය.",
+    listForSale: "විකිණීමට පැලයක් ලැයිස්තුගත කරන්න",
+    plantName: "පැල නාමය",
+    price: "මිල",
+    listPlant: "පැලය ලැයිස්තුගත කරන්න",
+    yourListed: "ඔබ ලැයිස්තුගත කළ පැල",
+    remove: "මකන්න",
+  },
+  ta: {
+    shop: "ஃப்ளோரானா கடை",
+    title: "பருவ கால செடி தொகுப்பு",
+    subtitle: "செடிகளை பாருங்கள், நாணயத்தை உடனே மாற்றுங்கள், நீங்கள் வாங்கவோ விற்கவோ விரும்பும்வற்றை நிர்வகிக்குங்கள்.",
+    listed: "{count} செடிகள் பட்டியலிடப்பட்டுள்ளன",
+    buy: "செடிகள் வாங்க",
+    sell: "செடிகள் விற்க",
+    allPlants: "அனைத்து செடிகள்",
+    available: "கிடைக்கும் செடிகள்",
+    addToCart: "வண்டியில் சேர்",
+    noPlants: "அந்த தேடலுக்கு செடிகள் கிடைக்கவில்லை.",
+    listForSale: "விற்பனைக்கு ஒரு செடியை பட்டியலிடுங்கள்",
+    plantName: "செடி பெயர்",
+    price: "விலை",
+    listPlant: "செடியை பட்டியலிடு",
+    yourListed: "நீங்கள் பட்டியலிட்ட செடிகள்",
+    remove: "நீக்கு",
+  },
+};
 
 const seasonImages = {
   Spring: brandAssets.spring,
@@ -29,6 +112,9 @@ export function CatalogScreen() {
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
   const { totalItems } = useCart();
+  const { t, languageCode } = useLanguage();
+  const copy = catalogCopy[languageCode] || catalogCopy.en;
+  const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<BuySellTab>("buy");
   const [products, setProducts] = useState<Product[]>([]);
@@ -42,13 +128,21 @@ export function CatalogScreen() {
     image: null as ImagePicker.ImagePickerAsset | null,
   });
 
+  const showStatus = (message: string) => {
+    setStatus(message);
+    if (statusTimer.current) {
+      clearTimeout(statusTimer.current);
+    }
+    statusTimer.current = setTimeout(() => setStatus(""), 2500);
+  };
+
   const loadProducts = async () => {
     setLoading(true);
     try {
       const response = await getProducts();
       setProducts(response);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Unable to load products.");
+      showStatus(error instanceof Error ? error.message : "Unable to load products.");
       setProducts([]);
     } finally {
       setLoading(false);
@@ -57,17 +151,24 @@ export function CatalogScreen() {
 
   useEffect(() => {
     void loadProducts();
+
+    return () => {
+      if (statusTimer.current) {
+        clearTimeout(statusTimer.current);
+      }
+    };
   }, []);
 
-  const filteredProducts = useMemo(
-    () => products.filter((product) => (product.name || "").toLowerCase().includes(search.toLowerCase())),
-    [products, search]
-  );
+  const filteredProducts = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    return products.filter((product) => !query || (product.name || "").toLowerCase().includes(query));
+  }, [products, search]);
 
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      setStatus("Photo library permission is required to upload a plant.");
+      showStatus("Photo library permission is required to upload a plant.");
       return;
     }
 
@@ -84,7 +185,7 @@ export function CatalogScreen() {
 
   const handleSell = async () => {
     if (!newPlant.name || !newPlant.price || !newPlant.image) {
-      setStatus("Add the plant name, price, season, and image first.");
+      showStatus("Add the plant name, price, season, and image first.");
       return;
     }
 
@@ -92,20 +193,16 @@ export function CatalogScreen() {
     formData.append("name", newPlant.name);
     formData.append("price", newPlant.price);
     formData.append("season", newPlant.season);
-    formData.append("file", {
-      uri: newPlant.image.uri,
-      name: newPlant.image.fileName || "plant.jpg",
-      type: newPlant.image.mimeType || "image/jpeg",
-    } as unknown as Blob);
 
     try {
+      await appendImageAsset(formData, "file", newPlant.image, "plant");
       await createProduct(formData);
-      setStatus("Plant listed successfully.");
       setNewPlant({ name: "", price: "", season: "Spring", image: null });
       setActiveTab("buy");
+      showStatus("Plant listed successfully.");
       await loadProducts();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Upload failed.");
+      showStatus(error instanceof Error ? error.message : "Upload failed.");
     }
   };
 
@@ -113,15 +210,15 @@ export function CatalogScreen() {
     Alert.alert("Delete Plant", `Delete ${product.name}?`, [
       { text: "Cancel", style: "cancel" },
       {
-        text: "Delete",
+        text: copy.remove,
         style: "destructive",
         onPress: async () => {
           try {
             await deleteProduct(product.id);
-            setStatus(`${product.name} deleted.`);
+            showStatus(`${product.name} deleted.`);
             await loadProducts();
           } catch (error) {
-            setStatus(error instanceof Error ? error.message : "Delete failed.");
+            showStatus(error instanceof Error ? error.message : "Delete failed.");
           }
         },
       },
@@ -130,122 +227,195 @@ export function CatalogScreen() {
 
   return (
     <Screen>
-      <TopBar title="Season Catalog" subtitle="Florana Shop" onMenuPress={() => setMenuOpen(true)} />
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
 
-      <View style={styles.toolbar}>
-        <Pressable onPress={() => router.push("/cart")} style={styles.cartButton}>
-          <Text style={styles.cartButtonText}>Cart {totalItems > 0 ? `(${totalItems})` : ""}</Text>
+      <View style={[styles.topBar, compact ? styles.topBarCompact : null]}>
+        <Pressable accessibilityLabel={t("back")} onPress={() => router.back()} style={styles.backButton}>
+          <MaterialIcons name="arrow-back" size={20} color={colors.text} />
         </Pressable>
-      </View>
 
-      <View style={[styles.heroCard, compact ? styles.heroCardCompact : null]}>
-        <Text style={styles.heroEyebrow}>Florana Shop</Text>
-        <Text style={[styles.heroTitle, compact ? styles.heroTitleCompact : null]}>Browse plants, switch currency instantly, and manage what you want to buy or sell.</Text>
-        <View style={styles.heroMeta}>
-          <Text style={styles.heroMetaText}>{products.length} plants listed</Text>
+        <View style={styles.topActions}>
+          <LanguageSelector />
+          <CurrencySwitcher />
+
+          <Pressable accessibilityLabel="Open cart" onPress={() => router.push("/cart")} style={styles.cartButton}>
+            <MaterialIcons name="shopping-cart" size={18} color={colors.text} />
+            {totalItems > 0 ? (
+              <View style={styles.cartBadge}>
+                <Text style={styles.cartBadgeText}>{totalItems}</Text>
+              </View>
+            ) : null}
+          </Pressable>
+
+          <Pressable accessibilityLabel={t("open_menu")} onPress={() => setMenuOpen(true)} style={styles.menuButton}>
+            <MaterialIcons name="menu" size={20} color={colors.text} />
+          </Pressable>
         </View>
       </View>
 
-      {status ? <View style={styles.statusCard}><Text style={styles.statusText}>{status}</Text></View> : null}
+      <View style={[styles.heroCard, compact ? styles.heroCardCompact : null]}>
+        <View style={styles.heroTextBlock}>
+          <Text style={styles.heroEyebrow}>{copy.shop}</Text>
+          <Text style={[styles.heroTitle, compact ? styles.heroTitleCompact : null]}>{copy.title}</Text>
+          <Text style={[styles.heroSubtitle, compact ? styles.heroSubtitleCompact : null]}>{copy.subtitle}</Text>
+        </View>
 
-      <TextInput
-        onChangeText={setSearch}
-        placeholder="Search plants"
-        placeholderTextColor={colors.textMuted}
-        style={styles.searchInput}
-        value={search}
-      />
+        <View style={styles.heroMetaCard}>
+          <Text style={styles.heroMetaText}>{copy.listed.replace("{count}", String(products.length))}</Text>
+        </View>
+      </View>
 
-      <View style={[styles.toggleBar, compact ? styles.toggleBarCompact : null]}>
-        <PrimaryButton label="Buy Plants" onPress={() => setActiveTab("buy")} variant={activeTab === "buy" ? "primary" : "secondary"} />
-        <PrimaryButton label="Sell Plants" onPress={() => setActiveTab("sell")} variant={activeTab === "sell" ? "primary" : "secondary"} />
+      {status ? (
+        <View style={styles.statusCard}>
+          <Text style={styles.statusText}>{status}</Text>
+        </View>
+      ) : null}
+
+      <View style={styles.searchShell}>
+        <MaterialIcons name="search" size={18} color={colors.textMuted} />
+        <TextInput
+          onChangeText={setSearch}
+          placeholder={t("search_placeholder")}
+          placeholderTextColor={colors.textMuted}
+          style={styles.searchInput}
+          value={search}
+        />
+      </View>
+
+      <View style={styles.toggleBar}>
+        <Pressable
+          onPress={() => setActiveTab("buy")}
+          style={[styles.toggleButton, activeTab === "buy" ? styles.toggleButtonActive : null]}
+        >
+          <Text style={[styles.toggleText, activeTab === "buy" ? styles.toggleTextActive : null]}>{copy.buy}</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => setActiveTab("sell")}
+          style={[styles.toggleButton, activeTab === "sell" ? styles.toggleButtonActive : null]}
+        >
+          <Text style={[styles.toggleText, activeTab === "sell" ? styles.toggleTextActive : null]}>{copy.sell}</Text>
+        </Pressable>
       </View>
 
       {activeTab === "buy" ? (
         <>
-          <View style={[styles.seasonGrid, compact ? styles.seasonGridCompact : null]}>
-            {seasons.map((item) => (
-              <Pressable key={item} onPress={() => setSearch(item.toLowerCase())} style={[styles.seasonCard, compact ? styles.seasonCardCompact : null]}>
-                <Image source={seasonImages[item as keyof typeof seasonImages]} style={[styles.seasonImage, compact ? styles.seasonImageCompact : null]} />
-                <Text style={[styles.seasonName, compact ? styles.seasonNameCompact : null]}>{item}</Text>
+          <View style={styles.seasonGrid}>
+            {seasons.map((season) => (
+              <Pressable
+                key={season}
+                onPress={() => router.push(`/season/${season.toLowerCase()}`)}
+                style={styles.seasonCard}
+              >
+                  <Image source={seasonImages[season]} style={styles.seasonImage} />
+                  <View style={styles.seasonOverlay}>
+                    <Text style={styles.seasonName}>{season}</Text>
+                  </View>
               </Pressable>
             ))}
 
-            <Pressable onPress={() => setSearch("")} style={[styles.seasonCard, compact ? styles.seasonCardCompact : null, styles.allCard]}>
-              <Text style={[styles.seasonName, compact ? styles.seasonNameCompact : null]}>All Plants</Text>
+            <Pressable
+              onPress={() => router.push("/season/all")}
+              style={[styles.seasonCard, styles.allPlantsCard]}
+            >
+              <MaterialIcons name="spa" size={26} color={colors.primaryDark} />
+              <Text style={styles.allPlantsText}>{copy.allPlants}</Text>
             </Pressable>
           </View>
 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Available Plants</Text>
+            <Text style={styles.sectionTitle}>{copy.available}</Text>
             <Text style={styles.sectionMeta}>{loading ? "Loading..." : `${filteredProducts.length} listed`}</Text>
           </View>
 
           {filteredProducts.length > 0 ? (
-            <FlatList
-              contentContainerStyle={styles.productList}
-              data={filteredProducts}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => <ProductCard product={item} />}
-              scrollEnabled={false}
-            />
+            <View style={styles.productList}>
+              {filteredProducts.map((product) => (
+                <ProductCard key={product.id} actionLabel={copy.addToCart} product={product} />
+              ))}
+            </View>
           ) : (
             <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>No plants found for that search.</Text>
+              <Text style={styles.emptyText}>{copy.noPlants}</Text>
             </View>
           )}
         </>
       ) : (
-        <View style={styles.sellForm}>
-          <Text style={styles.sectionTitle}>List a Plant for Sale</Text>
+        <View style={styles.sellSection}>
+          <View style={styles.sellForm}>
+            <Text style={styles.sectionTitle}>{copy.listForSale}</Text>
 
-          <TextInput
-            onChangeText={(value) => setNewPlant((current) => ({ ...current, name: value }))}
-            placeholder="Plant Name"
-            placeholderTextColor={colors.textMuted}
-            style={styles.searchInput}
-            value={newPlant.name}
-          />
-          <TextInput
-            keyboardType="decimal-pad"
-            onChangeText={(value) => setNewPlant((current) => ({ ...current, price: value }))}
-            placeholder="Price"
-            placeholderTextColor={colors.textMuted}
-            style={styles.searchInput}
-            value={newPlant.price}
-          />
+            <TextInput
+              onChangeText={(value) => setNewPlant((current) => ({ ...current, name: value }))}
+              placeholder={copy.plantName}
+              placeholderTextColor={colors.textMuted}
+              style={styles.fieldInput}
+              value={newPlant.name}
+            />
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.seasonChipRow}>
-            {seasons.map((item) => (
-              <Pressable
-                key={item}
-                onPress={() => setNewPlant((current) => ({ ...current, season: item }))}
-                style={[styles.seasonChip, newPlant.season === item ? styles.activeChip : null]}
-              >
-                <Text style={[styles.seasonChipText, newPlant.season === item ? styles.activeChipText : null]}>{item}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
+            <TextInput
+              keyboardType="decimal-pad"
+              onChangeText={(value) => setNewPlant((current) => ({ ...current, price: value }))}
+              placeholder={copy.price}
+              placeholderTextColor={colors.textMuted}
+              style={styles.fieldInput}
+              value={newPlant.price}
+            />
 
-          <PrimaryButton label={newPlant.image ? "Change Photo" : "Choose Photo"} onPress={() => void pickImage()} variant="secondary" />
-          {newPlant.image ? <Image source={{ uri: newPlant.image.uri }} style={styles.previewImage} /> : null}
-          <PrimaryButton label="List Plant" onPress={() => void handleSell()} />
+            <View style={styles.seasonChipWrap}>
+              {seasons.map((season) => {
+                const active = newPlant.season === season;
+                return (
+                  <Pressable
+                    key={season}
+                    onPress={() => setNewPlant((current) => ({ ...current, season }))}
+                    style={[styles.seasonChip, active ? styles.seasonChipActive : null]}
+                  >
+                    <Text style={[styles.seasonChipText, active ? styles.seasonChipTextActive : null]}>{season}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
 
-          <Text style={styles.sectionTitle}>Your Listed Plants</Text>
-          <FlatList
-            contentContainerStyle={styles.productList}
-            data={products}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View style={styles.manageCard}>
-                <Text style={styles.manageName}>{item.name}</Text>
-                <Text style={styles.manageMeta}>{item.season}</Text>
-                <PrimaryButton label="Delete" onPress={() => handleDelete(item)} variant="secondary" />
-              </View>
-            )}
-            scrollEnabled={false}
-          />
+            <PrimaryButton
+              label={newPlant.image ? "Change Photo" : "Choose Photo"}
+              onPress={() => void pickImage()}
+              variant="secondary"
+            />
+
+            {newPlant.image ? <Image source={{ uri: newPlant.image.uri }} style={styles.previewImage} /> : null}
+
+            <PrimaryButton label={copy.listPlant} onPress={() => void handleSell()} />
+          </View>
+
+          <View style={styles.manageSection}>
+            <Text style={styles.sectionTitle}>{copy.yourListed}</Text>
+
+            <View style={styles.manageList}>
+              {products.map((product) => {
+                const imageUri = product.image ? buildApiUrl(product.image) : null;
+
+                return (
+                  <View key={product.id} style={styles.manageCard}>
+                    {imageUri ? (
+                      <Image source={{ uri: imageUri }} style={styles.manageImage} />
+                    ) : (
+                      <View style={styles.manageImageFallback}>
+                        <Text style={styles.manageImageFallbackText}>No Image</Text>
+                      </View>
+                    )}
+
+                    <View style={styles.manageContent}>
+                      <Text style={styles.manageName}>{product.name}</Text>
+                      <Text style={styles.manageMeta}>{product.season}</Text>
+                    </View>
+
+                    <PrimaryButton label={copy.remove} onPress={() => handleDelete(product)} variant="secondary" />
+                  </View>
+                );
+              })}
+            </View>
+          </View>
         </View>
       )}
 
@@ -255,43 +425,87 @@ export function CatalogScreen() {
 }
 
 const styles = StyleSheet.create({
-  toolbar: {
+  topBar: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: spacing.md,
+  },
+  topBarCompact: {
+    alignItems: "flex-start",
+  },
+  backButton: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    height: 42,
+    justifyContent: "center",
+    width: 42,
+    ...shadows.soft,
+  },
+  topActions: {
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.sm,
-    marginBottom: spacing.md,
   },
   cartButton: {
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.92)",
+    backgroundColor: "rgba(255,255,255,0.94)",
     borderColor: colors.border,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
+    height: 42,
     justifyContent: "center",
-    minHeight: 44,
-    minWidth: 76,
-    paddingHorizontal: spacing.md,
+    position: "relative",
+    width: 42,
     ...shadows.soft,
   },
-  cartButtonText: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: "700",
+  cartBadge: {
+    alignItems: "center",
+    backgroundColor: colors.primaryDark,
+    borderRadius: radii.pill,
+    justifyContent: "center",
+    minWidth: 18,
+    paddingHorizontal: 5,
+    position: "absolute",
+    right: -4,
+    top: -4,
+  },
+  cartBadgeText: {
+    color: colors.white,
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  menuButton: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    height: 42,
+    justifyContent: "center",
+    width: 42,
+    ...shadows.soft,
   },
   heroCard: {
     backgroundColor: "#6A52CB",
-    borderRadius: radii.xl,
-    gap: spacing.sm,
+    borderRadius: 30,
+    gap: spacing.md,
     marginBottom: spacing.md,
     padding: spacing.lg,
     ...shadows.card,
   },
   heroCardCompact: {
-    borderRadius: 22,
+    borderRadius: 24,
     padding: spacing.md,
   },
+  heroTextBlock: {
+    gap: spacing.xs,
+  },
   heroEyebrow: {
-    color: "rgba(255,255,255,0.88)",
+    color: "rgba(255,255,255,0.84)",
     fontSize: 12,
     fontWeight: "800",
     letterSpacing: 0.8,
@@ -299,26 +513,31 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     color: colors.white,
-    fontSize: 22,
-    fontWeight: "800",
-    lineHeight: 30,
+    fontSize: 24,
+    fontWeight: "900",
   },
   heroTitleCompact: {
-    fontSize: 19,
-    lineHeight: 26,
+    fontSize: 21,
   },
-  heroMeta: {
+  heroSubtitle: {
+    color: "rgba(255,255,255,0.88)",
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  heroSubtitleCompact: {
+    lineHeight: 20,
+  },
+  heroMetaCard: {
     alignSelf: "flex-start",
-    backgroundColor: "rgba(255,255,255,0.14)",
+    backgroundColor: "rgba(255,255,255,0.16)",
     borderRadius: radii.pill,
-    marginTop: spacing.xs,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
   heroMetaText: {
     color: colors.white,
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "800",
   },
   statusCard: {
     backgroundColor: "rgba(255,255,255,0.9)",
@@ -332,65 +551,100 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
   },
-  searchInput: {
-    backgroundColor: "rgba(255,255,255,0.94)",
+  searchShell: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.96)",
     borderColor: colors.border,
-    borderRadius: radii.md,
+    borderRadius: 18,
     borderWidth: 1,
-    color: colors.text,
-    fontSize: 15,
+    flexDirection: "row",
+    gap: spacing.sm,
     marginBottom: spacing.md,
-    minHeight: 48,
     paddingHorizontal: spacing.md,
     ...shadows.soft,
   },
-  toggleBar: {
-    gap: spacing.sm,
-    marginBottom: spacing.md,
+  searchInput: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 15,
+    minHeight: 50,
   },
-  toggleBarCompact: {
+  toggleBar: {
+    backgroundColor: "rgba(255,255,255,0.72)",
+    borderRadius: 20,
+    flexDirection: "row",
     gap: spacing.xs,
+    marginBottom: spacing.md,
+    padding: 4,
+  },
+  toggleButton: {
+    alignItems: "center",
+    borderRadius: 16,
+    flex: 1,
+    minHeight: 48,
+    justifyContent: "center",
+    paddingHorizontal: spacing.md,
+  },
+  toggleButtonActive: {
+    backgroundColor: colors.primaryDark,
+  },
+  toggleText: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  toggleTextActive: {
+    color: colors.white,
   },
   seasonGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.sm,
   },
-  seasonGridCompact: {
-    gap: 10,
-  },
   seasonCard: {
-    backgroundColor: "rgba(255,255,255,0.94)",
-    borderRadius: 22,
+    borderRadius: 24,
     overflow: "hidden",
+    position: "relative",
     width: "48%",
     ...shadows.soft,
   },
-  seasonCardCompact: {
-    borderRadius: 18,
+  seasonCardActive: {
+    shadowColor: colors.primaryDark,
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.24,
+    shadowRadius: 28,
+    elevation: 6,
   },
   seasonImage: {
-    height: 124,
+    height: 140,
     width: "100%",
   },
-  seasonImageCompact: {
-    height: 108,
+  seasonOverlay: {
+    backgroundColor: "rgba(18, 13, 28, 0.22)",
+    bottom: 0,
+    left: 0,
+    padding: spacing.md,
+    position: "absolute",
+    right: 0,
   },
   seasonName: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "700",
-    padding: spacing.md,
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: "800",
   },
-  seasonNameCompact: {
-    fontSize: 14,
-    padding: 12,
-  },
-  allCard: {
+  allPlantsCard: {
     alignItems: "center",
     backgroundColor: "#F7F8F2",
     justifyContent: "center",
-    minHeight: 170,
+    minHeight: 140,
+    padding: spacing.lg,
+  },
+  allPlantsText: {
+    color: colors.primaryDark,
+    fontSize: 16,
+    fontWeight: "800",
+    marginTop: spacing.sm,
+    textAlign: "center",
   },
   sectionHeader: {
     alignItems: "center",
@@ -402,7 +656,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: colors.text,
     fontSize: 18,
-    fontWeight: "800",
+    fontWeight: "900",
   },
   sectionMeta: {
     color: colors.textMuted,
@@ -414,8 +668,8 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.88)",
-    borderRadius: radii.md,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    borderRadius: 20,
     marginTop: spacing.sm,
     padding: spacing.lg,
     ...shadows.soft,
@@ -423,55 +677,95 @@ const styles = StyleSheet.create({
   emptyText: {
     color: colors.textMuted,
     fontSize: 14,
+    textAlign: "center",
+  },
+  sellSection: {
+    gap: spacing.lg,
   },
   sellForm: {
-    gap: spacing.md,
-  },
-  seasonChipRow: {
-    gap: spacing.sm,
-    paddingBottom: spacing.xs,
-  },
-  seasonChip: {
     backgroundColor: "rgba(255,255,255,0.92)",
+    borderRadius: 24,
+    gap: spacing.md,
+    padding: spacing.lg,
+    ...shadows.soft,
+  },
+  fieldInput: {
+    backgroundColor: colors.white,
     borderColor: colors.border,
-    borderRadius: 14,
+    borderRadius: radii.md,
     borderWidth: 1,
-    minHeight: 44,
-    justifyContent: "center",
+    color: colors.text,
+    fontSize: 15,
+    minHeight: 50,
     paddingHorizontal: spacing.md,
   },
-  activeChip: {
-    backgroundColor: "#FFFFFF",
-    shadowColor: colors.primaryDark,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 20,
-    elevation: 4,
+  seasonChipWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  seasonChip: {
+    backgroundColor: "#F4EEF9",
+    borderColor: colors.border,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+  },
+  seasonChipActive: {
+    backgroundColor: colors.primaryDark,
   },
   seasonChipText: {
     color: colors.text,
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "800",
   },
-  activeChipText: {
-    color: "#352456",
+  seasonChipTextActive: {
+    color: colors.white,
   },
   previewImage: {
-    borderRadius: radii.md,
-    height: 180,
+    borderRadius: 18,
+    height: 190,
     width: "100%",
+  },
+  manageSection: {
+    gap: spacing.md,
+  },
+  manageList: {
+    gap: spacing.md,
   },
   manageCard: {
     backgroundColor: "rgba(255,255,255,0.95)",
-    borderRadius: 20,
-    gap: spacing.sm,
+    borderRadius: 24,
+    gap: spacing.md,
+    overflow: "hidden",
     padding: spacing.md,
     ...shadows.soft,
   },
+  manageImage: {
+    borderRadius: 18,
+    height: 160,
+    width: "100%",
+  },
+  manageImageFallback: {
+    alignItems: "center",
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 18,
+    height: 160,
+    justifyContent: "center",
+  },
+  manageImageFallbackText: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  manageContent: {
+    gap: spacing.xs,
+  },
   manageName: {
     color: colors.text,
-    fontSize: 16,
-    fontWeight: "700",
+    fontSize: 17,
+    fontWeight: "800",
   },
   manageMeta: {
     color: colors.textMuted,

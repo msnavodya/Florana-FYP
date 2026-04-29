@@ -24,6 +24,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { useSettings } from "../context/SettingsContext";
 import { getBackendHealth } from "../lib/api/health";
 import { predictImage } from "../lib/api/predict";
+import { appendImageAsset } from "../lib/api/upload";
 import { brandAssets } from "../theme/brand";
 import { colors, radii, shadows, spacing } from "../theme/tokens";
 import type { FeedbackEntry } from "../types/app";
@@ -273,22 +274,17 @@ export function HomeScreen() {
 
     const file = result.assets[0];
     const formData = new FormData();
-    formData.append("file", {
-      uri: file.uri,
-      name: file.fileName || "scan.jpg",
-      type: file.mimeType || "image/jpeg",
-    } as unknown as Blob);
-
     setLoading(true);
 
     try {
+      await appendImageAsset(formData, "file", file, "scan");
       const response = await predictImage(formData);
       const healthy = isHealthyPrediction(response.prediction);
       const confidence = formatPredictionConfidence(response.confidence);
 
       setDiagnosis({
         title: healthy ? t("healthy_plant") : t("disease_detected"),
-        message: `${response.prediction} • ${confidence}% confidence`,
+        message: `${response.prediction} - ${confidence}% confidence`,
         tone: healthy ? "healthy" : "warning",
       });
       setModelState({ loaded: true, status: "ready" });

@@ -8,6 +8,7 @@ import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { TopBar } from "../components/TopBar";
 import { createPlant } from "../lib/api/plants";
+import { appendImageAsset } from "../lib/api/upload";
 import { colors, radii, shadows, spacing } from "../theme/tokens";
 
 const sunlightOptions = ["Full Sun", "Partial Sun", "Shade"] as const;
@@ -91,11 +92,7 @@ export function RegisterPlantScreen() {
       formData.append("tracking", form.tracking ? "true" : "false");
 
       if (form.image) {
-        formData.append("image", {
-          uri: form.image.uri,
-          name: form.image.fileName || "plant.jpg",
-          type: form.image.mimeType || "image/jpeg",
-        } as unknown as Blob);
+        await appendImageAsset(formData, "image", form.image, "plant");
       }
 
       const response = await createPlant(formData);

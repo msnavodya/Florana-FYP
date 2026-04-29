@@ -95,7 +95,7 @@ export function ProfileScreen() {
 
       <View style={styles.headerRow}>
         <Pressable accessibilityLabel="Go back" onPress={() => router.back()} style={styles.iconButton}>
-          <Text style={styles.iconButtonText}>{"<"}</Text>
+          <MaterialIcons name="arrow-back" size={20} color={colors.text} />
         </Pressable>
 
         <View style={[styles.headerCard, compact ? styles.headerCardCompact : null]}>
@@ -203,17 +203,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.white,
     borderColor: colors.border,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    height: 44,
+    height: 42,
     justifyContent: "center",
-    width: 44,
+    width: 42,
     ...shadows.soft,
-  },
-  iconButtonText: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: "800",
   },
   headerCard: {
     backgroundColor: "rgba(255,255,255,0.18)",

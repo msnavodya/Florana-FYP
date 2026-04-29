@@ -360,7 +360,9 @@ def build_quick_tips():
 
 # ----------------- AI ROUTES -----------------
 @app.post("/predict")
-async def predict(file: UploadFile = File(...)):
+async def predict(file: UploadFile | None = File(None)):
+    if file is None or not file.filename:
+        raise HTTPException(status_code=400, detail="Image file is required")
     if not file.filename.lower().endswith((".jpg", ".jpeg", ".png")):
         raise HTTPException(status_code=400, detail="Invalid image format")
     file_bytes = await file.read()

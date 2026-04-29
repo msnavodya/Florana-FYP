@@ -26,6 +26,59 @@ const api = axios.create({
   timeout: 15000,
 });
 
+function normalizeApiErrorDetail(detail: unknown): string | undefined {
+  if (typeof detail === "string") {
+    return detail;
+  }
+
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((entry) => {
+        if (typeof entry === "string") {
+          return entry;
+        }
+
+        if (entry && typeof entry === "object") {
+          const record = entry as { loc?: unknown; msg?: unknown; message?: unknown };
+          const loc = Array.isArray(record.loc) ? record.loc.join(".") : null;
+          const msg =
+            typeof record.msg === "string"
+              ? record.msg
+              : typeof record.message === "string"
+                ? record.message
+                : null;
+
+          if (loc && msg) {
+            return `${loc}: ${msg}`;
+          }
+
+          if (msg) {
+            return msg;
+          }
+        }
+
+        return null;
+      })
+      .filter((message): message is string => Boolean(message));
+
+    if (messages.length > 0) {
+      return messages.join(", ");
+    }
+  }
+
+  if (detail && typeof detail === "object") {
+    const record = detail as { message?: unknown; detail?: unknown };
+    if (typeof record.message === "string") {
+      return record.message;
+    }
+    if (typeof record.detail === "string") {
+      return record.detail;
+    }
+  }
+
+  return undefined;
+}
+
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { token, headers, body, method = "GET", ...rest } = options;
   const requestHeaders: Record<string, string> = {
@@ -56,7 +109,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     });
     return response.data;
   } catch (error) {
-    const axiosError = error as AxiosError<{ detail?: string; message?: string }>;
+    const axiosError = error as AxiosError<{ detail?: unknown; message?: unknown }>;
     if (axiosError.code === "ECONNABORTED") {
       throw new ApiError(
         `The server took too long to respond at ${API_URL}. Check that the backend is running and reachable from your phone or emulator.`,
@@ -72,8 +125,8 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     }
 
     const detail =
-      axiosError.response?.data?.detail ||
-      axiosError.response?.data?.message ||
+      normalizeApiErrorDetail(axiosError.response?.data?.detail) ||
+      normalizeApiErrorDetail(axiosError.response?.data?.message) ||
       axiosError.message ||
       "Request failed";
 

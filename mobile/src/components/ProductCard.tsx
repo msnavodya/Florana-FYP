@@ -10,9 +10,10 @@ import { PrimaryButton } from "./PrimaryButton";
 
 interface ProductCardProps {
   product: Product;
+  actionLabel?: string;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, actionLabel = "Add to Cart" }: ProductCardProps) {
   const { addItem, currency } = useCart();
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
@@ -24,7 +25,7 @@ export function ProductCard({ product }: ProductCardProps) {
       <Text style={[styles.name, compact ? styles.nameCompact : null]}>{product.name}</Text>
       <Text style={styles.meta}>{product.season}</Text>
       <Text style={[styles.price, compact ? styles.priceCompact : null]}>{formatPrice(product.price, currency)}</Text>
-      <PrimaryButton label="Add to Cart" onPress={() => void addItem(product)} />
+      <PrimaryButton label={actionLabel} onPress={() => void addItem(product)} />
     </Pressable>
   );
 }

@@ -1,133 +1,438 @@
+import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useMemo, useRef, useState } from "react";
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  useWindowDimensions,
+} from "react-native";
 
 import { AppMenu } from "../components/AppMenu";
 import { BottomNav } from "../components/BottomNav";
+import { LanguageSelector } from "../components/LanguageSelector";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
-import { TopBar } from "../components/TopBar";
 import { useCart } from "../context/CartContext";
-import { confirmPayment, createPaymentIntent, type PaymentMethod } from "../lib/api/payment";
-import { colors, radii, shadows, spacing } from "../theme/tokens";
+import { useLanguage } from "../context/LanguageContext";
+import {
+  confirmPayment,
+  createPaymentIntent,
+  type PaymentIntentPayload,
+  type PaymentIntentResponse,
+} from "../lib/api/payment";
+import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 import { formatPrice } from "../utils/shop";
 
-const deliveryFee = 750;
+type CheckoutMethod = "card" | "cod" | "paypal";
+type CheckoutStep = 0 | 1 | 2 | 3 | 4;
+type LanguageCode = "en" | "si" | "ta";
+
+const cartCopy: Record<
+  LanguageCode,
+  {
+    checkout: string;
+    myCart: string;
+    itemsInCart: string;
+    total: string;
+    empty: string;
+    continueShopping: string;
+    preparing: string;
+    proceed: string;
+    paymentMethod: string;
+    creditCard: string;
+    creditCardDesc: string;
+    paypalDesc: string;
+    cod: string;
+    codDesc: string;
+    verifyMobile: string;
+    phoneCopy: string;
+    phoneNumber: string;
+    sending: string;
+    sendOtp: string;
+    enterOtp: string;
+    cardDetails: string;
+    cardCopy: string;
+    cardNumber: string;
+    nameOnCard: string;
+    expiry: string;
+    submitting: string;
+    pay: string;
+    paypalCheckout: string;
+    paypalCopy: string;
+    codCopy: string;
+    confirmCod: string;
+    processing: string;
+    processingCopy: string;
+    confirmed: string;
+    completed: string;
+  }
+> = {
+  en: {
+    checkout: "Florana Checkout",
+    myCart: "My Cart",
+    itemsInCart: "Items in cart",
+    total: "Total",
+    empty: "Your cart is empty right now.",
+    continueShopping: "Continue Shopping",
+    preparing: "Preparing checkout...",
+    proceed: "Proceed to Payment",
+    paymentMethod: "Select Payment Method",
+    creditCard: "Credit Card",
+    creditCardDesc: "Fast checkout with secure card validation.",
+    paypalDesc: "Backend marks it processing and confirms in real time.",
+    cod: "Cash on Delivery",
+    codDesc: "Confirm now and pay when the order arrives.",
+    verifyMobile: "Verify Mobile Number",
+    phoneCopy: "We use phone verification before payment confirmation.",
+    phoneNumber: "Phone number",
+    sending: "Sending...",
+    sendOtp: "Continue",
+    enterOtp: "Enter OTP",
+    cardDetails: "Card Details",
+    cardCopy: "Card data is validated by the backend before processing.",
+    cardNumber: "Card Number (16 digits)",
+    nameOnCard: "Name on Card",
+    expiry: "MM/YY",
+    submitting: "Submitting...",
+    pay: "Pay",
+    paypalCheckout: "PayPal Checkout",
+    paypalCopy: "PayPal Sandbox is available on the web version, but the current mobile backend is not wired for PayPal confirmation yet.",
+    codCopy: "Confirm the order now and pay the courier on delivery.",
+    confirmCod: "Confirm COD",
+    processing: "Payment Processing",
+    processingCopy: "We are checking the latest order status from the backend.",
+    confirmed: "Order Confirmed",
+    completed: "Your payment flow completed successfully.",
+  },
+  si: {
+    checkout: "ෆ්ලෝරානා ගෙවීම්",
+    myCart: "මගේ කරත්තය",
+    itemsInCart: "කරත්තයේ අයිතම",
+    total: "මුළු එකතුව",
+    empty: "ඔබගේ කරත්තය දැන් හිස්ය.",
+    continueShopping: "සාප්පු යාම දිගටම කරගෙන යන්න",
+    preparing: "ගෙවීම සූදානම් කරමින්...",
+    proceed: "ගෙවීමට ඉදිරියට යන්න",
+    paymentMethod: "ගෙවීමේ ක්‍රමය තෝරන්න",
+    creditCard: "ක්‍රෙඩිට් කාඩ්",
+    creditCardDesc: "ආරක්ෂිත කාඩ් තහවුරු කිරීම සමඟ වේගවත් ගෙවීම.",
+    paypalDesc: "බැක්එන්ඩ් එය ක්‍රියාවලියේ බව ලෙස සලකුණු කර තත්‍ය කාලීනව තහවුරු කරයි.",
+    cod: "භාරදීමේදී මුදල්",
+    codDesc: "දැන් තහවුරු කර ඇණවුම පැමිණි විට ගෙවන්න.",
+    verifyMobile: "ජංගම දුරකථන අංකය තහවුරු කරන්න",
+    phoneCopy: "ගෙවීම තහවුරු කිරීමට පෙර අපි දුරකථන තහවුරු කිරීම භාවිතා කරමු.",
+    phoneNumber: "දුරකථන අංකය",
+    sending: "යවමින්...",
+    sendOtp: "ඉදිරියට යන්න",
+    enterOtp: "OTP ඇතුළත් කරන්න",
+    cardDetails: "කාඩ් විස්තර",
+    cardCopy: "කාඩ් දත්ත ක්‍රියාවලියට පෙර බැක්එන්ඩ් මගින් තහවුරු කරයි.",
+    cardNumber: "කාඩ් අංකය (අංක 16)",
+    nameOnCard: "කාඩ්පතේ නම",
+    expiry: "MM/YY",
+    submitting: "ඉදිරිපත් කරමින්...",
+    pay: "ගෙවන්න",
+    paypalCheckout: "PayPal ගෙවීම",
+    paypalCopy: "වෙබ් සංස්කරණයේ PayPal Sandbox පවතින නමුත් වත්මන් ජංගම බැක්එන්ඩ් PayPal තහවුරුව සඳහා සම්බන්ධ කර නොමැත.",
+    codCopy: "දැන් ඇණවුම තහවුරු කර භාරදීමේදී කුරියර්ට ගෙවන්න.",
+    confirmCod: "COD තහවුරු කරන්න",
+    processing: "ගෙවීම සැකසෙමින් පවතී",
+    processingCopy: "අපි බැක්එන්ඩ් වෙතින් නවතම ඇණවුම් තත්ත්වය පරීක්ෂා කරමින් සිටිමු.",
+    confirmed: "ඇණවුම තහවුරුයි",
+    completed: "ඔබගේ ගෙවීමේ ක්‍රියාවලිය සාර්ථකව අවසන් විය.",
+  },
+  ta: {
+    checkout: "ஃப்ளோரானா கட்டணம்",
+    myCart: "என் வண்டி",
+    itemsInCart: "வண்டியில் உள்ளவை",
+    total: "மொத்தம்",
+    empty: "உங்கள் வண்டி இப்போது காலியாக உள்ளது.",
+    continueShopping: "ஷாப்பிங்கை தொடருங்கள்",
+    preparing: "கட்டணம் தயார் செய்யப்படுகிறது...",
+    proceed: "கட்டணத்திற்கு செல்லுங்கள்",
+    paymentMethod: "கட்டண முறையை தேர்வுசெய்க",
+    creditCard: "கிரெடிட் கார்டு",
+    creditCardDesc: "பாதுகாப்பான அட்டை சரிபார்ப்புடன் விரைவான கட்டணம்.",
+    paypalDesc: "பின்புற அமைப்பு இதை செயலாக்கமாக குறித்து நேரடியாக உறுதிப்படுத்துகிறது.",
+    cod: "வழங்கும் போது பணம்",
+    codDesc: "இப்போது உறுதிப்படுத்து, ஆர்டர் வந்தபோது கட்டணம் செலுத்துங்கள்.",
+    verifyMobile: "மொபைல் எண்ணை உறுதிப்படுத்து",
+    phoneCopy: "கட்டண உறுதிப்பாட்டிற்கு முன் தொலைபேசி சரிபார்ப்பைப் பயன்படுத்துகிறோம்.",
+    phoneNumber: "தொலைபேசி எண்",
+    sending: "அனுப்புகிறது...",
+    sendOtp: "தொடரவும்",
+    enterOtp: "OTP உள்ளிடுக",
+    cardDetails: "அட்டை விவரங்கள்",
+    cardCopy: "செயலாக்கத்திற்கு முன் அட்டை தகவல் பின்புறத்தில் சரிபார்க்கப்படுகிறது.",
+    cardNumber: "அட்டை எண் (16 இலக்கங்கள்)",
+    nameOnCard: "அட்டையில் உள்ள பெயர்",
+    expiry: "MM/YY",
+    submitting: "சமர்ப்பிக்கிறது...",
+    pay: "செலுத்து",
+    paypalCheckout: "PayPal கட்டணம்",
+    paypalCopy: "வலை பதிப்பில் PayPal Sandbox உள்ளது, ஆனால் தற்போதைய மொபைல் backend இன்னும் PayPal உறுதிப்பாட்டிற்கு இணைக்கப்படவில்லை.",
+    codCopy: "இப்போது ஆர்டரை உறுதிப்படுத்து, வழங்கும் போது கூரியருக்கு கட்டணம் செலுத்துங்கள்.",
+    confirmCod: "COD உறுதிப்படுத்து",
+    processing: "கட்டணம் செயலாக்கப்படுகிறது",
+    processingCopy: "பின்புறத்திலிருந்து சமீபத்திய ஆர்டர் நிலையை சரிபார்க்கிறோம்.",
+    confirmed: "ஆர்டர் உறுதிப்படுத்தப்பட்டது",
+    completed: "உங்கள் கட்டண செயல்முறை வெற்றிகரமாக முடிந்தது.",
+  },
+};
 
 export function CartScreen() {
-  const { items, currency, removeItem, updateQuantity, clearCart, subtotal, totalItems } = useCart();
+  const { height, width } = useWindowDimensions();
+  const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
+  const { items, currency, setCurrency, removeItem, clearCart, subtotal, totalItems } = useCart();
+  const { languageCode, t } = useLanguage();
+  const copy = cartCopy[languageCode] || cartCopy.en;
+  const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [showCheckout, setShowCheckout] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
-  const [submitting, setSubmitting] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutMethod>("card");
+  const [step, setStep] = useState<CheckoutStep>(0);
   const [status, setStatus] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [intentResponse, setIntentResponse] = useState<PaymentIntentResponse | null>(null);
   const [delivery, setDelivery] = useState({
-    name: "",
     phone: "",
+    name: "",
     email: "",
     address: "",
     note: "",
   });
+  const [card, setCard] = useState({
+    number: "",
+    name: "",
+    expiry: "",
+    cvv: "",
+  });
 
-  const summary = useMemo(() => {
-    const fee = items.length > 0 ? deliveryFee : 0;
-    return {
-      subtotal,
-      deliveryFee: fee,
-      total: subtotal + fee,
-    };
-  }, [items.length, subtotal]);
+  const showStatus = (message: string) => {
+    setStatus(message);
+    if (statusTimer.current) {
+      clearTimeout(statusTimer.current);
+    }
+    statusTimer.current = setTimeout(() => setStatus(""), 3200);
+  };
 
-  const canSubmit =
-    delivery.name.trim().length >= 2 &&
-    delivery.phone.trim().length >= 7 &&
-    delivery.address.trim().length >= 6 &&
-    items.length > 0;
+  const resetCheckoutState = () => {
+    setShowPayment(false);
+    setPaymentMethod("card");
+    setStep(0);
+    setBusy(false);
+    setIntentResponse(null);
+    setDelivery({
+      phone: "",
+      name: "",
+      email: "",
+      address: "",
+      note: "",
+    });
+    setCard({
+      number: "",
+      name: "",
+      expiry: "",
+      cvv: "",
+    });
+  };
 
-  const checkoutItems = items.map((item) => ({
-    id: item.id,
-    name: item.name,
-    quantity: item.quantity,
-    price: Number(item.price || 0),
-  }));
+  const total = useMemo(() => subtotal, [subtotal]);
 
-  const handleCheckout = async () => {
-    if (!canSubmit) {
-      setStatus("Please complete your delivery details before checkout.");
+  const buildPayload = (): PaymentIntentPayload => ({
+    amount: total,
+    currency,
+    method: paymentMethod === "cod" ? "cod" : "card",
+    item_count: totalItems,
+    items: items.map((item) => ({
+      id: item.id,
+      name: item.name,
+      quantity: item.quantity,
+      price: Number(item.price || 0),
+    })),
+    delivery: {
+      name: delivery.name.trim(),
+      phone: delivery.phone.trim(),
+      email: delivery.email.trim() || undefined,
+      address: delivery.address.trim(),
+      note: delivery.note.trim() || undefined,
+    },
+  });
+
+  const beginCheckout = () => {
+    if (items.length === 0) {
+      showStatus(copy.empty);
       return;
     }
 
-    setSubmitting(true);
-    setStatus("");
+    setShowPayment(true);
+    setStep(0);
+    showStatus("Choose a payment method to start secure checkout.");
+  };
 
+  const selectPaymentMethod = (method: CheckoutMethod) => {
+    setPaymentMethod(method);
+
+    if (method === "paypal") {
+      setStep(2);
+      showStatus(copy.paypalCopy);
+      return;
+    }
+
+    setStep(1);
+    showStatus("Add delivery details to continue.");
+  };
+
+  const continueFromDelivery = async () => {
+    if (delivery.phone.trim().length < 7 || delivery.name.trim().length < 2 || delivery.address.trim().length < 6) {
+      showStatus("Enter your name, phone number, and delivery address first.");
+      return;
+    }
+
+    setBusy(true);
     try {
-      const payload = {
-        amount: summary.total,
-        currency,
-        method: paymentMethod,
-        item_count: totalItems,
-        items: checkoutItems,
-        delivery: {
-          name: delivery.name.trim(),
-          phone: delivery.phone.trim(),
-          email: delivery.email.trim() || undefined,
-          address: delivery.address.trim(),
-          note: delivery.note.trim() || undefined,
-        },
-      };
+      const response = await createPaymentIntent(buildPayload());
+      setIntentResponse(response);
+      setStep(2);
+      showStatus(paymentMethod === "cod" ? "Delivery details verified. Confirm your COD order." : "Delivery details saved. Complete your payment.");
+    } catch (error) {
+      showStatus(error instanceof Error ? error.message : "Unable to prepare checkout.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
-      const intent = await createPaymentIntent(payload);
+  const handlePayment = async () => {
+    if (!intentResponse) {
+      showStatus("Start checkout again to continue.");
+      return;
+    }
 
-      const paymentStatus =
-        paymentMethod === "cod"
-          ? "cod_confirmed"
-          : intent.provider === "stripe" && intent.payment_intent_id
-            ? "requires_action"
-            : "pending";
+    if (paymentMethod === "card") {
+      if (card.number.trim().length < 16 || card.name.trim().length < 2 || card.expiry.trim().length < 4 || card.cvv.trim().length < 3) {
+        showStatus("Complete your card details first.");
+        return;
+      }
+    }
 
-      await confirmPayment({
-        ...payload,
-        payment_intent_id: intent.payment_intent_id,
-        status: paymentStatus,
+    setBusy(true);
+    setStep(3);
+    try {
+      const response = await confirmPayment({
+        ...buildPayload(),
+        payment_intent_id: intentResponse.payment_intent_id,
+        status:
+          paymentMethod === "cod"
+            ? "cod_confirmed"
+            : intentResponse.provider === "stripe" && intentResponse.payment_intent_id
+              ? "requires_action"
+              : "pending",
       });
 
       if (paymentMethod === "cod") {
-        setStatus("Order confirmed. Pay on delivery is active for this order.");
         await clearCart();
+        setStep(4);
+        showStatus("Order confirmed. Pay on delivery is active for this order.");
         return;
       }
 
-      if (intent.provider === "stripe" && intent.payment_intent_id) {
-        setStatus("Stripe payment intent created. Connect the Stripe mobile SDK and publishable key to complete secure in-app card payment.");
+      if (intentResponse.provider === "stripe" && intentResponse.payment_intent_id) {
+        setStep(4);
+        showStatus("Stripe payment intent created. Connect the Stripe mobile SDK to complete secure in-app card payment.");
       } else {
-        setStatus(intent.message);
+        setStep(4);
+        showStatus(response.status === "ok" ? "Payment request submitted." : "Order saved.");
       }
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Checkout failed. Please try again.");
+      setStep(2);
+      showStatus(error instanceof Error ? error.message : "Checkout failed.");
     } finally {
-      setSubmitting(false);
+      setBusy(false);
     }
+  };
+
+  const handleBack = () => {
+    if (showPayment) {
+      if (step > 0 && step < 3) {
+        setStep((current) => (current - 1) as CheckoutStep);
+        return;
+      }
+
+      resetCheckoutState();
+      return;
+    }
+
+    router.back();
   };
 
   return (
     <Screen>
-      <TopBar title="My Cart" subtitle="Checkout" onMenuPress={() => setMenuOpen(true)} />
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
 
-      <View style={styles.heroCard}>
-        <View>
-          <Text style={styles.heroEyebrow}>Secure Checkout</Text>
-          <Text style={styles.heroTitle}>Professional mobile ordering for your Florana store.</Text>
+      <View style={styles.nav}>
+        <View style={[styles.cartTopRow, compact ? styles.cartTopRowCompact : null]}>
+          <Pressable accessibilityLabel={t("back")} onPress={handleBack} style={styles.backButton}>
+            <MaterialIcons name="arrow-back" size={20} color={colors.text} />
+          </Pressable>
+
+          <View style={styles.cartToolbar}>
+            <LanguageSelector />
+
+            <Pressable accessibilityLabel="Cart overview" style={styles.cartIconButton}>
+              <MaterialIcons name="shopping-bag" size={16} color={colors.text} />
+              {items.length > 0 ? (
+                <View style={styles.catalogBadge}>
+                  <Text style={styles.catalogBadgeText}>{items.length}</Text>
+                </View>
+              ) : null}
+            </Pressable>
+
+            <View style={styles.currencyPill}>
+              <MaterialIcons name="account-balance-wallet" size={14} color={colors.primaryDark} />
+              <View style={styles.currencyPillOptions}>
+                {(["LKR", "USD", "EUR"] as const).map((item) => {
+                  const active = currency === item;
+                  return (
+                    <Pressable
+                      key={item}
+                      onPress={() => void setCurrency(item)}
+                      style={[styles.currencyMini, active ? styles.currencyMiniActive : null]}
+                    >
+                      <Text style={[styles.currencyMiniText, active ? styles.currencyMiniTextActive : null]}>
+                        {item === "LKR" ? "Rs." : item}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+
+            <Pressable accessibilityLabel={t("open_menu")} onPress={() => setMenuOpen(true)} style={styles.menuButton}>
+              <MaterialIcons name="menu" size={18} color={colors.text} />
+            </Pressable>
+          </View>
         </View>
-        <View style={styles.heroMetrics}>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>Items</Text>
-            <Text style={styles.metricValue}>{totalItems}</Text>
-          </View>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>Total</Text>
-            <Text style={styles.metricValue}>{formatPrice(summary.total, currency)}</Text>
-          </View>
+
+        <View style={styles.cartTitleWrap}>
+          <Text style={styles.cartEyebrow}>{copy.checkout}</Text>
+          <Text style={styles.cartHeading}>{copy.myCart}</Text>
+          <Text style={styles.cartSubtitle}>Review your flowers, confirm totals, and finish checkout with confidence.</Text>
+        </View>
+      </View>
+
+      <View style={styles.cartSummaryCard}>
+        <View style={styles.summaryBlock}>
+          <Text style={styles.summaryLabel}>{copy.itemsInCart}</Text>
+          <Text style={styles.summaryValue}>{items.length}</Text>
+        </View>
+        <View style={[styles.summaryBlock, styles.summaryTotal]}>
+          <Text style={styles.summaryLabel}>{copy.total}</Text>
+          <Text style={styles.summaryValue}>{formatPrice(total, currency)}</Text>
         </View>
       </View>
 
@@ -137,137 +442,230 @@ export function CartScreen() {
         </View>
       ) : null}
 
-      {items.length > 0 ? (
-        <FlatList
-          contentContainerStyle={styles.list}
-          data={items}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.itemCard}>
+      <View style={styles.cartBox}>
+        {items.length > 0 ? (
+          items.map((item) => (
+            <View key={item.id} style={styles.item}>
               <View style={styles.itemCopy}>
+                <Text style={styles.itemTag}>Plant item</Text>
                 <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemMeta}>{formatPrice(item.price, currency)}</Text>
+                <Text style={styles.itemMeta}>
+                  {item.quantity > 1 ? `${item.quantity} x ` : ""}
+                  {formatPrice(item.price, currency)}
+                </Text>
               </View>
-              <View style={styles.itemFooter}>
-                <View style={styles.qtyRow}>
-                  <Pressable onPress={() => void updateQuantity(item.id, item.quantity - 1)} style={styles.qtyButton}>
-                    <Text style={styles.qtyButtonText}>-</Text>
-                  </Pressable>
-                  <Text style={styles.quantity}>{item.quantity}</Text>
-                  <Pressable onPress={() => void updateQuantity(item.id, item.quantity + 1)} style={styles.qtyButton}>
-                    <Text style={styles.qtyButtonText}>+</Text>
-                  </Pressable>
-                </View>
-                <Pressable onPress={() => void removeItem(item.id)} style={styles.removeButton}>
-                  <Text style={styles.removeButtonText}>Remove</Text>
-                </Pressable>
-              </View>
+
+              <Pressable accessibilityLabel="Remove item" onPress={() => void removeItem(item.id)} style={styles.deleteButton}>
+                <MaterialIcons name="close" size={16} color="#B33D68" />
+              </Pressable>
             </View>
-          )}
-          scrollEnabled={false}
-        />
-      ) : (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>Your cart is empty.</Text>
-          <Text style={styles.emptyText}>Add plants from the catalog to start a real checkout flow.</Text>
-          <PrimaryButton label="Browse Catalog" onPress={() => router.push("/catalog")} variant="secondary" />
-        </View>
-      )}
+          ))
+        ) : (
+          <View style={styles.emptyState}>
+            <MaterialIcons name="shopping-bag" size={34} color={colors.textMuted} />
+            <Text style={styles.emptyText}>{copy.empty}</Text>
+            <PrimaryButton label={copy.continueShopping} onPress={() => router.push("/catalog")} variant="secondary" />
+          </View>
+        )}
+      </View>
 
       {items.length > 0 ? (
-        <View style={styles.summaryPanel}>
-          <Text style={styles.panelTitle}>Order Summary</Text>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryKey}>Subtotal</Text>
-            <Text style={styles.summaryValueText}>{formatPrice(summary.subtotal, currency)}</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryKey}>Delivery</Text>
-            <Text style={styles.summaryValueText}>{formatPrice(summary.deliveryFee, currency)}</Text>
-          </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryTotalKey}>Amount due</Text>
-            <Text style={styles.summaryTotalValue}>{formatPrice(summary.total, currency)}</Text>
+        <PrimaryButton disabled={busy} label={busy ? copy.preparing : copy.proceed} onPress={beginCheckout} />
+      ) : null}
+
+      <Modal animationType="fade" transparent visible={showPayment} onRequestClose={resetCheckoutState}>
+        <View style={styles.overlay}>
+          <Pressable style={styles.overlayBg} onPress={resetCheckoutState} />
+
+          <View style={styles.paymentDrawer}>
+            <View style={styles.paymentOrderChip}>
+              <Text style={styles.paymentOrderLabel}>Order</Text>
+              <Text style={styles.paymentOrderValue}>
+                {paymentMethod === "paypal"
+                  ? "PayPal Sandbox"
+                  : intentResponse?.payment_intent_id || intentResponse?.provider || "Creating..."}
+              </Text>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {step === 0 ? (
+                <>
+                  <Text style={styles.drawerTitle}>{copy.paymentMethod}</Text>
+
+                  <Pressable onPress={() => selectPaymentMethod("card")} style={styles.methodItem}>
+                    <Text style={styles.methodTitle}>{copy.creditCard}</Text>
+                    <Text style={styles.methodBody}>{copy.creditCardDesc}</Text>
+                  </Pressable>
+
+                  <Pressable onPress={() => selectPaymentMethod("paypal")} style={[styles.methodItem, styles.methodItemMuted]}>
+                    <Text style={styles.methodTitle}>PayPal</Text>
+                    <Text style={styles.methodBody}>{copy.paypalDesc}</Text>
+                  </Pressable>
+
+                  <Pressable onPress={() => selectPaymentMethod("cod")} style={styles.methodItem}>
+                    <Text style={styles.methodTitle}>{copy.cod}</Text>
+                    <Text style={styles.methodBody}>{copy.codDesc}</Text>
+                  </Pressable>
+                </>
+              ) : null}
+
+              {step === 1 ? (
+                <>
+                  <Text style={styles.drawerTitle}>{copy.verifyMobile}</Text>
+                  <Text style={styles.drawerCopy}>{copy.phoneCopy}</Text>
+
+                  <TextInput
+                    keyboardType="phone-pad"
+                    onChangeText={(value) => setDelivery((current) => ({ ...current, phone: value }))}
+                    placeholder={copy.phoneNumber}
+                    placeholderTextColor={colors.textMuted}
+                    style={styles.input}
+                    value={delivery.phone}
+                  />
+                  <TextInput
+                    onChangeText={(value) => setDelivery((current) => ({ ...current, name: value }))}
+                    placeholder="Full name"
+                    placeholderTextColor={colors.textMuted}
+                    style={styles.input}
+                    value={delivery.name}
+                  />
+                  <TextInput
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    onChangeText={(value) => setDelivery((current) => ({ ...current, email: value }))}
+                    placeholder="Email address"
+                    placeholderTextColor={colors.textMuted}
+                    style={styles.input}
+                    value={delivery.email}
+                  />
+                  <TextInput
+                    multiline
+                    onChangeText={(value) => setDelivery((current) => ({ ...current, address: value }))}
+                    placeholder="Delivery address"
+                    placeholderTextColor={colors.textMuted}
+                    style={[styles.input, styles.inputMultiline]}
+                    value={delivery.address}
+                  />
+                  <TextInput
+                    multiline
+                    onChangeText={(value) => setDelivery((current) => ({ ...current, note: value }))}
+                    placeholder="Order note (optional)"
+                    placeholderTextColor={colors.textMuted}
+                    style={[styles.input, styles.inputMultiline]}
+                    value={delivery.note}
+                  />
+
+                  <PrimaryButton
+                    disabled={busy}
+                    label={busy ? copy.sending : copy.sendOtp}
+                    onPress={() => void continueFromDelivery()}
+                  />
+                </>
+              ) : null}
+
+              {step === 2 ? (
+                <>
+                  {paymentMethod === "card" ? (
+                    <>
+                      <Text style={styles.drawerTitle}>{copy.cardDetails}</Text>
+                      <Text style={styles.drawerCopy}>{copy.cardCopy}</Text>
+                      <TextInput
+                        keyboardType="number-pad"
+                        onChangeText={(value) => setCard((current) => ({ ...current, number: value.replace(/\D/g, "") }))}
+                        placeholder={copy.cardNumber}
+                        placeholderTextColor={colors.textMuted}
+                        style={styles.input}
+                        value={card.number}
+                      />
+                      <TextInput
+                        onChangeText={(value) => setCard((current) => ({ ...current, name: value }))}
+                        placeholder={copy.nameOnCard}
+                        placeholderTextColor={colors.textMuted}
+                        style={styles.input}
+                        value={card.name}
+                      />
+                      <View style={styles.cardGrid}>
+                        <TextInput
+                          onChangeText={(value) => setCard((current) => ({ ...current, expiry: value }))}
+                          placeholder={copy.expiry}
+                          placeholderTextColor={colors.textMuted}
+                          style={[styles.input, styles.cardGridInput]}
+                          value={card.expiry}
+                        />
+                        <TextInput
+                          keyboardType="number-pad"
+                          onChangeText={(value) => setCard((current) => ({ ...current, cvv: value.replace(/\D/g, "") }))}
+                          placeholder="CVV"
+                          placeholderTextColor={colors.textMuted}
+                          style={[styles.input, styles.cardGridInput]}
+                          value={card.cvv}
+                        />
+                      </View>
+
+                      <PrimaryButton
+                        disabled={busy}
+                        label={busy ? copy.submitting : `${copy.pay} ${formatPrice(total, currency)}`}
+                        onPress={() => void handlePayment()}
+                      />
+                    </>
+                  ) : null}
+
+                  {paymentMethod === "paypal" ? (
+                    <>
+                      <Text style={styles.drawerTitle}>{copy.paypalCheckout}</Text>
+                      <Text style={styles.drawerCopy}>{copy.paypalCopy}</Text>
+                      <PrimaryButton label="Back to Methods" onPress={() => setStep(0)} variant="secondary" />
+                    </>
+                  ) : null}
+
+                  {paymentMethod === "cod" ? (
+                    <>
+                      <Text style={styles.drawerTitle}>{copy.cod}</Text>
+                      <Text style={styles.drawerCopy}>{copy.codCopy}</Text>
+                      <PrimaryButton
+                        disabled={busy}
+                        label={busy ? copy.submitting : `${copy.confirmCod} ${formatPrice(total, currency)}`}
+                        onPress={() => void handlePayment()}
+                      />
+                    </>
+                  ) : null}
+                </>
+              ) : null}
+
+              {step === 3 ? (
+                <View style={styles.successBox}>
+                  <MaterialIcons name="autorenew" size={26} color={colors.primaryDark} />
+                  <Text style={styles.drawerTitle}>{copy.processing}</Text>
+                  <Text style={styles.successText}>{copy.processingCopy}</Text>
+                </View>
+              ) : null}
+
+              {step === 4 ? (
+                <View style={styles.successBox}>
+                  <MaterialIcons name="verified" size={28} color="#1F4B3F" />
+                  <Text style={styles.drawerTitle}>{copy.confirmed}</Text>
+                  <Text style={styles.successText}>
+                    {paymentMethod === "card" && intentResponse?.provider === "stripe"
+                      ? "Your order was saved and a Stripe payment intent was created for the next secure payment step."
+                      : copy.completed}
+                  </Text>
+                  <PrimaryButton
+                    label="Close"
+                    onPress={() => {
+                      if (paymentMethod === "cod") {
+                        resetCheckoutState();
+                        return;
+                      }
+                      resetCheckoutState();
+                    }}
+                    variant="secondary"
+                  />
+                </View>
+              ) : null}
+            </ScrollView>
           </View>
         </View>
-      ) : null}
-
-      {items.length > 0 && !showCheckout ? (
-        <PrimaryButton label="Continue to Checkout" onPress={() => setShowCheckout(true)} />
-      ) : null}
-
-      {showCheckout && items.length > 0 ? (
-        <View style={styles.checkoutCard}>
-          <Text style={styles.panelTitle}>Delivery Details</Text>
-          <TextInput
-            onChangeText={(value) => setDelivery((current) => ({ ...current, name: value }))}
-            placeholder="Full name"
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-            value={delivery.name}
-          />
-          <TextInput
-            keyboardType="phone-pad"
-            onChangeText={(value) => setDelivery((current) => ({ ...current, phone: value }))}
-            placeholder="Phone number"
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-            value={delivery.phone}
-          />
-          <TextInput
-            autoCapitalize="none"
-            keyboardType="email-address"
-            onChangeText={(value) => setDelivery((current) => ({ ...current, email: value }))}
-            placeholder="Email address"
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-            value={delivery.email}
-          />
-          <TextInput
-            multiline
-            onChangeText={(value) => setDelivery((current) => ({ ...current, address: value }))}
-            placeholder="Delivery address"
-            placeholderTextColor={colors.textMuted}
-            style={[styles.input, styles.inputMultiline]}
-            value={delivery.address}
-          />
-          <TextInput
-            multiline
-            onChangeText={(value) => setDelivery((current) => ({ ...current, note: value }))}
-            placeholder="Order note (optional)"
-            placeholderTextColor={colors.textMuted}
-            style={[styles.input, styles.inputMultiline]}
-            value={delivery.note}
-          />
-
-          <Text style={styles.panelTitle}>Payment Method</Text>
-          <Pressable
-            onPress={() => setPaymentMethod("card")}
-            style={[styles.methodCard, paymentMethod === "card" ? styles.methodCardActive : null]}
-          >
-            <Text style={[styles.methodTitle, paymentMethod === "card" ? styles.methodTitleActive : null]}>Card Payment</Text>
-            <Text style={[styles.methodBody, paymentMethod === "card" ? styles.methodBodyActive : null]}>
-              Creates a Stripe-ready payment intent for secure checkout.
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setPaymentMethod("cod")}
-            style={[styles.methodCard, paymentMethod === "cod" ? styles.methodCardActive : null]}
-          >
-            <Text style={[styles.methodTitle, paymentMethod === "cod" ? styles.methodTitleActive : null]}>Cash on Delivery</Text>
-            <Text style={[styles.methodBody, paymentMethod === "cod" ? styles.methodBodyActive : null]}>
-              Confirm the order now and collect payment on delivery.
-            </Text>
-          </Pressable>
-
-          <PrimaryButton
-            disabled={submitting}
-            label={submitting ? "Processing..." : `Place Order • ${formatPrice(summary.total, currency)}`}
-            onPress={() => void handleCheckout()}
-          />
-        </View>
-      ) : null}
+      </Modal>
 
       <BottomNav />
     </Screen>
@@ -275,50 +673,150 @@ export function CartScreen() {
 }
 
 const styles = StyleSheet.create({
-  heroCard: {
-    backgroundColor: "#1F4B3F",
-    borderRadius: radii.xl,
-    gap: spacing.md,
+  nav: {
+    marginBottom: spacing.md,
+  },
+  cartTopRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  cartTopRowCompact: {
+    alignItems: "flex-start",
+  },
+  backButton: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    height: 42,
+    justifyContent: "center",
+    width: 42,
+    ...shadows.soft,
+  },
+  cartToolbar: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  cartIconButton: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    height: 42,
+    justifyContent: "center",
+    position: "relative",
+    width: 42,
+    ...shadows.soft,
+  },
+  catalogBadge: {
+    alignItems: "center",
+    backgroundColor: colors.primaryDark,
+    borderRadius: radii.pill,
+    justifyContent: "center",
+    minWidth: 18,
+    paddingHorizontal: 5,
+    position: "absolute",
+    right: -4,
+    top: -4,
+  },
+  catalogBadgeText: {
+    color: colors.white,
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  currencyPill: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.xs,
+    minHeight: 42,
+    paddingHorizontal: spacing.sm,
+    ...shadows.soft,
+  },
+  currencyPillOptions: {
+    flexDirection: "row",
+    gap: 4,
+  },
+  currencyMini: {
+    borderRadius: radii.pill,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+  },
+  currencyMiniActive: {
+    backgroundColor: "#EFE6FF",
+  },
+  currencyMiniText: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  currencyMiniTextActive: {
+    color: colors.primaryDark,
+  },
+  menuButton: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    height: 42,
+    justifyContent: "center",
+    width: 42,
+    ...shadows.soft,
+  },
+  cartTitleWrap: {
+    marginTop: spacing.lg,
+  },
+  cartEyebrow: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+  cartHeading: {
+    color: colors.text,
+    fontSize: 28,
+    fontWeight: "900",
+    marginTop: spacing.xs,
+  },
+  cartSubtitle: {
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 22,
+    marginTop: spacing.xs,
+  },
+  cartSummaryCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 26,
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: spacing.md,
     padding: spacing.lg,
     ...shadows.card,
   },
-  heroEyebrow: {
-    color: "rgba(231,255,245,0.76)",
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 1,
-    textTransform: "uppercase",
+  summaryBlock: {
+    gap: spacing.xs,
   },
-  heroTitle: {
-    color: colors.white,
-    fontSize: 24,
-    fontWeight: "800",
-    lineHeight: 31,
-    marginTop: spacing.xs,
+  summaryTotal: {
+    alignItems: "flex-end",
   },
-  heroMetrics: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  metricCard: {
-    backgroundColor: "rgba(255,255,255,0.12)",
-    borderColor: "rgba(255,255,255,0.18)",
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    flex: 1,
-    padding: spacing.md,
-  },
-  metricLabel: {
-    color: "rgba(255,255,255,0.7)",
-    fontSize: 12,
+  summaryLabel: {
+    color: colors.textMuted,
+    fontSize: 13,
     fontWeight: "700",
   },
-  metricValue: {
-    color: colors.white,
-    fontSize: 20,
-    fontWeight: "800",
-    marginTop: spacing.xs,
+  summaryValue: {
+    color: colors.text,
+    fontSize: 24,
+    fontWeight: "900",
   },
   statusCard: {
     backgroundColor: "rgba(255,255,255,0.94)",
@@ -335,19 +833,33 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     lineHeight: 20,
   },
-  list: {
-    gap: spacing.md,
-  },
-  itemCard: {
-    backgroundColor: "rgba(255,255,255,0.95)",
-    borderRadius: 22,
+  cartBox: {
+    backgroundColor: "rgba(255,255,255,0.82)",
+    borderRadius: 26,
     gap: spacing.md,
     marginBottom: spacing.md,
     padding: spacing.md,
     ...shadows.soft,
   },
+  item: {
+    alignItems: "center",
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: 22,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: spacing.md,
+  },
   itemCopy: {
+    flex: 1,
     gap: spacing.xs,
+  },
+  itemTag: {
+    color: colors.primaryDark,
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
   },
   itemName: {
     color: colors.text,
@@ -355,125 +867,101 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   itemMeta: {
-    color: "#24513B",
+    color: colors.textMuted,
     fontSize: 14,
     fontWeight: "700",
   },
-  itemFooter: {
+  deleteButton: {
     alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  qtyRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  qtyButton: {
-    alignItems: "center",
-    backgroundColor: colors.primaryDark,
-    borderRadius: radii.pill,
-    height: 38,
-    justifyContent: "center",
-    width: 38,
-  },
-  qtyButtonText: {
-    color: colors.white,
-    fontSize: 18,
-    fontWeight: "800",
-  },
-  quantity: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "800",
-    minWidth: 22,
-    textAlign: "center",
-  },
-  removeButton: {
     backgroundColor: "rgba(255,245,248,0.96)",
     borderColor: "rgba(179,61,104,0.18)",
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-  },
-  removeButtonText: {
-    color: "#B33D68",
-    fontSize: 13,
-    fontWeight: "700",
+    height: 40,
+    justifyContent: "center",
+    width: 40,
   },
   emptyState: {
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.96)",
-    borderRadius: radii.xl,
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-    padding: spacing.lg,
-    ...shadows.soft,
-  },
-  emptyTitle: {
-    color: colors.text,
-    fontSize: 19,
-    fontWeight: "800",
+    gap: spacing.md,
+    paddingVertical: spacing.lg,
   },
   emptyText: {
     color: colors.textMuted,
     fontSize: 14,
-    lineHeight: 21,
+    lineHeight: 22,
     textAlign: "center",
   },
-  summaryPanel: {
-    backgroundColor: "rgba(255,255,255,0.96)",
-    borderColor: colors.border,
-    borderRadius: radii.xl,
-    borderWidth: 1,
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-    padding: spacing.lg,
-    ...shadows.soft,
+  overlay: {
+    backgroundColor: "rgba(16, 10, 29, 0.42)",
+    flex: 1,
+    justifyContent: "flex-end",
   },
-  panelTitle: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "800",
+  overlayBg: {
+    ...StyleSheet.absoluteFillObject,
   },
-  summaryRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  summaryKey: {
-    color: colors.textMuted,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  summaryValueText: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  summaryDivider: {
-    backgroundColor: colors.border,
-    height: 1,
-    marginVertical: spacing.xs,
-  },
-  summaryTotalKey: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  summaryTotalValue: {
-    color: "#1F4B3F",
-    fontSize: 20,
-    fontWeight: "800",
-  },
-  checkoutCard: {
+  paymentDrawer: {
     backgroundColor: colors.white,
-    borderRadius: radii.xl,
-    gap: spacing.md,
-    marginTop: spacing.md,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: "82%",
     padding: spacing.lg,
     ...shadows.card,
+  },
+  paymentOrderChip: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: "#F5F0FA",
+    borderRadius: radii.pill,
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  paymentOrderLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  paymentOrderValue: {
+    color: colors.primaryDark,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  drawerTitle: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: "900",
+    marginBottom: spacing.sm,
+  },
+  drawerCopy: {
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 21,
+    marginBottom: spacing.md,
+  },
+  methodItem: {
+    backgroundColor: "rgba(247,248,251,0.98)",
+    borderColor: colors.border,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginBottom: spacing.sm,
+    padding: spacing.md,
+  },
+  methodItemMuted: {
+    opacity: 0.9,
+  },
+  methodTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  methodBody: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: spacing.xs,
   },
   input: {
     backgroundColor: "rgba(247,248,251,0.98)",
@@ -481,41 +969,31 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     color: colors.text,
+    marginBottom: spacing.md,
     minHeight: 50,
     paddingHorizontal: spacing.md,
-    ...shadows.soft,
   },
   inputMultiline: {
     minHeight: 92,
     paddingTop: spacing.md,
     textAlignVertical: "top",
   },
-  methodCard: {
-    backgroundColor: "rgba(247,248,251,0.98)",
-    borderColor: colors.border,
-    borderRadius: 18,
-    borderWidth: 1,
-    gap: spacing.xs,
-    padding: spacing.md,
+  cardGrid: {
+    flexDirection: "row",
+    gap: spacing.sm,
   },
-  methodCardActive: {
-    backgroundColor: "#1F4B3F",
-    borderColor: "#1F4B3F",
+  cardGridInput: {
+    flex: 1,
   },
-  methodTitle: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "800",
+  successBox: {
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: spacing.lg,
   },
-  methodTitleActive: {
-    color: colors.white,
-  },
-  methodBody: {
+  successText: {
     color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  methodBodyActive: {
-    color: "rgba(255,255,255,0.78)",
+    fontSize: 14,
+    lineHeight: 22,
+    textAlign: "center",
   },
 });

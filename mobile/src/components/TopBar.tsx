@@ -1,3 +1,4 @@
+import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
@@ -38,7 +39,7 @@ export function TopBar({ title, subtitle, onMenuPress, backTo, stackBrand = true
           pressed ? styles.iconButtonPressed : null,
         ]}
       >
-        <Text style={[styles.iconText, compact ? styles.iconTextCompact : null]}>{"<"}</Text>
+        <MaterialIcons name="arrow-back" size={20} color={colors.text} />
       </Pressable>
 
       <View style={[styles.center, compact ? styles.centerCompact : null]}>
@@ -158,16 +159,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.white,
     borderColor: colors.border,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    height: 44,
+    height: 42,
     justifyContent: "center",
-    minHeight: 44,
-    minWidth: 44,
-    width: 44,
+    minHeight: 42,
+    minWidth: 42,
+    width: 42,
+    shadowColor: "#1E1330",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 3,
   },
   iconButtonCompact: {
-    borderRadius: 12,
+    borderRadius: 16,
     height: 42,
     minHeight: 42,
     minWidth: 42,
