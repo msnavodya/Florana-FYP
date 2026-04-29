@@ -65,6 +65,11 @@ export function HomeScreen() {
     () => `${productCount ?? "--"} plants live | ${feedbacks.length} reviews | ${totalItems} cart items`,
     [feedbacks.length, productCount, totalItems]
   );
+  const wellnessMessage = diagnosis
+    ? diagnosis
+    : loading
+      ? "Analyzing your latest leaf scan..."
+      : "Scan a leaf to get a live health prediction from the Florana model.";
 
   const handleScan = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -124,6 +129,24 @@ export function HomeScreen() {
         </View>
       </View>
 
+      <View style={styles.heroCard}>
+        <View style={styles.heroBadge}>
+          <Text style={styles.heroBadgeText}>REAL-TIME PLANT CARE</Text>
+        </View>
+        <Text style={styles.heroTitle}>A cleaner mobile workspace for diagnosis, care, and shopping.</Text>
+        <Text style={styles.heroBody}>
+          Florana brings the model, reminders, catalog, and community feedback into one focused dashboard.
+        </Text>
+        <View style={styles.heroActionRow}>
+          <Pressable onPress={() => void handleScan()} style={styles.heroPrimaryAction}>
+            <Text style={styles.heroPrimaryActionText}>{loading ? "Scanning..." : "Scan a leaf"}</Text>
+          </Pressable>
+          <Pressable onPress={() => router.push("/myplants")} style={styles.heroSecondaryAction}>
+            <Text style={styles.heroSecondaryActionText}>My plants</Text>
+          </Pressable>
+        </View>
+      </View>
+
       <View style={styles.searchBox}>
         <TextInput
           onChangeText={setSearch}
@@ -137,14 +160,17 @@ export function HomeScreen() {
         </Pressable>
       </View>
 
-      {diagnosis ? (
-        <View style={styles.diagnosisAlert}>
-          <Text style={styles.diagnosisText}>Result: {diagnosis}</Text>
-          <Pressable onPress={() => setDiagnosis(null)} style={styles.dismissButton}>
-            <Text style={styles.dismissButtonText}>x</Text>
-          </Pressable>
+      <View style={styles.wellnessPanel}>
+        <View style={styles.wellnessHeader}>
+          <Text style={styles.wellnessTitle}>Plant wellness</Text>
+          {diagnosis ? (
+            <Pressable onPress={() => setDiagnosis(null)} style={styles.dismissButton}>
+              <Text style={styles.dismissButtonText}>x</Text>
+            </Pressable>
+          ) : null}
         </View>
-      ) : null}
+        <Text style={styles.wellnessText}>{wellnessMessage}</Text>
+      </View>
 
       <Text style={styles.sectionTitle}>{t("todays_insights")}</Text>
 
@@ -283,6 +309,75 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
   },
+  heroCard: {
+    backgroundColor: colors.backgroundDeep,
+    borderRadius: radii.xl,
+    marginBottom: spacing.md,
+    overflow: "hidden",
+    padding: spacing.lg,
+    ...shadows.card,
+  },
+  heroBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderRadius: radii.pill,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+  },
+  heroBadgeText: {
+    color: "#E9DDFF",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+  },
+  heroTitle: {
+    color: colors.white,
+    fontSize: 24,
+    fontWeight: "800",
+    lineHeight: 31,
+  },
+  heroBody: {
+    color: "#D8CAEF",
+    fontSize: 14,
+    lineHeight: 22,
+    marginTop: spacing.sm,
+  },
+  heroActionRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  heroPrimaryAction: {
+    alignItems: "center",
+    backgroundColor: colors.white,
+    borderRadius: radii.pill,
+    flex: 1,
+    justifyContent: "center",
+    minHeight: 46,
+    paddingHorizontal: spacing.md,
+  },
+  heroPrimaryActionText: {
+    color: colors.backgroundDeep,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  heroSecondaryAction: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderColor: "rgba(255,255,255,0.18)",
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    flex: 1,
+    justifyContent: "center",
+    minHeight: 46,
+    paddingHorizontal: spacing.md,
+  },
+  heroSecondaryActionText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: "700",
+  },
   searchBox: {
     alignItems: "center",
     backgroundColor: colors.white,
@@ -315,23 +410,29 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
   },
-  diagnosisAlert: {
-    alignItems: "center",
+  wellnessPanel: {
     backgroundColor: "rgba(255,255,255,0.94)",
     borderColor: colors.border,
     borderRadius: radii.md,
     borderWidth: 1,
-    flexDirection: "row",
-    gap: spacing.sm,
     marginBottom: spacing.md,
     padding: spacing.md,
     ...shadows.soft,
   },
-  diagnosisText: {
+  wellnessHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: spacing.xs,
+  },
+  wellnessTitle: {
     color: colors.text,
-    flex: 1,
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  wellnessText: {
+    color: colors.text,
     fontSize: 13,
-    fontWeight: "700",
     lineHeight: 20,
   },
   dismissButton: {

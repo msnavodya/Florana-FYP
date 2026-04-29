@@ -25,6 +25,7 @@ try:
     from .routes.auth import router as auth_router
     from .routes.plant import router as plant_router
     from .routes.growth import router as growth_router
+    from .routes.payment import router as payment_router
     from .routes.shop import router as shop_router
     from . import database
     from .utils import local_store
@@ -32,6 +33,7 @@ except ImportError:
     from routes.auth import router as auth_router
     from routes.plant import router as plant_router
     from routes.growth import router as growth_router
+    from routes.payment import router as payment_router
     from routes.shop import router as shop_router
     import database
     from utils import local_store
@@ -104,6 +106,7 @@ def startup_event():
 app.include_router(auth_router)
 app.include_router(plant_router)
 app.include_router(growth_router)
+app.include_router(payment_router)
 app.include_router(shop_router)
 
 
@@ -205,6 +208,149 @@ def predict_image(file_bytes: bytes):
     return class_names.get(class_index, "Unknown"), confidence
 
 
+def get_tracked_plant_records():
+    plants_collection = database.get_plants_collection()
+    records = (
+        local_store.list_items(local_store.PLANTS_FILE)
+        if plants_collection is None
+        else list(plants_collection.find())
+    )
+    return [record for record in records if record.get("tracking", True) is not False]
+
+
+def get_season_for_month(month: int):
+    if month in (12, 1, 2):
+        return "winter"
+    if month in (3, 4, 5):
+        return "spring"
+    if month in (6, 7, 8):
+        return "summer"
+    return "autumn"
+
+
+def build_quick_tips():
+    now = datetime.now()
+    records = get_tracked_plant_records()
+    plant_names = [record.get("name") or record.get("plant_name") for record in records if record.get("name") or record.get("plant_name")]
+    plant_count = len(plant_names)
+    warning_count = sum(1 for record in records if record.get("confidence", 1) < 0.8)
+    featured_plant = plant_names[0] if plant_names else None
+    hour = now.hour
+    season = get_season_for_month(now.month)
+
+    if hour < 10:
+        timing_tip = {
+            "id": "morning-check",
+            "category": "Daily Rhythm",
+            "title": "Use the morning for a fast leaf check",
+            "tip": "Look for drooping leaves, dry soil, or pests before the day gets hotter.",
+            "detail": "A quick morning check helps you spot stress early and water only the plants that need it.",
+        }
+    elif hour < 16:
+        timing_tip = {
+            "id": "midday-light",
+            "category": "Daily Rhythm",
+            "title": "Watch midday light exposure",
+            "tip": "Bright windows can become too intense around noon.",
+            "detail": "If leaves feel hot or start fading, move sensitive plants slightly back from direct light.",
+        }
+    else:
+        timing_tip = {
+            "id": "evening-reset",
+            "category": "Daily Rhythm",
+            "title": "Use the evening to reset care tasks",
+            "tip": "Review which plants were watered today and which can wait until tomorrow.",
+            "detail": "A simple evening reset prevents accidental overwatering and keeps care more consistent.",
+        }
+
+    season_tip_map = {
+        "winter": {
+            "id": "season-winter",
+            "category": "Seasonal Care",
+            "title": "Winter care should stay light",
+            "tip": "Most plants need less water and slower feeding during cooler months.",
+            "detail": "Let the top layer of soil dry a little longer before watering, especially for indoor plants.",
+        },
+        "spring": {
+            "id": "season-spring",
+            "category": "Seasonal Care",
+            "title": "Spring is a growth restart window",
+            "tip": "This is a good time to prune lightly and restart a feeding routine.",
+            "detail": "New growth usually responds well to brighter light, gentle fertilizer, and fresh inspection.",
+        },
+        "summer": {
+            "id": "season-summer",
+            "category": "Seasonal Care",
+            "title": "Summer means faster drying soil",
+            "tip": "Check moisture more often instead of watering on a rigid schedule.",
+            "detail": "Heat and light can change the pace quickly, especially in smaller pots and balcony setups.",
+        },
+        "autumn": {
+            "id": "season-autumn",
+            "category": "Seasonal Care",
+            "title": "Autumn is a transition season",
+            "tip": "Slow down fertilizer and watch how indoor light shifts through the day.",
+            "detail": "Plants often need a softer care rhythm as temperatures and daylight begin to drop.",
+        },
+    }
+
+    if plant_count == 0:
+        collection_tip = {
+            "id": "collection-start",
+            "category": "Getting Started",
+            "title": "Add your first plant to unlock more useful tips",
+            "tip": "Quick Tips become more personal once Florana can see what you are tracking.",
+            "detail": "Registering a plant lets the app surface more relevant reminders and care patterns.",
+        }
+    elif warning_count > 0:
+        collection_tip = {
+            "id": "collection-warning",
+            "category": "Plant Health",
+            "title": f"{warning_count} tracked plant{'s' if warning_count != 1 else ''} may need attention",
+            "tip": "Open My Plants and review the entries marked with lower confidence or warning signals.",
+            "detail": "Plants with uncertain health data are worth checking first so small issues do not spread.",
+        }
+    else:
+        featured_label = featured_plant or "your collection"
+        collection_tip = {
+            "id": "collection-healthy",
+            "category": "Collection Focus",
+            "title": f"Your collection is looking steady",
+            "tip": f"Keep care consistent for {featured_label} and the rest of your tracked plants.",
+            "detail": "Consistency is usually more helpful than doing too much at once, especially with watering and light changes.",
+        }
+
+    if featured_plant:
+        personal_tip = {
+            "id": "plant-feature",
+            "category": "Plant Spotlight",
+            "title": f"Focus on {featured_plant} today",
+            "tip": f"Check the leaves and soil around {featured_plant} before making any big changes.",
+            "detail": "A simple touch-and-look routine often tells you more than following a fixed schedule alone.",
+        }
+    else:
+        personal_tip = {
+            "id": "plant-feature-generic",
+            "category": "Care Habit",
+            "title": "Build a repeatable plant routine",
+            "tip": "Use one small habit like checking soil moisture at the same time each day.",
+            "detail": "Reliable observation usually improves plant care faster than collecting more tools.",
+        }
+
+    tips = [timing_tip, season_tip_map[season], collection_tip, personal_tip]
+    return {
+        "generated_at": now.isoformat(),
+        "context": {
+            "season": season,
+            "hour": hour,
+            "plant_count": plant_count,
+            "warning_count": warning_count,
+            "featured_plant": featured_plant,
+        },
+        "tips": tips,
+    }
+
+
 # ----------------- AI ROUTES -----------------
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
@@ -261,6 +407,11 @@ def get_all_plants():
             }
         )
     return plants
+
+
+@app.get("/quick-tips")
+def get_quick_tips():
+    return build_quick_tips()
 
 
 @app.delete("/plants/{plant_id}")

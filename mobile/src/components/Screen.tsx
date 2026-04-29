@@ -4,6 +4,7 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
+  Text,
   View,
   useWindowDimensions,
   type ViewStyle,
@@ -20,12 +21,23 @@ interface ScreenProps {
 export function Screen({ children, scroll = true, contentStyle }: ScreenProps) {
   const { width } = useWindowDimensions();
   const compact = width < 390;
+  const framed = width >= 768;
 
   const content = (
-    <View style={styles.frame}>
+    <View style={[styles.frame, framed ? styles.frameDesktop : null]}>
+      {framed ? (
+        <>
+          <View style={styles.notch} />
+          <View style={styles.sideButtonLeft} />
+          <View style={styles.sideButtonTopRight} />
+          <View style={styles.sideButtonBottomRight} />
+          <Text style={styles.frameLabel}>FLORANA MOBILE</Text>
+        </>
+      ) : null}
       <View
         style={[
           styles.content,
+          framed ? styles.contentFramed : null,
           {
             padding: compact ? spacing.md : spacing.lg,
           },
@@ -121,7 +133,77 @@ const styles = StyleSheet.create({
     maxWidth: 460,
     width: "100%",
   },
+  frameDesktop: {
+    backgroundColor: "#1F1631",
+    borderColor: "rgba(255,255,255,0.08)",
+    borderRadius: 38,
+    borderWidth: 1,
+    overflow: "hidden",
+    padding: 10,
+    paddingTop: 28,
+    position: "relative",
+    shadowColor: "#150F22",
+    shadowOffset: { width: 0, height: 28 },
+    shadowOpacity: 0.35,
+    shadowRadius: 40,
+    elevation: 12,
+  },
+  notch: {
+    alignSelf: "center",
+    backgroundColor: "#120C1E",
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
+    height: 24,
+    position: "absolute",
+    top: 0,
+    width: 150,
+    zIndex: 2,
+  },
+  sideButtonLeft: {
+    backgroundColor: "#120C1E",
+    borderBottomLeftRadius: 6,
+    borderTopLeftRadius: 6,
+    height: 56,
+    left: -4,
+    position: "absolute",
+    top: 150,
+    width: 4,
+  },
+  sideButtonTopRight: {
+    backgroundColor: "#120C1E",
+    borderBottomRightRadius: 6,
+    borderTopRightRadius: 6,
+    height: 44,
+    position: "absolute",
+    right: -4,
+    top: 138,
+    width: 4,
+  },
+  sideButtonBottomRight: {
+    backgroundColor: "#120C1E",
+    borderBottomRightRadius: 6,
+    borderTopRightRadius: 6,
+    height: 72,
+    position: "absolute",
+    right: -4,
+    top: 196,
+    width: 4,
+  },
+  frameLabel: {
+    color: "rgba(255,255,255,0.48)",
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 2,
+    position: "absolute",
+    right: 20,
+    top: 10,
+  },
   content: {
     flexGrow: 1,
+  },
+  contentFramed: {
+    backgroundColor: colors.background,
+    borderRadius: 28,
+    minHeight: "100%",
   },
 });

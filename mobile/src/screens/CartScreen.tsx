@@ -8,100 +8,134 @@ import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { TopBar } from "../components/TopBar";
 import { useCart } from "../context/CartContext";
-import { notifyPayment } from "../lib/api/payment";
+import { confirmPayment, createPaymentIntent, type PaymentMethod } from "../lib/api/payment";
 import { colors, radii, shadows, spacing } from "../theme/tokens";
 import { formatPrice } from "../utils/shop";
 
-type PaymentMethod = "card" | "paypal" | "cod";
+const deliveryFee = 750;
 
 export function CartScreen() {
-  const { items, currency, removeItem, updateQuantity, clearCart, subtotal } = useCart();
+  const { items, currency, removeItem, updateQuantity, clearCart, subtotal, totalItems } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [showPayment, setShowPayment] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
-  const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
-  const [generatedOtp, setGeneratedOtp] = useState("");
-  const [step, setStep] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState("");
-  const [card, setCard] = useState({ number: "", name: "", expiry: "", cvv: "" });
+  const [delivery, setDelivery] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    address: "",
+    note: "",
+  });
 
-  const total = useMemo(() => subtotal, [subtotal]);
+  const summary = useMemo(() => {
+    const fee = items.length > 0 ? deliveryFee : 0;
+    return {
+      subtotal,
+      deliveryFee: fee,
+      total: subtotal + fee,
+    };
+  }, [items.length, subtotal]);
 
-  const sendOtp = () => {
-    if (phone.replace(/\D/g, "").length < 8) {
-      setStatus("Enter a valid phone number first.");
+  const canSubmit =
+    delivery.name.trim().length >= 2 &&
+    delivery.phone.trim().length >= 7 &&
+    delivery.address.trim().length >= 6 &&
+    items.length > 0;
+
+  const checkoutItems = items.map((item) => ({
+    id: item.id,
+    name: item.name,
+    quantity: item.quantity,
+    price: Number(item.price || 0),
+  }));
+
+  const handleCheckout = async () => {
+    if (!canSubmit) {
+      setStatus("Please complete your delivery details before checkout.");
       return;
     }
 
-    const otpCode = Math.floor(1000 + Math.random() * 9000);
-    setGeneratedOtp(String(otpCode));
-    setStep(2);
-    setStatus(`Demo OTP sent: ${otpCode}`);
-  };
-
-  const verifyOtp = () => {
-    if (otp === generatedOtp) {
-      setStep(3);
-      setStatus("Phone verified.");
-      return;
-    }
-
-    setStatus("Invalid OTP. Try again.");
-  };
-
-  const validateCard = () => {
-    if (!card.number.match(/^\d{16}$/)) return "Card number must be 16 digits.";
-    if (!card.name.trim()) return "Enter the cardholder name.";
-    if (!card.expiry.match(/^\d{2}\/\d{2}$/)) return "Expiry must use MM/YY.";
-    if (!card.cvv.match(/^\d{3,4}$/)) return "CVV must be 3 or 4 digits.";
-    return null;
-  };
-
-  const handlePayment = async () => {
-    if (paymentMethod === "card") {
-      const error = validateCard();
-      if (error) {
-        setStatus(error);
-        return;
-      }
-    }
+    setSubmitting(true);
+    setStatus("");
 
     try {
-      await notifyPayment({
+      const payload = {
+        amount: summary.total,
         currency,
-        itemCount: items.length,
         method: paymentMethod,
-        phone,
-        total,
-      });
-    } catch {
-      setStatus("Payment completed, but the backend notification could not be confirmed.");
-      return;
-    }
+        item_count: totalItems,
+        items: checkoutItems,
+        delivery: {
+          name: delivery.name.trim(),
+          phone: delivery.phone.trim(),
+          email: delivery.email.trim() || undefined,
+          address: delivery.address.trim(),
+          note: delivery.note.trim() || undefined,
+        },
+      };
 
-    setStep(4);
-    setStatus("Payment completed successfully.");
-    await clearCart();
+      const intent = await createPaymentIntent(payload);
+
+      const paymentStatus =
+        paymentMethod === "cod"
+          ? "cod_confirmed"
+          : intent.provider === "stripe" && intent.payment_intent_id
+            ? "requires_action"
+            : "pending";
+
+      await confirmPayment({
+        ...payload,
+        payment_intent_id: intent.payment_intent_id,
+        status: paymentStatus,
+      });
+
+      if (paymentMethod === "cod") {
+        setStatus("Order confirmed. Pay on delivery is active for this order.");
+        await clearCart();
+        return;
+      }
+
+      if (intent.provider === "stripe" && intent.payment_intent_id) {
+        setStatus("Stripe payment intent created. Connect the Stripe mobile SDK and publishable key to complete secure in-app card payment.");
+      } else {
+        setStatus(intent.message);
+      }
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Checkout failed. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <Screen>
-      <TopBar title="My Cart" subtitle="Florana Checkout" onMenuPress={() => setMenuOpen(true)} />
+      <TopBar title="My Cart" subtitle="Checkout" onMenuPress={() => setMenuOpen(true)} />
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
 
-      <View style={styles.summaryCard}>
+      <View style={styles.heroCard}>
         <View>
-          <Text style={styles.summaryLabel}>Items in cart</Text>
-          <Text style={styles.summaryValue}>{items.length}</Text>
+          <Text style={styles.heroEyebrow}>Secure Checkout</Text>
+          <Text style={styles.heroTitle}>Professional mobile ordering for your Florana store.</Text>
         </View>
-        <View>
-          <Text style={styles.summaryLabel}>Total</Text>
-          <Text style={styles.summaryValue}>{formatPrice(total, currency)}</Text>
+        <View style={styles.heroMetrics}>
+          <View style={styles.metricCard}>
+            <Text style={styles.metricLabel}>Items</Text>
+            <Text style={styles.metricValue}>{totalItems}</Text>
+          </View>
+          <View style={styles.metricCard}>
+            <Text style={styles.metricLabel}>Total</Text>
+            <Text style={styles.metricValue}>{formatPrice(summary.total, currency)}</Text>
+          </View>
         </View>
       </View>
 
-      {status ? <View style={styles.statusCard}><Text style={styles.statusText}>{status}</Text></View> : null}
+      {status ? (
+        <View style={styles.statusCard}>
+          <Text style={styles.statusText}>{status}</Text>
+        </View>
+      ) : null}
 
       {items.length > 0 ? (
         <FlatList
@@ -110,11 +144,11 @@ export function CartScreen() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <View style={styles.itemCard}>
-              <View style={styles.itemInfo}>
+              <View style={styles.itemCopy}>
                 <Text style={styles.itemName}>{item.name}</Text>
                 <Text style={styles.itemMeta}>{formatPrice(item.price, currency)}</Text>
               </View>
-              <View style={styles.itemActions}>
+              <View style={styles.itemFooter}>
                 <View style={styles.qtyRow}>
                   <Pressable onPress={() => void updateQuantity(item.id, item.quantity - 1)} style={styles.qtyButton}>
                     <Text style={styles.qtyButtonText}>-</Text>
@@ -124,8 +158,8 @@ export function CartScreen() {
                     <Text style={styles.qtyButtonText}>+</Text>
                   </Pressable>
                 </View>
-                <Pressable onPress={() => void removeItem(item.id)} style={styles.deleteButton}>
-                  <Text style={styles.deleteButtonText}>Remove</Text>
+                <Pressable onPress={() => void removeItem(item.id)} style={styles.removeButton}>
+                  <Text style={styles.removeButtonText}>Remove</Text>
                 </Pressable>
               </View>
             </View>
@@ -134,119 +168,104 @@ export function CartScreen() {
         />
       ) : (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>Your cart is empty right now.</Text>
-          <Text style={styles.emptyText}>Browse the catalog and add a few plants to start checkout.</Text>
-          <PrimaryButton label="Continue Shopping" onPress={() => router.push("/catalog")} variant="secondary" />
+          <Text style={styles.emptyTitle}>Your cart is empty.</Text>
+          <Text style={styles.emptyText}>Add plants from the catalog to start a real checkout flow.</Text>
+          <PrimaryButton label="Browse Catalog" onPress={() => router.push("/catalog")} variant="secondary" />
         </View>
       )}
 
-      {items.length > 0 && !showPayment ? (
-        <PrimaryButton
-          label="Proceed to Payment"
-          onPress={() => {
-            setShowPayment(true);
-            setStep(0);
-          }}
-        />
+      {items.length > 0 ? (
+        <View style={styles.summaryPanel}>
+          <Text style={styles.panelTitle}>Order Summary</Text>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryKey}>Subtotal</Text>
+            <Text style={styles.summaryValueText}>{formatPrice(summary.subtotal, currency)}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryKey}>Delivery</Text>
+            <Text style={styles.summaryValueText}>{formatPrice(summary.deliveryFee, currency)}</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryTotalKey}>Amount due</Text>
+            <Text style={styles.summaryTotalValue}>{formatPrice(summary.total, currency)}</Text>
+          </View>
+        </View>
       ) : null}
 
-      {showPayment ? (
-        <View style={styles.paymentDrawer}>
-          {step === 0 ? (
-            <>
-              <Text style={styles.paymentTitle}>Select Payment Method</Text>
-              <Pressable onPress={() => { setPaymentMethod("card"); setStep(1); }} style={styles.methodCard}>
-                <Text style={styles.methodTitle}>Credit Card</Text>
-              </Pressable>
-              <Pressable onPress={() => { setPaymentMethod("paypal"); setStep(1); }} style={styles.methodCard}>
-                <Text style={styles.methodTitle}>PayPal</Text>
-              </Pressable>
-              <Pressable onPress={() => { setPaymentMethod("cod"); setStep(1); }} style={styles.methodCard}>
-                <Text style={styles.methodTitle}>Cash on Delivery</Text>
-              </Pressable>
-            </>
-          ) : null}
+      {items.length > 0 && !showCheckout ? (
+        <PrimaryButton label="Continue to Checkout" onPress={() => setShowCheckout(true)} />
+      ) : null}
 
-          {step === 1 ? (
-            <>
-              <Text style={styles.paymentTitle}>Enter Your Phone</Text>
-              <TextInput
-                keyboardType="phone-pad"
-                onChangeText={setPhone}
-                placeholder="Phone number"
-                placeholderTextColor={colors.textMuted}
-                style={styles.input}
-                value={phone}
-              />
-              <PrimaryButton label="Send OTP" onPress={sendOtp} />
-            </>
-          ) : null}
+      {showCheckout && items.length > 0 ? (
+        <View style={styles.checkoutCard}>
+          <Text style={styles.panelTitle}>Delivery Details</Text>
+          <TextInput
+            onChangeText={(value) => setDelivery((current) => ({ ...current, name: value }))}
+            placeholder="Full name"
+            placeholderTextColor={colors.textMuted}
+            style={styles.input}
+            value={delivery.name}
+          />
+          <TextInput
+            keyboardType="phone-pad"
+            onChangeText={(value) => setDelivery((current) => ({ ...current, phone: value }))}
+            placeholder="Phone number"
+            placeholderTextColor={colors.textMuted}
+            style={styles.input}
+            value={delivery.phone}
+          />
+          <TextInput
+            autoCapitalize="none"
+            keyboardType="email-address"
+            onChangeText={(value) => setDelivery((current) => ({ ...current, email: value }))}
+            placeholder="Email address"
+            placeholderTextColor={colors.textMuted}
+            style={styles.input}
+            value={delivery.email}
+          />
+          <TextInput
+            multiline
+            onChangeText={(value) => setDelivery((current) => ({ ...current, address: value }))}
+            placeholder="Delivery address"
+            placeholderTextColor={colors.textMuted}
+            style={[styles.input, styles.inputMultiline]}
+            value={delivery.address}
+          />
+          <TextInput
+            multiline
+            onChangeText={(value) => setDelivery((current) => ({ ...current, note: value }))}
+            placeholder="Order note (optional)"
+            placeholderTextColor={colors.textMuted}
+            style={[styles.input, styles.inputMultiline]}
+            value={delivery.note}
+          />
 
-          {step === 2 ? (
-            <>
-              <Text style={styles.paymentTitle}>Verify OTP</Text>
-              <TextInput
-                keyboardType="number-pad"
-                onChangeText={setOtp}
-                placeholder="Enter OTP"
-                placeholderTextColor={colors.textMuted}
-                style={styles.input}
-                value={otp}
-              />
-              <PrimaryButton label="Verify" onPress={verifyOtp} />
-            </>
-          ) : null}
+          <Text style={styles.panelTitle}>Payment Method</Text>
+          <Pressable
+            onPress={() => setPaymentMethod("card")}
+            style={[styles.methodCard, paymentMethod === "card" ? styles.methodCardActive : null]}
+          >
+            <Text style={[styles.methodTitle, paymentMethod === "card" ? styles.methodTitleActive : null]}>Card Payment</Text>
+            <Text style={[styles.methodBody, paymentMethod === "card" ? styles.methodBodyActive : null]}>
+              Creates a Stripe-ready payment intent for secure checkout.
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setPaymentMethod("cod")}
+            style={[styles.methodCard, paymentMethod === "cod" ? styles.methodCardActive : null]}
+          >
+            <Text style={[styles.methodTitle, paymentMethod === "cod" ? styles.methodTitleActive : null]}>Cash on Delivery</Text>
+            <Text style={[styles.methodBody, paymentMethod === "cod" ? styles.methodBodyActive : null]}>
+              Confirm the order now and collect payment on delivery.
+            </Text>
+          </Pressable>
 
-          {step === 3 && paymentMethod === "card" ? (
-            <>
-              <Text style={styles.paymentTitle}>Card Details</Text>
-              <TextInput
-                keyboardType="number-pad"
-                onChangeText={(value) => setCard((current) => ({ ...current, number: value.replace(/\D/g, "") }))}
-                placeholder="Card Number (16 digits)"
-                placeholderTextColor={colors.textMuted}
-                style={styles.input}
-                value={card.number}
-              />
-              <TextInput
-                onChangeText={(value) => setCard((current) => ({ ...current, name: value }))}
-                placeholder="Name on Card"
-                placeholderTextColor={colors.textMuted}
-                style={styles.input}
-                value={card.name}
-              />
-              <TextInput
-                onChangeText={(value) => setCard((current) => ({ ...current, expiry: value }))}
-                placeholder="MM/YY"
-                placeholderTextColor={colors.textMuted}
-                style={styles.input}
-                value={card.expiry}
-              />
-              <TextInput
-                keyboardType="number-pad"
-                onChangeText={(value) => setCard((current) => ({ ...current, cvv: value.replace(/\D/g, "") }))}
-                placeholder="CVV"
-                placeholderTextColor={colors.textMuted}
-                style={styles.input}
-                value={card.cvv}
-              />
-              <PrimaryButton label={`Pay ${formatPrice(total, currency)}`} onPress={() => void handlePayment()} />
-            </>
-          ) : null}
-
-          {step === 3 && paymentMethod !== "card" ? (
-            <>
-              <Text style={styles.paymentTitle}>{paymentMethod === "paypal" ? "PayPal" : "Cash on Delivery"}</Text>
-              <PrimaryButton label={`Confirm ${formatPrice(total, currency)}`} onPress={() => void handlePayment()} />
-            </>
-          ) : null}
-
-          {step === 4 ? (
-            <View style={styles.successCard}>
-              <Text style={styles.successTitle}>Payment Successful</Text>
-              <Text style={styles.successText}>Thank you for your order.</Text>
-            </View>
-          ) : null}
+          <PrimaryButton
+            disabled={submitting}
+            label={submitting ? "Processing..." : `Place Order • ${formatPrice(summary.total, currency)}`}
+            onPress={() => void handleCheckout()}
+          />
         </View>
       ) : null}
 
@@ -256,62 +275,91 @@ export function CartScreen() {
 }
 
 const styles = StyleSheet.create({
-  summaryCard: {
-    backgroundColor: "#6A52CB",
+  heroCard: {
+    backgroundColor: "#1F4B3F",
     borderRadius: radii.xl,
-    flexDirection: "row",
-    justifyContent: "space-between",
+    gap: spacing.md,
     marginBottom: spacing.md,
     padding: spacing.lg,
     ...shadows.card,
   },
-  summaryLabel: {
-    color: "rgba(255,255,255,0.78)",
-    fontSize: 13,
-    fontWeight: "600",
+  heroEyebrow: {
+    color: "rgba(231,255,245,0.76)",
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 1,
+    textTransform: "uppercase",
   },
-  summaryValue: {
+  heroTitle: {
     color: colors.white,
     fontSize: 24,
+    fontWeight: "800",
+    lineHeight: 31,
+    marginTop: spacing.xs,
+  },
+  heroMetrics: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  metricCard: {
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderColor: "rgba(255,255,255,0.18)",
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    flex: 1,
+    padding: spacing.md,
+  },
+  metricLabel: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  metricValue: {
+    color: colors.white,
+    fontSize: 20,
     fontWeight: "800",
     marginTop: spacing.xs,
   },
   statusCard: {
-    backgroundColor: "rgba(255,255,255,0.9)",
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderColor: colors.border,
     borderRadius: radii.md,
+    borderWidth: 1,
     marginBottom: spacing.md,
     padding: spacing.md,
     ...shadows.soft,
   },
   statusText: {
-    color: "#24513B",
+    color: colors.text,
     fontSize: 13,
     fontWeight: "700",
+    lineHeight: 20,
   },
   list: {
     gap: spacing.md,
   },
   itemCard: {
     backgroundColor: "rgba(255,255,255,0.95)",
-    borderRadius: 20,
+    borderRadius: 22,
     gap: spacing.md,
+    marginBottom: spacing.md,
     padding: spacing.md,
     ...shadows.soft,
   },
-  itemInfo: {
+  itemCopy: {
     gap: spacing.xs,
   },
   itemName: {
     color: colors.text,
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "800",
   },
   itemMeta: {
-    color: "#22553F",
+    color: "#24513B",
     fontSize: 14,
     fontWeight: "700",
   },
-  itemActions: {
+  itemFooter: {
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
@@ -325,9 +373,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.primaryDark,
     borderRadius: radii.pill,
-    height: 36,
+    height: 38,
     justifyContent: "center",
-    width: 36,
+    width: 38,
   },
   qtyButtonText: {
     color: colors.white,
@@ -338,43 +386,88 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 15,
     fontWeight: "800",
-    minWidth: 18,
+    minWidth: 22,
     textAlign: "center",
   },
-  deleteButton: {
-    backgroundColor: "rgba(255,245,248,0.98)",
-    borderColor: "rgba(179,61,104,0.16)",
+  removeButton: {
+    backgroundColor: "rgba(255,245,248,0.96)",
+    borderColor: "rgba(179,61,104,0.18)",
     borderRadius: 14,
     borderWidth: 1,
-    minHeight: 36,
-    justifyContent: "center",
     paddingHorizontal: spacing.md,
+    paddingVertical: 10,
   },
-  deleteButtonText: {
+  removeButtonText: {
     color: "#B33D68",
     fontSize: 13,
     fontWeight: "700",
   },
   emptyState: {
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.95)",
+    backgroundColor: "rgba(255,255,255,0.96)",
     borderRadius: radii.xl,
     gap: spacing.sm,
+    marginBottom: spacing.md,
     padding: spacing.lg,
     ...shadows.soft,
   },
   emptyTitle: {
     color: colors.text,
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 19,
+    fontWeight: "800",
   },
   emptyText: {
     color: colors.textMuted,
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 21,
     textAlign: "center",
   },
-  paymentDrawer: {
+  summaryPanel: {
+    backgroundColor: "rgba(255,255,255,0.96)",
+    borderColor: colors.border,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    padding: spacing.lg,
+    ...shadows.soft,
+  },
+  panelTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  summaryRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  summaryKey: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  summaryValueText: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  summaryDivider: {
+    backgroundColor: colors.border,
+    height: 1,
+    marginVertical: spacing.xs,
+  },
+  summaryTotalKey: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  summaryTotalValue: {
+    color: "#1F4B3F",
+    fontSize: 20,
+    fontWeight: "800",
+  },
+  checkoutCard: {
     backgroundColor: colors.white,
     borderRadius: radii.xl,
     gap: spacing.md,
@@ -382,49 +475,47 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     ...shadows.card,
   },
-  paymentTitle: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "800",
-  },
-  methodCard: {
-    backgroundColor: "rgba(255,255,255,0.92)",
+  input: {
+    backgroundColor: "rgba(247,248,251,0.98)",
     borderColor: colors.border,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    minHeight: 44,
-    justifyContent: "center",
+    color: colors.text,
+    minHeight: 50,
     paddingHorizontal: spacing.md,
     ...shadows.soft,
+  },
+  inputMultiline: {
+    minHeight: 92,
+    paddingTop: spacing.md,
+    textAlignVertical: "top",
+  },
+  methodCard: {
+    backgroundColor: "rgba(247,248,251,0.98)",
+    borderColor: colors.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    gap: spacing.xs,
+    padding: spacing.md,
+  },
+  methodCardActive: {
+    backgroundColor: "#1F4B3F",
+    borderColor: "#1F4B3F",
   },
   methodTitle: {
     color: colors.text,
     fontSize: 15,
-    fontWeight: "700",
-  },
-  input: {
-    backgroundColor: colors.white,
-    borderColor: colors.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    color: colors.text,
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
-    ...shadows.soft,
-  },
-  successCard: {
-    alignItems: "center",
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-  },
-  successTitle: {
-    color: colors.success,
-    fontSize: 22,
     fontWeight: "800",
   },
-  successText: {
+  methodTitleActive: {
+    color: colors.white,
+  },
+  methodBody: {
     color: colors.textMuted,
-    fontSize: 14,
-    textAlign: "center",
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  methodBodyActive: {
+    color: "rgba(255,255,255,0.78)",
   },
 });

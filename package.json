@@ -1,4 +1,12 @@
 {
+  "private": true,
+  "scripts": {
+    "mobile:start": "npm --prefix mobile start",
+    "mobile:android": "npm --prefix mobile run android",
+    "mobile:ios": "npm --prefix mobile run ios",
+    "mobile:web": "npm --prefix mobile run web",
+    "mobile:typecheck": "npm --prefix mobile run typecheck"
+  },
   "dependencies": {
     "@capacitor/cli": "^8.3.0",
     "@capacitor/core": "^8.3.0",
