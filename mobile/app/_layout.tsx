@@ -40,6 +40,9 @@ export default function RootLayout() {
               screenOptions={{
                 headerShown: false,
                 contentStyle: { backgroundColor: colors.background },
+                gestureEnabled: true,
+                fullScreenGestureEnabled: true,
+                animation: "slide_from_right",
               }}
             />
           </CartProvider>

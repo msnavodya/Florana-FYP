@@ -14,6 +14,7 @@ import {
 
 import { AppMenu } from "../components/AppMenu";
 import { BottomNav } from "../components/BottomNav";
+import { CurrencySwitcher } from "../components/CurrencySwitcher";
 import { LanguageSelector } from "../components/LanguageSelector";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
@@ -28,7 +29,7 @@ import {
 import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 import { formatPrice } from "../utils/shop";
 
-type CheckoutMethod = "card" | "cod" | "paypal";
+type CheckoutMethod = "stripe" | "cod";
 type CheckoutStep = 0 | 1 | 2 | 3 | 4;
 type LanguageCode = "en" | "si" | "ta";
 
@@ -82,8 +83,8 @@ const cartCopy: Record<
     preparing: "Preparing checkout...",
     proceed: "Proceed to Payment",
     paymentMethod: "Select Payment Method",
-    creditCard: "Credit Card",
-    creditCardDesc: "Fast checkout with secure card validation.",
+    creditCard: "Stripe",
+    creditCardDesc: "Secure card checkout powered by Stripe.",
     paypalDesc: "Backend marks it processing and confirms in real time.",
     cod: "Cash on Delivery",
     codDesc: "Confirm now and pay when the order arrives.",
@@ -188,13 +189,13 @@ const cartCopy: Record<
 export function CartScreen() {
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
-  const { items, currency, setCurrency, removeItem, clearCart, subtotal, totalItems } = useCart();
+  const { items, currency, removeItem, clearCart, subtotal, totalItems } = useCart();
   const { languageCode, t } = useLanguage();
   const copy = cartCopy[languageCode] || cartCopy.en;
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<CheckoutMethod>("card");
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutMethod>("stripe");
   const [step, setStep] = useState<CheckoutStep>(0);
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
@@ -223,7 +224,7 @@ export function CartScreen() {
 
   const resetCheckoutState = () => {
     setShowPayment(false);
-    setPaymentMethod("card");
+    setPaymentMethod("stripe");
     setStep(0);
     setBusy(false);
     setIntentResponse(null);
@@ -243,6 +244,7 @@ export function CartScreen() {
   };
 
   const total = useMemo(() => subtotal, [subtotal]);
+  const isStripePayment = paymentMethod === "stripe";
 
   const buildPayload = (): PaymentIntentPayload => ({
     amount: total,
@@ -278,12 +280,6 @@ export function CartScreen() {
   const selectPaymentMethod = (method: CheckoutMethod) => {
     setPaymentMethod(method);
 
-    if (method === "paypal") {
-      setStep(2);
-      showStatus(copy.paypalCopy);
-      return;
-    }
-
     setStep(1);
     showStatus("Add delivery details to continue.");
   };
@@ -299,7 +295,11 @@ export function CartScreen() {
       const response = await createPaymentIntent(buildPayload());
       setIntentResponse(response);
       setStep(2);
-      showStatus(paymentMethod === "cod" ? "Delivery details verified. Confirm your COD order." : "Delivery details saved. Complete your payment.");
+      showStatus(
+        paymentMethod === "cod"
+          ? "Delivery details verified. Confirm your COD order."
+          : "Delivery details saved. Continue with Stripe to prepare your payment."
+      );
     } catch (error) {
       showStatus(error instanceof Error ? error.message : "Unable to prepare checkout.");
     } finally {
@@ -313,7 +313,7 @@ export function CartScreen() {
       return;
     }
 
-    if (paymentMethod === "card") {
+    if (isStripePayment) {
       if (card.number.trim().length < 16 || card.name.trim().length < 2 || card.expiry.trim().length < 4 || card.cvv.trim().length < 3) {
         showStatus("Complete your card details first.");
         return;
@@ -343,7 +343,7 @@ export function CartScreen() {
 
       if (intentResponse.provider === "stripe" && intentResponse.payment_intent_id) {
         setStep(4);
-        showStatus("Stripe payment intent created. Connect the Stripe mobile SDK to complete secure in-app card payment.");
+        showStatus("Stripe payment method is ready. The backend created a Stripe payment intent for this order.");
       } else {
         setStep(4);
         showStatus(response.status === "ok" ? "Payment request submitted." : "Order saved.");
@@ -392,25 +392,7 @@ export function CartScreen() {
               ) : null}
             </Pressable>
 
-            <View style={styles.currencyPill}>
-              <MaterialIcons name="account-balance-wallet" size={14} color={colors.primaryDark} />
-              <View style={styles.currencyPillOptions}>
-                {(["LKR", "USD", "EUR"] as const).map((item) => {
-                  const active = currency === item;
-                  return (
-                    <Pressable
-                      key={item}
-                      onPress={() => void setCurrency(item)}
-                      style={[styles.currencyMini, active ? styles.currencyMiniActive : null]}
-                    >
-                      <Text style={[styles.currencyMiniText, active ? styles.currencyMiniTextActive : null]}>
-                        {item === "LKR" ? "Rs." : item}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
+            <CurrencySwitcher />
 
             <Pressable accessibilityLabel={t("open_menu")} onPress={() => setMenuOpen(true)} style={styles.menuButton}>
               <MaterialIcons name="menu" size={18} color={colors.text} />
@@ -481,9 +463,9 @@ export function CartScreen() {
             <View style={styles.paymentOrderChip}>
               <Text style={styles.paymentOrderLabel}>Order</Text>
               <Text style={styles.paymentOrderValue}>
-                {paymentMethod === "paypal"
-                  ? "PayPal Sandbox"
-                  : intentResponse?.payment_intent_id || intentResponse?.provider || "Creating..."}
+                {isStripePayment
+                  ? intentResponse?.payment_intent_id || "Stripe Secure Checkout"
+                  : intentResponse?.provider || "Creating..."}
               </Text>
             </View>
 
@@ -492,14 +474,14 @@ export function CartScreen() {
                 <>
                   <Text style={styles.drawerTitle}>{copy.paymentMethod}</Text>
 
-                  <Pressable onPress={() => selectPaymentMethod("card")} style={styles.methodItem}>
-                    <Text style={styles.methodTitle}>{copy.creditCard}</Text>
+                  <Pressable onPress={() => selectPaymentMethod("stripe")} style={[styles.methodItem, styles.methodItemStripe]}>
+                    <View style={styles.methodHeader}>
+                      <Text style={styles.methodTitle}>{copy.creditCard}</Text>
+                      <View style={styles.methodBadge}>
+                        <Text style={styles.methodBadgeText}>Secure</Text>
+                      </View>
+                    </View>
                     <Text style={styles.methodBody}>{copy.creditCardDesc}</Text>
-                  </Pressable>
-
-                  <Pressable onPress={() => selectPaymentMethod("paypal")} style={[styles.methodItem, styles.methodItemMuted]}>
-                    <Text style={styles.methodTitle}>PayPal</Text>
-                    <Text style={styles.methodBody}>{copy.paypalDesc}</Text>
                   </Pressable>
 
                   <Pressable onPress={() => selectPaymentMethod("cod")} style={styles.methodItem}>
@@ -565,10 +547,12 @@ export function CartScreen() {
 
               {step === 2 ? (
                 <>
-                  {paymentMethod === "card" ? (
+                  {isStripePayment ? (
                     <>
-                      <Text style={styles.drawerTitle}>{copy.cardDetails}</Text>
-                      <Text style={styles.drawerCopy}>{copy.cardCopy}</Text>
+                      <Text style={styles.drawerTitle}>Stripe Card Details</Text>
+                      <Text style={styles.drawerCopy}>
+                        {copy.cardCopy} Florana will create a Stripe payment request for this order.
+                      </Text>
                       <TextInput
                         keyboardType="number-pad"
                         onChangeText={(value) => setCard((current) => ({ ...current, number: value.replace(/\D/g, "") }))}
@@ -610,14 +594,6 @@ export function CartScreen() {
                     </>
                   ) : null}
 
-                  {paymentMethod === "paypal" ? (
-                    <>
-                      <Text style={styles.drawerTitle}>{copy.paypalCheckout}</Text>
-                      <Text style={styles.drawerCopy}>{copy.paypalCopy}</Text>
-                      <PrimaryButton label="Back to Methods" onPress={() => setStep(0)} variant="secondary" />
-                    </>
-                  ) : null}
-
                   {paymentMethod === "cod" ? (
                     <>
                       <Text style={styles.drawerTitle}>{copy.cod}</Text>
@@ -645,8 +621,8 @@ export function CartScreen() {
                   <MaterialIcons name="verified" size={28} color="#1F4B3F" />
                   <Text style={styles.drawerTitle}>{copy.confirmed}</Text>
                   <Text style={styles.successText}>
-                    {paymentMethod === "card" && intentResponse?.provider === "stripe"
-                      ? "Your order was saved and a Stripe payment intent was created for the next secure payment step."
+                    {isStripePayment && intentResponse?.provider === "stripe"
+                      ? "Your order was saved and a Stripe payment intent was created successfully."
                       : copy.completed}
                   </Text>
                   <PrimaryButton
@@ -727,38 +703,6 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 10,
     fontWeight: "800",
-  },
-  currencyPill: {
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.94)",
-    borderColor: colors.border,
-    borderRadius: 16,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: spacing.xs,
-    minHeight: 42,
-    paddingHorizontal: spacing.sm,
-    ...shadows.soft,
-  },
-  currencyPillOptions: {
-    flexDirection: "row",
-    gap: 4,
-  },
-  currencyMini: {
-    borderRadius: radii.pill,
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-  },
-  currencyMiniActive: {
-    backgroundColor: "#EFE6FF",
-  },
-  currencyMiniText: {
-    color: colors.textMuted,
-    fontSize: 10,
-    fontWeight: "800",
-  },
-  currencyMiniTextActive: {
-    color: colors.primaryDark,
   },
   menuButton: {
     alignItems: "center",
@@ -949,8 +893,28 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     padding: spacing.md,
   },
+  methodItemStripe: {
+    borderColor: "rgba(124,92,255,0.26)",
+    backgroundColor: "#F8F4FF",
+  },
   methodItemMuted: {
     opacity: 0.9,
+  },
+  methodHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  methodBadge: {
+    backgroundColor: colors.primaryDark,
+    borderRadius: radii.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  methodBadgeText: {
+    color: colors.white,
+    fontSize: 11,
+    fontWeight: "800",
   },
   methodTitle: {
     color: colors.text,

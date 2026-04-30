@@ -1,9 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   Image,
-  Linking,
   Pressable,
   StyleSheet,
   Text,
@@ -13,8 +11,10 @@ import {
 } from "react-native";
 
 import { AppMenu } from "../components/AppMenu";
+import { BottomNav } from "../components/BottomNav";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
+import { TopBar } from "../components/TopBar";
 import { useLanguage } from "../context/LanguageContext";
 import { useSettings } from "../context/SettingsContext";
 import { brandAssets } from "../theme/brand";
@@ -29,6 +29,7 @@ export function FeedbackScreen() {
   const [status, setStatus] = useState("");
   const { t } = useLanguage();
   const { addFeedback, refreshFeedbacks } = useSettings();
+  const selectedLabel = rating > 0 ? `${rating}/5 selected` : "No rating selected";
 
   useEffect(() => {
     void refreshFeedbacks();
@@ -51,84 +52,68 @@ export function FeedbackScreen() {
     setRating(0);
   };
 
-  const openSupportEmail = async () => {
-    const url = "mailto:support@florana.com?subject=Florana%20Support";
-    const supported = await Linking.canOpenURL(url);
-    if (!supported) {
-      showStatus("Email support is unavailable on this device.");
-      return;
-    }
-    await Linking.openURL(url);
-  };
-
   return (
     <Screen>
+      <TopBar
+        title={t("feedback_title")}
+       onMenuPress={() => setMenuOpen(true)}
+      />
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
 
-      <View style={styles.topBar}>
-        <View style={styles.topBarSpacer} />
-        <Pressable accessibilityLabel={t("open_menu")} onPress={() => setMenuOpen(true)} style={styles.menuButton}>
-          <MaterialIcons name="menu" size={20} color={colors.text} />
-        </Pressable>
-      </View>
-
       <View style={[styles.heroCard, compact ? styles.heroCardCompact : null]}>
+        <View style={styles.heroHeader}>
+          <View style={styles.heroBadge}>
+            <MaterialIcons name="forum" size={18} color={colors.white} />
+          </View>
+          <Image source={brandAssets.logo} style={styles.logo} />
+        </View>
         <Text style={styles.heroEyebrow}>{t("feedback_card")}</Text>
-        <Text style={styles.heroTitle}>{t("feedback_title")}</Text>
-        <Text style={styles.heroSubtitle}>Send a rating, save your notes, or jump to support.</Text>
+        <Text style={[styles.heroTitle, compact ? styles.heroTitleCompact : null]}>Professional feedback hub</Text>
+        <Text style={[styles.heroSubtitle, compact ? styles.heroSubtitleCompact : null]}>
+          Send a rating, write a clear message, and reach support from one polished screen.
+        </Text>
+
+        <View style={[styles.metricRow, compact ? styles.metricRowCompact : null]}>
+          <View style={[styles.metricCard, compact ? styles.metricCardCompact : null]}>
+            <Text style={styles.metricValue}>24h</Text>
+            <Text style={styles.metricLabel}>Response goal</Text>
+          </View>
+          <View style={[styles.metricCard, compact ? styles.metricCardCompact : null]}>
+            <Text style={styles.metricValue}>3</Text>
+            <Text style={styles.metricLabel}>Support paths</Text>
+          </View>
+        </View>
       </View>
 
-      <Image source={brandAssets.logo} style={styles.logo} />
+      {status ? (
+        <View style={[styles.statusBanner, compact ? styles.statusBannerCompact : null]}>
+          <Text style={styles.statusText}>{status}</Text>
+        </View>
+      ) : null}
 
-      {status ? <View style={styles.statusBanner}><Text style={styles.statusText}>{status}</Text></View> : null}
-
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>{t("contact_support")}</Text>
-
-        <Pressable onPress={() => void openSupportEmail()} style={styles.supportItem}>
-          <View style={styles.supportIconShell}>
-            <MaterialIcons name="email" size={18} color={colors.primaryDark} />
-          </View>
-          <Text style={styles.supportLabel}>{t("email_support")}</Text>
-        </Pressable>
-
-        <Pressable onPress={() => router.push("/help")} style={styles.supportItem}>
-          <View style={styles.supportIconShell}>
-            <MaterialIcons name="help-outline" size={18} color={colors.primaryDark} />
-          </View>
-          <Text style={styles.supportLabel}>{t("faq_center")}</Text>
-        </Pressable>
-
-        <Pressable onPress={() => router.push("/settings")} style={styles.supportItem}>
-          <View style={styles.supportIconShell}>
-            <Text style={styles.supportBadge}>+</Text>
-          </View>
-          <Text style={styles.supportLabel}>{t("call_us")}</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>{t("share_your_thoughts")}</Text>
+      <View style={[styles.card, compact ? styles.cardCompact : null]}>
+        <View style={[styles.sectionHeader, compact ? styles.sectionHeaderCompact : null]}>
+          <Text style={styles.sectionTitle}>{t("share_your_thoughts")}</Text>
+          <Text style={styles.sectionMeta}>{selectedLabel}</Text>
+        </View>
         <Text style={styles.helper}>{t("rate_app")}</Text>
 
-        <View style={styles.starRow}>
+        <View style={[styles.starRow, compact ? styles.starRowCompact : null]}>
           {[1, 2, 3, 4, 5].map((star) => (
             <Pressable
               key={star}
               accessibilityLabel={`Rate ${star} stars`}
               onPress={() => setRating(star)}
-              style={styles.starButton}
+              style={[styles.starButton, compact ? styles.starButtonCompact : null]}
             >
               <MaterialIcons
                 name={star <= rating ? "star" : "star-border"}
-                size={26}
+                size={compact ? 22 : 26}
                 color={star <= rating ? "#F4B740" : "#C2B6DD"}
               />
             </Pressable>
           ))}
         </View>
-
-        <PrimaryButton label="Open About Florana" onPress={() => router.push("/about")} variant="secondary" />
 
         <TextInput
           multiline
@@ -140,36 +125,22 @@ export function FeedbackScreen() {
           onChangeText={setFeedback}
         />
 
+        <View style={styles.composerFooter}>
+          <Text style={styles.composerHint}>Clear, short feedback helps us improve faster.</Text>
+          <Text style={styles.composerCount}>{feedback.trim().length} chars</Text>
+        </View>
+
         <PrimaryButton label={t("submit_feedback")} onPress={() => void handleSubmit()} />
       </View>
+
+      <BottomNav />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  topBar: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: spacing.md,
-  },
-  topBarSpacer: {
-    height: 42,
-    width: 42,
-  },
-  menuButton: {
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.94)",
-    borderColor: colors.border,
-    borderRadius: 16,
-    borderWidth: 1,
-    height: 42,
-    justifyContent: "center",
-    width: 42,
-    ...shadows.soft,
-  },
   heroCard: {
-    backgroundColor: "#6A5AA7",
+    backgroundColor: "#5C4C96",
     borderRadius: radii.xl,
     gap: spacing.xs,
     marginBottom: spacing.md,
@@ -178,6 +149,20 @@ const styles = StyleSheet.create({
   },
   heroCardCompact: {
     padding: spacing.md,
+  },
+  heroHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: spacing.sm,
+  },
+  heroBadge: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.16)",
+    borderRadius: 18,
+    height: 42,
+    justifyContent: "center",
+    width: 42,
   },
   heroEyebrow: {
     color: "rgba(255,255,255,0.82)",
@@ -191,17 +176,50 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "900",
   },
+  heroTitleCompact: {
+    fontSize: 21,
+  },
   heroSubtitle: {
     color: "rgba(255,255,255,0.88)",
     fontSize: 14,
     lineHeight: 22,
   },
+  heroSubtitleCompact: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
   logo: {
-    alignSelf: "center",
-    borderRadius: 22,
-    height: 92,
-    marginBottom: spacing.md,
-    width: 92,
+    borderRadius: 18,
+    height: 54,
+    width: 54,
+  },
+  metricRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  metricRowCompact: {
+    gap: spacing.xs,
+  },
+  metricCard: {
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderRadius: 18,
+    flex: 1,
+    padding: spacing.md,
+  },
+  metricCardCompact: {
+    padding: spacing.sm,
+  },
+  metricValue: {
+    color: colors.white,
+    fontSize: 20,
+    fontWeight: "900",
+  },
+  metricLabel: {
+    color: "rgba(255,255,255,0.82)",
+    fontSize: 12,
+    fontWeight: "700",
+    marginTop: 4,
   },
   statusBanner: {
     backgroundColor: "#F7EEFF",
@@ -211,6 +229,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  statusBannerCompact: {
+    paddingHorizontal: spacing.sm,
   },
   statusText: {
     color: colors.primaryDark,
@@ -227,57 +248,62 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     ...shadows.soft,
   },
+  cardCompact: {
+    borderRadius: 22,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
   sectionTitle: {
     color: colors.text,
     fontSize: 19,
     fontWeight: "900",
   },
-  supportItem: {
+  sectionHeader: {
     alignItems: "center",
-    backgroundColor: "rgba(245,238,252,0.9)",
-    borderColor: colors.border,
-    borderRadius: 18,
-    borderWidth: 1,
     flexDirection: "row",
-    gap: spacing.sm,
-    minHeight: 56,
-    paddingHorizontal: spacing.md,
+    justifyContent: "space-between",
   },
-  supportIconShell: {
-    alignItems: "center",
-    backgroundColor: colors.white,
-    borderRadius: 14,
-    height: 36,
-    justifyContent: "center",
-    width: 36,
+  sectionHeaderCompact: {
+    alignItems: "flex-start",
+    flexDirection: "column",
+    gap: 4,
   },
-  supportBadge: {
-    color: colors.primaryDark,
-    fontSize: 18,
-    fontWeight: "900",
-    lineHeight: 18,
-  },
-  supportLabel: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "800",
+  sectionMeta: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: "700",
   },
   helper: {
     color: colors.textMuted,
     fontSize: 14,
   },
-  starRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  starButton: {
-    alignItems: "center",
-    backgroundColor: "#FFF8E8",
-    borderRadius: 16,
-    height: 46,
-    justifyContent: "center",
-    width: 46,
-  },
+starRow: {
+  flexDirection: "row",
+  alignItems: "center",
+},
+
+starRowCompact: {
+  justifyContent: "space-between",
+},
+
+starButton: {
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "#FFF8E8",
+  borderRadius: 16,
+  height: 46,
+  width: 46,
+},
+
+// ✅ FIXED VERSION
+starButtonCompact: {
+  flex: 1,              // equal width
+  marginHorizontal: 4,  // 🔥 replaces gap (more reliable in RN)
+  borderRadius: 10,
+  height: 42,
+  alignItems: "center",
+  justifyContent: "center",
+},
   feedbackInput: {
     backgroundColor: colors.white,
     borderColor: colors.border,
@@ -289,5 +315,23 @@ const styles = StyleSheet.create({
   },
   feedbackInputCompact: {
     minHeight: 132,
+  },
+  composerFooter: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: -4,
+  },
+  composerHint: {
+    color: colors.textMuted,
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 18,
+    paddingRight: spacing.sm,
+  },
+  composerCount: {
+    color: colors.primaryDark,
+    fontSize: 12,
+    fontWeight: "800",
   },
 });

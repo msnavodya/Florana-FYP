@@ -23,6 +23,7 @@ except Exception as e:
 # ----------------- Import Routers -----------------
 try:
     from .routes.auth import router as auth_router
+    from .routes.care_reminder import router as care_reminder_router
     from .routes.feedback import router as feedback_router
     from .routes.plant import router as plant_router
     from .routes.growth import router as growth_router
@@ -33,6 +34,7 @@ try:
     from .utils.paths import UPLOAD_DIR, build_upload_api_path, build_upload_disk_path, build_upload_public_path
 except ImportError:
     from routes.auth import router as auth_router
+    from routes.care_reminder import router as care_reminder_router
     from routes.feedback import router as feedback_router
     from routes.plant import router as plant_router
     from routes.growth import router as growth_router
@@ -106,6 +108,7 @@ def startup_event():
 
 # Routers
 app.include_router(auth_router)
+app.include_router(care_reminder_router)
 app.include_router(feedback_router)
 app.include_router(plant_router)
 app.include_router(growth_router)

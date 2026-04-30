@@ -1,6 +1,9 @@
+import { MaterialIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, router } from "expo-router";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { AppMenu } from "../components/AppMenu";
 import { BottomNav } from "../components/BottomNav";
 import { CurrencySwitcher } from "../components/CurrencySwitcher";
 import { PrimaryButton } from "../components/PrimaryButton";
@@ -14,6 +17,7 @@ import { formatPrice } from "../utils/shop";
 export function ProductDetailsScreen() {
   const params = useLocalSearchParams<{ id: string; name?: string; season?: string; price?: string; image?: string }>();
   const { addItem, currency } = useCart();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const product: Product = {
     id: params.id,
@@ -25,12 +29,22 @@ export function ProductDetailsScreen() {
 
   return (
     <Screen>
+      <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
+
       <View style={styles.topRow}>
-        <View>
+        <Pressable accessibilityLabel="Go back" onPress={() => router.back()} style={styles.backButton}>
+          <MaterialIcons name="arrow-back" size={20} color={colors.text} />
+        </Pressable>
+        <View style={styles.topCopy}>
           <Text style={styles.eyebrow}>Plant Details</Text>
           <Text style={styles.title}>{product.name}</Text>
         </View>
-        <CurrencySwitcher />
+        <View style={styles.topActions}>
+          <CurrencySwitcher />
+          <Pressable accessibilityLabel="Open menu" onPress={() => setMenuOpen(true)} style={styles.menuButton}>
+            <MaterialIcons name="menu" size={18} color={colors.text} />
+          </Pressable>
+        </View>
       </View>
 
       {product.image ? <Image source={{ uri: buildApiUrl(product.image) }} style={styles.image} /> : <View style={styles.imageFallback}><Text style={styles.imageFallbackText}>No photo available</Text></View>}
@@ -51,7 +65,29 @@ export function ProductDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
-  topRow: { alignItems: "flex-start", gap: spacing.md, justifyContent: "space-between", marginBottom: spacing.lg },
+  topRow: { alignItems: "flex-start", flexDirection: "row", gap: spacing.md, justifyContent: "space-between", marginBottom: spacing.lg },
+  backButton: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    height: 42,
+    justifyContent: "center",
+    width: 42,
+  },
+  topCopy: { flex: 1, marginRight: spacing.sm },
+  topActions: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
+  menuButton: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    height: 42,
+    justifyContent: "center",
+    width: 42,
+  },
   eyebrow: { color: colors.primary, fontSize: 13, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase" },
   title: { color: colors.text, fontSize: 30, fontWeight: "800", marginTop: spacing.xs },
   image: { borderRadius: radii.lg, height: 260, marginBottom: spacing.lg, width: "100%" },

@@ -69,7 +69,7 @@ export function TopBar({ title, subtitle, onMenuPress, backTo, stackBrand = true
               pressed ? styles.iconButtonPressed : null,
             ]}
           >
-            <Text style={[styles.menuText, compact ? styles.iconTextCompact : null]}>|||</Text>
+            <MaterialIcons name="menu" size={compact ? 18 : 20} color={colors.text} />
           </Pressable>
         ) : null}
       </View>
@@ -187,12 +187,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "800",
     letterSpacing: 0.1,
-  },
-  menuText: {
-    color: "#24183D",
-    fontSize: 12,
-    fontWeight: "900",
-    letterSpacing: 0.6,
   },
   iconTextCompact: {
     fontSize: 12,

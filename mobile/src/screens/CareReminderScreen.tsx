@@ -1,7 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
 
 import { AppMenu } from "../components/AppMenu";
 import { BottomNav } from "../components/BottomNav";
@@ -264,9 +264,10 @@ const careCopy: Record<
 };
 
 const isExpoGo = Constants.executionEnvironment === "storeClient";
+const supportsNativeNotifications = Platform.OS !== "web" && !isExpoGo;
 
 function getNotificationsModule() {
-  if (isExpoGo) {
+  if (!supportsNativeNotifications) {
     return null;
   }
 
@@ -396,7 +397,7 @@ export function CareReminderScreen() {
   };
 
   const ensurePushPermission = async () => {
-    if (isExpoGo) {
+    if (!supportsNativeNotifications) {
       showStatus(copy.pushUnsupported);
       return false;
     }
@@ -889,7 +890,7 @@ export function CareReminderScreen() {
           </Pressable>
         </View>
 
-        {isExpoGo ? <Text style={styles.helperText}>{copy.pushUnsupported}</Text> : null}
+        {!supportsNativeNotifications ? <Text style={styles.helperText}>{copy.pushUnsupported}</Text> : null}
 
         <Pressable onPress={() => void sendNotification()} style={styles.testButton}>
           <MaterialIcons name="notifications-active" size={16} color={colors.white} />

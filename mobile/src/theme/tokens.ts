@@ -29,9 +29,9 @@ export const spacing = {
 export const viewport = {
   compactWidth: 350,
   phoneWidth: 390,
-  compactHeight: 600,
-  frameWidth: 350,
-  frameHeight: 600,
+  compactHeight: 640,
+  frameWidth: 390,
+  frameHeight: 844,
 } as const;
 
 export const radii = {

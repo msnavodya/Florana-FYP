@@ -5,6 +5,7 @@ import { Image, Pressable, StyleSheet, Text, TextInput, View, useWindowDimension
 
 import { AppMenu } from "../components/AppMenu";
 import { BottomNav } from "../components/BottomNav";
+import { CurrencySwitcher } from "../components/CurrencySwitcher";
 import { LanguageSelector } from "../components/LanguageSelector";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
@@ -18,7 +19,6 @@ import type { Product } from "../types/shop";
 import { formatPrice, seasons } from "../utils/shop";
 
 type LanguageCode = "en" | "si" | "ta";
-type CurrencyCode = "LKR" | "USD" | "EUR";
 
 const seasonCopy: Record<
   LanguageCode,
@@ -62,7 +62,6 @@ const seasonCopy: Record<
 };
 
 const seasonTabs = [...seasons.map((season) => season.toLowerCase()), "all"] as const;
-const currencies: CurrencyCode[] = ["LKR", "USD", "EUR"];
 const seasonImages = {
   spring: brandAssets.spring,
   summer: brandAssets.summer,
@@ -78,7 +77,7 @@ export function SeasonScreen() {
   const safeSeason = seasonTabs.includes(routeSeason as (typeof seasonTabs)[number]) ? routeSeason : "all";
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
-  const { totalItems, currency, setCurrency, addItem } = useCart();
+  const { totalItems, currency, addItem } = useCart();
   const { t, languageCode } = useLanguage();
   const copy = seasonCopy[languageCode] || seasonCopy.en;
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -118,11 +117,6 @@ export function SeasonScreen() {
     });
   }, [products, safeSeason, search]);
 
-  const handleCurrencyChange = async (value: CurrencyCode) => {
-    await setCurrency(value);
-    showStatus(`Currency changed to ${value}.`);
-  };
-
   const handleAddToCart = async (product: Product) => {
     await addItem(product);
     showStatus(`${product.name} added to cart.`);
@@ -141,6 +135,7 @@ export function SeasonScreen() {
 
         <View style={styles.topActions}>
           <LanguageSelector />
+          <CurrencySwitcher />
 
           <Pressable accessibilityLabel="Open cart" onPress={() => router.push("/cart")} style={styles.cartButton}>
             <MaterialIcons name="shopping-cart" size={18} color={colors.text} />
@@ -154,30 +149,6 @@ export function SeasonScreen() {
           <Pressable accessibilityLabel={t("open_menu")} onPress={() => setMenuOpen(true)} style={styles.menuButton}>
             <MaterialIcons name="menu" size={20} color={colors.text} />
           </Pressable>
-        </View>
-      </View>
-
-      <View style={[styles.currencyBar, compact ? styles.currencyBarCompact : null]}>
-        <View style={styles.currencyLabel}>
-          <MaterialIcons name="account-balance-wallet" size={16} color={colors.primaryDark} />
-          <Text style={styles.currencyLabelText}>Currency</Text>
-        </View>
-
-        <View style={styles.currencyOptions}>
-          {currencies.map((item) => {
-            const active = currency === item;
-            return (
-              <Pressable
-                key={item}
-                onPress={() => void handleCurrencyChange(item)}
-                style={[styles.currencyOption, active ? styles.currencyOptionActive : null]}
-              >
-                <Text style={[styles.currencyOptionText, active ? styles.currencyOptionTextActive : null]}>
-                  {item}
-                </Text>
-              </Pressable>
-            );
-          })}
         </View>
       </View>
 
@@ -339,56 +310,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 42,
     ...shadows.soft,
-  },
-  currencyBar: {
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.92)",
-    borderColor: colors.border,
-    borderRadius: 24,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: spacing.md,
-    justifyContent: "space-between",
-    marginBottom: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    ...shadows.soft,
-  },
-  currencyBarCompact: {
-    alignItems: "flex-start",
-    flexDirection: "column",
-  },
-  currencyLabel: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.xs,
-  },
-  currencyLabelText: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  currencyOptions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.xs,
-  },
-  currencyOption: {
-    backgroundColor: "#F5F0FA",
-    borderRadius: radii.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-  },
-  currencyOptionActive: {
-    backgroundColor: colors.primaryDark,
-  },
-  currencyOptionText: {
-    color: colors.text,
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  currencyOptionTextActive: {
-    color: colors.white,
   },
   heroCard: {
     backgroundColor: "#6A52CB",

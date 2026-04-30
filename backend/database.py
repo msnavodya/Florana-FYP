@@ -21,6 +21,7 @@ prediction_collection = None
 growth_collection = None
 login_history_collection = None
 feedback_collection = None
+care_reminders_collection = None
 Base = declarative_base()
 
 
@@ -28,6 +29,7 @@ def _set_collections(current_db):
     """Refresh exported collection handles after connection changes."""
     global users_collection, plants_collection, products_collection
     global prediction_collection, growth_collection, login_history_collection, feedback_collection
+    global care_reminders_collection
 
     if current_db is None:
         users_collection = None
@@ -37,6 +39,7 @@ def _set_collections(current_db):
         growth_collection = None
         login_history_collection = None
         feedback_collection = None
+        care_reminders_collection = None
         return
 
     users_collection = current_db["users"]
@@ -46,6 +49,7 @@ def _set_collections(current_db):
     growth_collection = current_db["growth"]
     login_history_collection = current_db["login_history"]
     feedback_collection = current_db["feedback"]
+    care_reminders_collection = current_db["care_reminders"]
 
 
 def connect_to_mongo():
@@ -133,6 +137,11 @@ def get_login_history_collection():
 def get_feedback_collection():
     ensure_db_connection()
     return feedback_collection
+
+
+def get_care_reminders_collection():
+    ensure_db_connection()
+    return care_reminders_collection
 
 
 connect_to_mongo()

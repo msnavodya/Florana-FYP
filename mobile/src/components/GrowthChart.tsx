@@ -9,7 +9,9 @@ interface GrowthChartProps {
 }
 
 export function GrowthChart({ data }: GrowthChartProps) {
-  const sorted = [...data].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const sorted = [...data].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
 
   if (!sorted.length) {
     return (
@@ -19,49 +21,69 @@ export function GrowthChart({ data }: GrowthChartProps) {
     );
   }
 
-  const chartWidth = Math.max(Dimensions.get("window").width - 48, 260);
+  // ✅ FIXED WIDTH (SAFE FOR CARD)
+  const chartWidth = Dimensions.get("window").width - 80;
 
   return (
-    <LineChart
-      data={{
-        labels: sorted.map((entry) => new Date(entry.date).toLocaleDateString().slice(0, 5)),
-        datasets: [{ data: sorted.map((entry) => Number(entry.height) || 0) }],
-      }}
-      width={chartWidth}
-      height={220}
-      withShadow={false}
-      withInnerLines={false}
-      yAxisSuffix="cm"
-      chartConfig={{
-        backgroundColor: colors.surface,
-        backgroundGradientFrom: colors.surface,
-        backgroundGradientTo: colors.surface,
-        decimalPlaces: 1,
-        color: () => colors.primaryDark,
-        labelColor: () => colors.textMuted,
-        propsForDots: {
-          r: "4",
-          strokeWidth: "2",
-          stroke: colors.accent,
-        },
-      }}
-      bezier
-      style={styles.chart}
-    />
+    <View style={styles.container}>
+      <LineChart
+        data={{
+          labels: sorted.map((entry) =>
+            new Date(entry.date).toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "numeric",
+            })
+          ),
+          datasets: [
+            {
+              data: sorted.map((entry) => Number(entry.height) || 0),
+            },
+          ],
+        }}
+        width={chartWidth}
+        height={200}
+        yAxisSuffix="cm"
+        withShadow={false}
+        withInnerLines={false}
+        withOuterLines={false}
+        bezier
+        chartConfig={{
+          backgroundColor: colors.surface,
+          backgroundGradientFrom: colors.surface,
+          backgroundGradientTo: colors.surface,
+          decimalPlaces: 1,
+          color: () => colors.primaryDark,
+          labelColor: () => colors.textMuted,
+          propsForDots: {
+            r: "4",
+            strokeWidth: "2",
+            stroke: colors.accent,
+          },
+        }}
+        style={styles.chart}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    width: "100%",
+    overflow: "hidden",   // ✅ prevents cut/overflow
+    borderRadius: radii.md,
+  },
+
   chart: {
     borderRadius: radii.md,
-    marginLeft: -spacing.md,
   },
+
   emptyCard: {
     alignItems: "center",
     backgroundColor: colors.surfaceMuted,
     borderRadius: radii.md,
     padding: spacing.lg,
   },
+
   emptyText: {
     color: colors.textMuted,
     fontSize: 14,

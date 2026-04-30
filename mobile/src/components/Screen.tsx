@@ -1,3 +1,4 @@
+import { Children, isValidElement } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -23,7 +24,51 @@ export function Screen({ children, scroll = true, contentStyle }: ScreenProps) {
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
   const framed = width >= 768;
-  const handsetFrame = !framed && width > viewport.frameWidth;
+  const handsetFrame = !framed && width >= 480;
+  const childArray = Children.toArray(children);
+  const bottomNavChild = childArray.find((child) => {
+    if (!isValidElement(child)) {
+      return false;
+    }
+
+    const childType = child.type as { displayName?: string; name?: string };
+    return childType.displayName === "BottomNav" || childType.name === "BottomNav";
+  });
+  const mainChildren = childArray.filter((child) => child !== bottomNavChild);
+
+  const contentBody = (
+    <View
+      style={[
+        styles.content,
+        framed ? styles.contentFramed : null,
+        {
+          padding: compact ? 14 : spacing.lg,
+          paddingBottom: compact ? spacing.md : spacing.lg,
+        },
+        contentStyle,
+      ]}
+    >
+      {mainChildren}
+    </View>
+  );
+
+  const viewportBody = (
+    <View style={styles.viewportBody}>
+      {scroll ? (
+        <ScrollView
+          style={styles.scrollViewport}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {contentBody}
+        </ScrollView>
+      ) : (
+        <View style={styles.nonScrollContent}>{contentBody}</View>
+      )}
+      {bottomNavChild}
+    </View>
+  );
 
   const content = (
     <View
@@ -47,18 +92,7 @@ export function Screen({ children, scroll = true, contentStyle }: ScreenProps) {
           <Text style={styles.frameLabel}>FLORANA MOBILE</Text>
         </>
       ) : null}
-      <View
-        style={[
-          styles.content,
-          framed ? styles.contentFramed : null,
-          {
-            padding: compact ? 14 : spacing.lg,
-          },
-          contentStyle,
-        ]}
-      >
-        {children}
-      </View>
+      {viewportBody}
     </View>
   );
 
@@ -72,33 +106,17 @@ export function Screen({ children, scroll = true, contentStyle }: ScreenProps) {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.keyboardArea}
       >
-        {scroll ? (
-          <ScrollView
-            contentContainerStyle={[
-              styles.scroll,
-              {
-                paddingHorizontal: compact ? 6 : spacing.sm,
-                paddingVertical: compact ? 4 : spacing.sm,
-              },
-            ]}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {content}
-          </ScrollView>
-        ) : (
-          <View
-            style={[
-              styles.scroll,
-              {
-                paddingHorizontal: compact ? 6 : spacing.sm,
-                paddingVertical: compact ? 4 : spacing.sm,
-              },
-            ]}
-          >
-            {content}
-          </View>
-        )}
+        <View
+          style={[
+            styles.scroll,
+            {
+              paddingHorizontal: compact ? spacing.xs : spacing.sm,
+              paddingVertical: compact ? 6 : spacing.sm,
+            },
+          ]}
+        >
+          {content}
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -114,6 +132,7 @@ const styles = StyleSheet.create({
   },
   keyboardArea: {
     flex: 1,
+    minHeight: 0,
   },
   glowLarge: {
     backgroundColor: colors.accent,
@@ -136,24 +155,26 @@ const styles = StyleSheet.create({
     width: 200,
   },
   scroll: {
-    flexGrow: 1,
+    flex: 1,
+    minHeight: 0,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
   },
   frame: {
     alignSelf: "center",
-    flexGrow: 1,
-    maxWidth: 460,
+    flex: 1,
+    maxWidth: 520,
+    minHeight: 0,
     width: "100%",
   },
   frameDesktop: {
-    backgroundColor: "#1F1631",
-    borderColor: "rgba(255,255,255,0.08)",
-    borderRadius: 38,
+    backgroundColor: "#1E1629",
+    borderColor: "rgba(255,255,255,0.12)",
+    borderRadius: 42,
     borderWidth: 1,
     overflow: "hidden",
-    padding: 10,
-    paddingTop: 28,
+    padding: 12,
+    paddingTop: 30,
     position: "relative",
     shadowColor: "#150F22",
     shadowOffset: { width: 0, height: 28 },
@@ -217,6 +238,23 @@ const styles = StyleSheet.create({
   contentFramed: {
     backgroundColor: colors.background,
     borderRadius: 28,
-    minHeight: "100%",
+  },
+  viewportBody: {
+    backgroundColor: colors.background,
+    borderRadius: 28,
+    flex: 1,
+    minHeight: 0,
+    overflow: "hidden",
+  },
+  scrollViewport: {
+    flex: 1,
+    minHeight: 0,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  nonScrollContent: {
+    flex: 1,
+    minHeight: 0,
   },
 });

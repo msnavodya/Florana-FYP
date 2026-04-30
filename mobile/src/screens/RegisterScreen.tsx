@@ -1,3 +1,4 @@
+import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
@@ -88,6 +89,9 @@ export function RegisterScreen() {
     <Screen contentStyle={styles.screen}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.keyboardArea}>
         <View style={[styles.heroPanel, compact ? styles.heroPanelCompact : null]}>
+          <Pressable accessibilityLabel={t("back")} onPress={() => router.back()} style={styles.backButton}>
+            <MaterialIcons name="arrow-back" size={20} color={colors.text} />
+          </Pressable>
           <Text style={styles.heroBadge}>{t("register_badge")}</Text>
           <Text style={[styles.heroTitle, compact ? styles.heroTitleCompact : null]}>{t("register_hero_title")}</Text>
           <Text style={styles.heroCopy}>{t("register_hero_copy")}</Text>
@@ -239,6 +243,18 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginBottom: spacing.md,
     paddingHorizontal: spacing.sm,
+  },
+  backButton: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    height: 42,
+    justifyContent: "center",
+    marginBottom: spacing.sm,
+    width: 42,
+    ...shadows.soft,
   },
   heroPanelCompact: {
     marginBottom: spacing.sm,

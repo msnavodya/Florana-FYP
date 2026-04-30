@@ -18,6 +18,7 @@ PRODUCTS_FILE = _path("products.local.json")
 GROWTH_FILE = _path("growth.local.json")
 PREDICTIONS_FILE = _path("predictions.local.json")
 FEEDBACK_FILE = _path("feedback.local.json")
+CARE_REMINDERS_FILE = _path("care_reminders.local.json")
 
 
 def _read_json(path):

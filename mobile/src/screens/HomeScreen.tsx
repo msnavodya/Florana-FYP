@@ -436,8 +436,9 @@ export function HomeScreen() {
           ) : null}
         </View>
 
-        <BottomNav />
       </Animated.View>
+
+      <BottomNav />
     </Screen>
   );
 }
