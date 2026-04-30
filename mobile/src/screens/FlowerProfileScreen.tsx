@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FlatList, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { AppMenu } from "../components/AppMenu";
+import { BottomNav } from "../components/BottomNav";
 import { GrowthChart } from "../components/GrowthChart";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
@@ -129,6 +130,8 @@ export function FlowerProfileScreen() {
           </View>
         </View>
       ) : null}
+
+      <BottomNav />
     </Screen>
   );
 }

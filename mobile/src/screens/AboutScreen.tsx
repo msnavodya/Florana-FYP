@@ -1,6 +1,7 @@
 import { Image, StyleSheet, Text, View } from "react-native";
 
 import { AppMenu } from "../components/AppMenu";
+import { BottomNav } from "../components/BottomNav";
 import { Screen } from "../components/Screen";
 import { TopBar } from "../components/TopBar";
 import { brandAssets } from "../theme/brand";
@@ -40,6 +41,8 @@ export function AboutScreen() {
         <Text style={styles.description}>Florana Development Team</Text>
         <Text style={styles.version}>Version 1.0.0</Text>
       </View>
+
+      <BottomNav />
     </Screen>
   );
 }

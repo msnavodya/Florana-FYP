@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { useState } from "react";
 
 import { AppMenu } from "../components/AppMenu";
+import { BottomNav } from "../components/BottomNav";
 import { Screen } from "../components/Screen";
 import { TopBar } from "../components/TopBar";
 import { colors, radii, shadows, spacing } from "../theme/tokens";
@@ -33,6 +34,8 @@ export function HelpScreen() {
         <Text style={styles.title}>FAQ Center</Text>
         <Text style={styles.body}>Share your thoughts and support requests here.</Text>
       </View>
+
+      <BottomNav />
     </Screen>
   );
 }

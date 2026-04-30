@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { AppMenu } from "../components/AppMenu";
+import { BottomNav } from "../components/BottomNav";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { TopBar } from "../components/TopBar";
@@ -176,6 +177,8 @@ export function RegisterPlantScreen() {
           <PrimaryButton label="Register Plant" onPress={() => void handleSubmit()} />
         </View>
       </ScrollView>
+
+      <BottomNav />
     </Screen>
   );
 }
