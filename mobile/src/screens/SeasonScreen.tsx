@@ -1,7 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Image, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
+import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
 
 import { AppMenu } from "../components/AppMenu";
 import { BottomNav } from "../components/BottomNav";
@@ -12,7 +12,7 @@ import { Screen } from "../components/Screen";
 import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
 import { buildApiUrl } from "../lib/api/config";
-import { getProducts } from "../lib/api/shop";
+import { deleteProduct, getProducts } from "../lib/api/shop";
 import { brandAssets } from "../theme/brand";
 import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 import type { Product } from "../types/shop";
@@ -85,6 +85,7 @@ export function SeasonScreen() {
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
 
   const showStatus = (message: string) => {
     setStatus(message);
@@ -131,6 +132,33 @@ export function SeasonScreen() {
   const handleAddToCart = async (product: Product) => {
     await addItem(product);
     showStatus(`${product.name} added to cart.`);
+  };
+
+  const handleDeleteProduct = (product: Product) => {
+    if (deletingProductId) {
+      return;
+    }
+
+    Alert.alert("Remove Listing", `Remove ${product.name} from the shop?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            setDeletingProductId(product.id);
+            await deleteProduct(product.id);
+            setProducts((current) => current.filter((item) => item.id !== product.id));
+            showStatus(`${product.name} removed.`);
+            await loadProducts();
+          } catch (error) {
+            showStatus(error instanceof Error ? error.message : "Unable to remove listing.");
+          } finally {
+            setDeletingProductId(null);
+          }
+        },
+      },
+    ]);
   };
 
   const title = safeSeason === "all" ? copy.allPlants : `${safeSeason.toUpperCase()} ${copy.plantsSuffix}`;
@@ -228,6 +256,21 @@ export function SeasonScreen() {
                 }
               >
                 <View style={styles.productVisual}>
+                  <Pressable
+                    accessibilityLabel={`Remove ${product.name}`}
+                    disabled={deletingProductId === product.id}
+                    onPress={(event) => {
+                      event.stopPropagation();
+                      handleDeleteProduct(product);
+                    }}
+                    style={styles.deleteProductButton}
+                  >
+                    {deletingProductId === product.id ? (
+                      <Text style={styles.deleteProductBusy}>...</Text>
+                    ) : (
+                      <MaterialIcons name="delete-outline" size={17} color="#B33D68" />
+                    )}
+                  </Pressable>
                   {product.image ? (
                     <Image source={{ uri: buildApiUrl(product.image) }} style={styles.productImage} />
                   ) : (
@@ -242,7 +285,15 @@ export function SeasonScreen() {
                 <Text style={styles.productMeta}>{product.season}</Text>
                 <Text style={styles.productPrice}>{formatPrice(product.price, currency)}</Text>
               </Pressable>
-              <PrimaryButton label={copy.addToCart} onPress={() => void handleAddToCart(product)} />
+              <View style={styles.productActions}>
+                <PrimaryButton label={copy.addToCart} onPress={() => void handleAddToCart(product)} />
+                <PrimaryButton
+                  disabled={deletingProductId === product.id}
+                  label={deletingProductId === product.id ? "Removing..." : "Remove Listing"}
+                  onPress={() => handleDeleteProduct(product)}
+                  variant="secondary"
+                />
+              </View>
             </View>
           ))}
         </View>
@@ -467,6 +518,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
   },
+  deleteProductButton: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,245,248,0.96)",
+    borderColor: "rgba(179,61,104,0.18)",
+    borderRadius: 16,
+    borderWidth: 1,
+    height: 36,
+    justifyContent: "center",
+    position: "absolute",
+    right: spacing.md,
+    top: spacing.md,
+    width: 36,
+    zIndex: 2,
+  },
+  deleteProductBusy: {
+    color: "#B33D68",
+    fontSize: 13,
+    fontWeight: "900",
+  },
   productName: {
     color: colors.text,
     fontSize: 18,
@@ -482,6 +552,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "900",
     marginBottom: spacing.sm,
+  },
+  productActions: {
+    gap: spacing.sm,
   },
   emptyCard: {
     alignItems: "center",

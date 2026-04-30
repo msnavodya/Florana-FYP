@@ -107,11 +107,13 @@ export default function Catalog() {
       formData.append("season", newPlant.season);
       formData.append("file", newPlant.image);
 
-      await createProduct(formData);
+      const response = await createProduct(formData);
+      const savedProduct = response.data;
+      setProducts((current) => [savedProduct, ...current.filter((product) => product.id !== savedProduct.id)]);
       setNewPlant({ name: "", price: "", season: "Spring", image: null });
       fetchProductsList();
       setActiveTab("buy");
-      showStatus("Plant listed successfully.");
+      showStatus(`${savedProduct.name || "Plant"} listed successfully.`);
     } catch (error) {
       console.error(error);
       showStatus(error.response?.data?.detail || "Upload failed.");

@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
   useWindowDimensions,
+  Alert,
 } from "react-native";
 
 import { AppMenu } from "../components/AppMenu";
@@ -277,6 +278,20 @@ export function CartScreen() {
     showStatus("Choose a payment method to start secure checkout.");
   };
 
+  const handleRemoveItem = (itemId: string, itemName: string) => {
+    Alert.alert("Remove Item", `Remove ${itemName} from your cart?`, [
+      { text: "Keep Item", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: async () => {
+          await removeItem(itemId);
+          showStatus(`${itemName} removed from cart.`);
+        },
+      },
+    ]);
+  };
+
   const selectPaymentMethod = (method: CheckoutMethod) => {
     setPaymentMethod(method);
 
@@ -437,7 +452,7 @@ export function CartScreen() {
                 </Text>
               </View>
 
-              <Pressable accessibilityLabel="Remove item" onPress={() => void removeItem(item.id)} style={styles.deleteButton}>
+              <Pressable accessibilityLabel="Remove item" onPress={() => handleRemoveItem(item.id, item.name)} style={styles.deleteButton}>
                 <MaterialIcons name="close" size={16} color="#B33D68" />
               </Pressable>
             </View>

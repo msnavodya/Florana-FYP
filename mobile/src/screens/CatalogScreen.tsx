@@ -121,6 +121,8 @@ export function CatalogScreen() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
+  const [savingListing, setSavingListing] = useState(false);
+  const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
   const [newPlant, setNewPlant] = useState({
     name: "",
     price: "",
@@ -165,6 +167,13 @@ export function CatalogScreen() {
     return products.filter((product) => !query || (product.name || "").toLowerCase().includes(query));
   }, [products, search]);
 
+  const listingPrice = Number(newPlant.price);
+  const listingReady = Boolean(newPlant.name.trim() && Number.isFinite(listingPrice) && listingPrice > 0 && newPlant.image);
+
+  const resetListingForm = () => {
+    setNewPlant({ name: "", price: "", season: "Spring", image: null });
+  };
+
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -184,41 +193,66 @@ export function CatalogScreen() {
   };
 
   const handleSell = async () => {
-    if (!newPlant.name || !newPlant.price || !newPlant.image) {
-      showStatus("Add the plant name, price, season, and image first.");
+    const trimmedName = newPlant.name.trim();
+    const price = Number(newPlant.price);
+
+    if (!trimmedName) {
+      showStatus("Add the plant name first.");
+      return;
+    }
+
+    if (!Number.isFinite(price) || price <= 0) {
+      showStatus("Enter a valid price greater than 0.");
+      return;
+    }
+
+    if (!newPlant.image) {
+      showStatus("Choose a clear plant photo before saving.");
       return;
     }
 
     const formData = new FormData();
-    formData.append("name", newPlant.name);
-    formData.append("price", newPlant.price);
+    formData.append("name", trimmedName);
+    formData.append("price", String(price));
     formData.append("season", newPlant.season);
 
     try {
+      setSavingListing(true);
       await appendImageAsset(formData, "file", newPlant.image, "plant");
-      await createProduct(formData);
-      setNewPlant({ name: "", price: "", season: "Spring", image: null });
+      const savedProduct = await createProduct(formData);
+      setProducts((current) => [savedProduct, ...current.filter((product) => product.id !== savedProduct.id)]);
+      resetListingForm();
       setActiveTab("buy");
-      showStatus("Plant listed successfully.");
+      showStatus(`${savedProduct.name} saved to the ${savedProduct.season} catalog.`);
       await loadProducts();
     } catch (error) {
       showStatus(error instanceof Error ? error.message : "Upload failed.");
+    } finally {
+      setSavingListing(false);
     }
   };
 
   const handleDelete = (product: Product) => {
-    Alert.alert("Delete Plant", `Delete ${product.name}?`, [
-      { text: "Cancel", style: "cancel" },
+    if (deletingProductId) {
+      return;
+    }
+
+    Alert.alert("Remove Listing", `Remove ${product.name} from the shop? This will also remove it from season screens.`, [
+      { text: "Keep Listing", style: "cancel" },
       {
         text: copy.remove,
         style: "destructive",
         onPress: async () => {
           try {
+            setDeletingProductId(product.id);
             await deleteProduct(product.id);
-            showStatus(`${product.name} deleted.`);
+            setProducts((current) => current.filter((item) => item.id !== product.id));
+            showStatus(`${product.name} removed from the shop.`);
             await loadProducts();
           } catch (error) {
             showStatus(error instanceof Error ? error.message : "Delete failed.");
+          } finally {
+            setDeletingProductId(null);
           }
         },
       },
@@ -343,7 +377,16 @@ export function CatalogScreen() {
       ) : (
         <View style={styles.sellSection}>
           <View style={styles.sellForm}>
-            <Text style={styles.sectionTitle}>{copy.listForSale}</Text>
+            <View style={styles.sellHeader}>
+              <View>
+                <Text style={styles.sectionTitle}>{copy.listForSale}</Text>
+                <Text style={styles.sellSubtitle}>Saved listings appear in the season catalog immediately.</Text>
+              </View>
+              <View style={styles.sellCountBadge}>
+                <Text style={styles.sellCountValue}>{products.length}</Text>
+                <Text style={styles.sellCountLabel}>Saved</Text>
+              </View>
+            </View>
 
             <TextInput
               onChangeText={(value) => setNewPlant((current) => ({ ...current, name: value }))}
@@ -362,6 +405,7 @@ export function CatalogScreen() {
               value={newPlant.price}
             />
 
+            <Text style={styles.fieldLabel}>Catalog Season</Text>
             <View style={styles.seasonChipWrap}>
               {seasons.map((season) => {
                 const active = newPlant.season === season;
@@ -377,15 +421,48 @@ export function CatalogScreen() {
               })}
             </View>
 
-            <PrimaryButton
-              label={newPlant.image ? "Change Photo" : "Choose Photo"}
-              onPress={() => void pickImage()}
-              variant="secondary"
-            />
+            <Pressable onPress={() => void pickImage()} style={[styles.photoPicker, newPlant.image ? styles.photoPickerSelected : null]}>
+              {newPlant.image ? (
+                <Image source={{ uri: newPlant.image.uri }} style={styles.previewImage} />
+              ) : (
+                <View style={styles.photoPlaceholder}>
+                  <MaterialIcons name="add-a-photo" size={24} color={colors.primaryDark} />
+                  <Text style={styles.photoPlaceholderTitle}>Choose Plant Photo</Text>
+                  <Text style={styles.photoPlaceholderText}>Use a clear image for buyers and season pages.</Text>
+                </View>
+              )}
+            </Pressable>
 
-            {newPlant.image ? <Image source={{ uri: newPlant.image.uri }} style={styles.previewImage} /> : null}
+            {newPlant.image ? (
+              <View style={styles.photoActions}>
+                <PrimaryButton label="Change Photo" onPress={() => void pickImage()} variant="secondary" />
+                <Pressable onPress={() => setNewPlant((current) => ({ ...current, image: null }))} style={styles.removePhotoButton}>
+                  <MaterialIcons name="close" size={16} color="#B33D68" />
+                  <Text style={styles.removePhotoText}>Remove Photo</Text>
+                </Pressable>
+              </View>
+            ) : null}
 
-            <PrimaryButton label={copy.listPlant} onPress={() => void handleSell()} />
+            <View style={styles.previewCard}>
+              <Text style={styles.previewLabel}>Listing Preview</Text>
+              <Text style={styles.previewName}>{newPlant.name.trim() || "Plant name"}</Text>
+              <Text style={styles.previewMeta}>{newPlant.season} catalog</Text>
+              <Text style={styles.previewPrice}>Rs. {Number.isFinite(listingPrice) && listingPrice > 0 ? listingPrice.toFixed(2) : "0.00"}</Text>
+            </View>
+
+            <View style={styles.sellActions}>
+              <PrimaryButton
+                disabled={savingListing || !listingReady}
+                label={savingListing ? "Saving Listing..." : copy.listPlant}
+                onPress={() => void handleSell()}
+              />
+              <PrimaryButton
+                disabled={savingListing}
+                label="Clear Form"
+                onPress={resetListingForm}
+                variant="secondary"
+              />
+            </View>
           </View>
 
           <View style={styles.manageSection}>
@@ -410,7 +487,12 @@ export function CatalogScreen() {
                       <Text style={styles.manageMeta}>{product.season}</Text>
                     </View>
 
-                    <PrimaryButton label={copy.remove} onPress={() => handleDelete(product)} variant="secondary" />
+                    <PrimaryButton
+                      disabled={deletingProductId === product.id}
+                      label={deletingProductId === product.id ? "Removing..." : copy.remove}
+                      onPress={() => handleDelete(product)}
+                      variant="secondary"
+                    />
                   </View>
                 );
               })}
@@ -689,6 +771,43 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     ...shadows.soft,
   },
+  sellHeader: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "space-between",
+  },
+  sellSubtitle: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: spacing.xs,
+  },
+  sellCountBadge: {
+    alignItems: "center",
+    backgroundColor: "#F4EEF9",
+    borderRadius: 16,
+    minWidth: 68,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  sellCountValue: {
+    color: colors.primaryDark,
+    fontSize: 18,
+    fontWeight: "900",
+  },
+  sellCountLabel: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+  },
+  fieldLabel: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "800",
+    textTransform: "uppercase",
+  },
   fieldInput: {
     backgroundColor: colors.white,
     borderColor: colors.border,
@@ -723,10 +842,89 @@ const styles = StyleSheet.create({
   seasonChipTextActive: {
     color: colors.white,
   },
+  photoPicker: {
+    alignItems: "center",
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: 20,
+    borderStyle: "dashed",
+    borderWidth: 1,
+    justifyContent: "center",
+    minHeight: 180,
+    overflow: "hidden",
+  },
+  photoPickerSelected: {
+    borderStyle: "solid",
+    borderColor: "rgba(124,92,255,0.28)",
+  },
+  photoPlaceholder: {
+    alignItems: "center",
+    gap: spacing.xs,
+    padding: spacing.lg,
+  },
+  photoPlaceholderTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  photoPlaceholderText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: "center",
+  },
   previewImage: {
-    borderRadius: 18,
-    height: 190,
+    height: 210,
     width: "100%",
+  },
+  photoActions: {
+    gap: spacing.sm,
+  },
+  removePhotoButton: {
+    alignItems: "center",
+    alignSelf: "center",
+    flexDirection: "row",
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  removePhotoText: {
+    color: "#B33D68",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  previewCard: {
+    backgroundColor: "#F7F8F2",
+    borderColor: colors.border,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 4,
+    padding: spacing.md,
+  },
+  previewLabel: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+  },
+  previewName: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: "900",
+  },
+  previewMeta: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  previewPrice: {
+    color: colors.primary,
+    fontSize: 18,
+    fontWeight: "900",
+    marginTop: spacing.xs,
+  },
+  sellActions: {
+    gap: spacing.sm,
   },
   manageSection: {
     gap: spacing.md,

@@ -4,7 +4,7 @@ import type { Product } from "../../types/shop";
 export const getProducts = () => apiRequest<Product[]>("/shop/products", { method: "GET" });
 
 export const createProduct = (formData: FormData) =>
-  apiRequest<{ message: string; id: string }>("/shop/products", {
+  apiRequest<Product>("/shop/products", {
     method: "POST",
     body: formData,
   });

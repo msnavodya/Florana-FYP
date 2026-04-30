@@ -102,12 +102,12 @@ export function MyPlantsScreen() {
 
   const handleDelete = (plant: Plant) => {
     const plantId = plant.id || plant._id;
-    if (!plantId) {
+    if (!plantId || deletingId) {
       return;
     }
 
-    Alert.alert("Delete Plant", "Delete this plant?", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert("Delete Plant", `Delete ${plant.name}? This removes the plant profile from My Plants.`, [
+      { text: "Keep Plant", style: "cancel" },
       {
         text: "Delete",
         style: "destructive",
@@ -116,8 +116,9 @@ export function MyPlantsScreen() {
           try {
             await deletePlant(plantId);
             setPlants((previous) => previous.filter((entry) => (entry.id || entry._id) !== plantId));
-          } catch {
-            Alert.alert("Delete failed", "Check backend connectivity and try again.");
+            await loadPlants();
+          } catch (error) {
+            Alert.alert("Delete failed", error instanceof Error ? error.message : "Check backend connectivity and try again.");
           } finally {
             setDeletingId(null);
           }

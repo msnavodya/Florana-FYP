@@ -1,5 +1,6 @@
 # routes/plant.py
 from datetime import datetime
+import os
 import shutil
 from typing import Optional
 
@@ -9,11 +10,11 @@ from bson import ObjectId
 try:
     from .. import database
     from ..utils import local_store
-    from ..utils.paths import build_upload_disk_path, build_upload_public_path
+    from ..utils.paths import build_upload_disk_path, build_upload_public_path, resolve_uploaded_file_path
 except ImportError:
     import database
     from utils import local_store
-    from utils.paths import build_upload_disk_path, build_upload_public_path
+    from utils.paths import build_upload_disk_path, build_upload_public_path, resolve_uploaded_file_path
 
 
 router = APIRouter()
@@ -112,3 +113,41 @@ def get_plant_by_name(name: str):
         raise HTTPException(status_code=404, detail="Plant not found")
 
     return serialize_plant(plant)
+
+
+@router.delete("/plants/{plant_id}")
+def delete_plant(plant_id: str):
+    try:
+        plants_collection = database.get_plants_collection()
+
+        if plants_collection is None:
+            plant = local_store.find_item(
+                local_store.PLANTS_FILE,
+                lambda item: item.get("_id") == plant_id or item.get("id") == plant_id,
+            )
+        else:
+            if not ObjectId.is_valid(plant_id):
+                raise HTTPException(status_code=400, detail="Invalid plant ID")
+            plant = plants_collection.find_one({"_id": ObjectId(plant_id)})
+
+        if not plant:
+            raise HTTPException(status_code=404, detail="Plant not found")
+
+        image_path = plant.get("image_path")
+        resolved_image_path = resolve_uploaded_file_path(image_path)
+        if resolved_image_path and resolved_image_path.exists():
+            os.remove(resolved_image_path)
+
+        if plants_collection is None:
+            local_store.delete_item(
+                local_store.PLANTS_FILE,
+                lambda item: item.get("_id") == plant_id or item.get("id") == plant_id,
+            )
+        else:
+            plants_collection.delete_one({"_id": ObjectId(plant_id)})
+
+        return {"message": "Plant deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
