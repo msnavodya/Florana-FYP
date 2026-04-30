@@ -20,33 +20,59 @@
   height: 700px;      /* mobile frame height */
   background: linear-gradient(180deg, #ece9f4, #ac8df2);
   border-radius: 30px;
-  overflow: hidden;
+  overflow-y: auto;
   position: relative;
   padding: 12px;
   display: flex;
   flex-direction: column;
 }
 
-/* ===== BACK BUTTON ===== */
-.back-btn {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  z-index: 20;
-  background: rgba(255, 255, 255, 0.95);
-  border: none;
+.flower-container::-webkit-scrollbar {
+  width: 0;
+}
+
+.flower-container .mobile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0 12px;
+  z-index: 10;
+}
+
+.flower-container .back-btn,
+.flower-container .menu-btn {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  width: 38px;
-  height: 38px;
-  font-size: 18px;
+  border: none;
+  background: #7a5b9a;
+  color: #fff;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.flower-container .page-title {
+  flex: 1;
+  color: #222;
+  font-size: 22px;
+  font-weight: 600;
+  text-align: center;
+  margin: 0 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ===== IMAGE ===== */
 .flower-image-box {
   width: 100%;
-  height: 35vh; /* responsive height */
+  height: 220px;
+  flex: 0 0 220px;
+  overflow: hidden;
+  border-radius: 22px 22px 0 0;
+  background: #eee;
 }
 
 .flower-image-box img {
@@ -60,8 +86,11 @@
   background: #ffffff;
   border-radius: 28px 28px 0 0;
   padding: 18px;
-  height: 65vh;
+  flex: 1;
   overflow-y: auto;
+  margin-top: -18px;
+  position: relative;
+  z-index: 2;
 }
 
 /* ===== TITLE ===== */
@@ -136,25 +165,33 @@
   cursor: pointer;
 }
 
-/* ===== GROWTH HISTORY ===== */
-.growth-history {
+.history-card {
   background: #f9f9f9;
   padding: 14px;
   border-radius: 14px;
   margin-bottom: 18px;
 }
 
-.growth-history h4 {
+.history-card h4 {
   margin-bottom: 10px;
 }
 
-.growth-item {
+.history-item {
   background: white;
   border-radius: 10px;
   padding: 10px;
   margin-bottom: 8px;
   font-size: 13px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.chart-wrapper {
+  height: 180px;
+}
+
+.empty-text {
+  color: #777;
+  font-size: 13px;
 }
 
 /* ===== DIAGNOSE ===== */

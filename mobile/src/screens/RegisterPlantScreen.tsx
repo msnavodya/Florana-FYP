@@ -2,6 +2,7 @@ import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 
 import { AppMenu } from "../components/AppMenu";
 import { BottomNav } from "../components/BottomNav";
@@ -14,13 +15,15 @@ import { colors, radii, shadows, spacing } from "../theme/tokens";
 
 const sunlightOptions = ["Full Sun", "Partial Sun", "Shade"] as const;
 const flowerCatalogOptions = ["Spring", "Summer", "Autumn", "Winter"] as const;
-const soilTypeOptions = ["Loamy", "Sandy", "Clay", "Peaty", "Chalky"] as const;
+const locationOptions = ["Home Garden", "Balcony", "Front Yard", "Back Yard", "Terrace", "Nursery", "Greenhouse"] as const;
+const soilTypeOptions = ["Loamy", "Sandy", "Clay", "Peaty", "Chalky", "Silty", "Well-drained Potting Mix"] as const;
 const environmentOptions = ["Indoor", "Outdoor", "Greenhouse"] as const;
 const climateOptions = ["Tropical", "Temperate", "Arid", "Subtropical"] as const;
 
 export function RegisterPlantScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [nextId, setNextId] = useState(1);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: "",
     species: "",
@@ -55,7 +58,7 @@ export function RegisterPlantScreen() {
     }
   };
 
-  const pickChoice = (title: string, field: "flowerCatalog" | "specificLocation" | "climate" | "soilType", options: readonly string[]) => {
+  const pickChoice = (title: string, field: "flowerCatalog" | "location" | "specificLocation" | "climate" | "soilType", options: readonly string[]) => {
     Alert.alert(
       title,
       "Choose an option",
@@ -76,9 +79,10 @@ export function RegisterPlantScreen() {
     }
 
     try {
+      setSaving(true);
       const formData = new FormData();
-      formData.append("name", form.name);
-      formData.append("species", form.species);
+      formData.append("name", form.name.trim());
+      formData.append("species", form.species.trim());
       formData.append("flowerId", form.flowerId || `F-${nextId}`);
       formData.append("flowerCatalog", form.flowerCatalog);
       formData.append("location", form.location);
@@ -98,9 +102,16 @@ export function RegisterPlantScreen() {
 
       const response = await createPlant(formData);
       setNextId((previous) => previous + 1);
-      router.push(`/flower/${encodeURIComponent(response.name || form.name)}`);
+      Alert.alert("Plant Registered", `${response.name || form.name} is now in My Plants.`, [
+        {
+          text: "View Profile",
+          onPress: () => router.replace(`/flower/${encodeURIComponent(response.name || form.name)}`),
+        },
+      ]);
     } catch (error) {
       Alert.alert("Register Failed", error instanceof Error ? error.message : "Failed to register plant");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -110,16 +121,27 @@ export function RegisterPlantScreen() {
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.heroPanel}>
+          <View style={styles.heroIcon}>
+            <MaterialIcons name="local-florist" size={24} color={colors.white} />
+          </View>
+          <Text style={styles.heroTitle}>Register a plant</Text>
+          <Text style={styles.heroText}>Create a complete care profile so Florana can track health, watering, and growth history.</Text>
+        </View>
+
         <View style={styles.formShell}>
           <View style={styles.imageRow}>
             <Pressable onPress={() => void pickImage()} style={styles.imageBox}>
               {form.image ? (
                 <Image source={{ uri: form.image.uri }} style={styles.imagePreview} />
               ) : (
-                <Text style={styles.plus}>+</Text>
+                <MaterialIcons name="add-a-photo" size={26} color={colors.primaryDark} />
               )}
             </Pressable>
-            <Text style={styles.imageText}>{form.image ? form.image.fileName || "Image selected" : "Choose Image"}</Text>
+            <View style={styles.imageCopy}>
+              <Text style={styles.imageTitle}>{form.image ? "Plant image selected" : "Add a plant photo"}</Text>
+              <Text style={styles.imageText}>{form.image ? form.image.fileName || "Ready to upload" : "Use a clear front-facing image for the profile."}</Text>
+            </View>
           </View>
 
           <Text style={styles.sectionTitle}>Basic Info</Text>
@@ -133,7 +155,11 @@ export function RegisterPlantScreen() {
           <TextInput placeholder={`Flower ID (Auto: F-${nextId})`} placeholderTextColor="#999" style={styles.input} value={form.flowerId} onChangeText={(value) => updateField("flowerId", value)} />
 
           <Text style={styles.sectionTitle}>Environment</Text>
-          <TextInput placeholder="Location" placeholderTextColor="#999" style={styles.input} value={form.location} onChangeText={(value) => updateField("location", value)} />
+          <Pressable onPress={() => pickChoice("Location", "location", locationOptions)} style={styles.inputButton}>
+            <Text style={[styles.inputButtonText, !form.location ? styles.placeholderText : null]}>
+              {form.location || "Location"}
+            </Text>
+          </Pressable>
           <Pressable onPress={() => pickChoice("Specific Location", "specificLocation", environmentOptions)} style={styles.inputButton}>
             <Text style={[styles.inputButtonText, !form.specificLocation ? styles.placeholderText : null]}>
               {form.specificLocation || "Specific Location"}
@@ -149,7 +175,7 @@ export function RegisterPlantScreen() {
           <View style={styles.optionRow}>
             {sunlightOptions.map((option) => (
               <Pressable key={option} onPress={() => updateField("sunlight", option)} style={[styles.check, form.sunlight === option ? styles.activeCheck : null]}>
-                <View style={[styles.radioDot, form.sunlight === option ? styles.radioDotActive : null]} />
+                <MaterialIcons name={form.sunlight === option ? "radio-button-checked" : "radio-button-unchecked"} size={16} color={form.sunlight === option ? colors.primaryDark : colors.textMuted} />
                 <Text style={[styles.checkText, form.sunlight === option ? styles.activeCheckText : null]}>{option}</Text>
               </Pressable>
             ))}
@@ -174,7 +200,7 @@ export function RegisterPlantScreen() {
             </View>
           </Pressable>
 
-          <PrimaryButton label="Register Plant" onPress={() => void handleSubmit()} />
+          <PrimaryButton label={saving ? "Saving Plant..." : "Register Plant"} onPress={() => void handleSubmit()} disabled={saving} />
         </View>
       </ScrollView>
 
@@ -188,9 +214,37 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
   },
   formShell: {
-    backgroundColor: "#ECE9F4",
-    borderRadius: 30,
+    backgroundColor: "rgba(255,255,255,0.96)",
+    borderRadius: 26,
     padding: 18,
+    ...shadows.card,
+  },
+  heroPanel: {
+    backgroundColor: colors.backgroundDeep,
+    borderRadius: 26,
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+    padding: spacing.lg,
+    ...shadows.card,
+  },
+  heroIcon: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.16)",
+    borderRadius: 18,
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
+  heroTitle: {
+    color: colors.white,
+    fontSize: 24,
+    fontWeight: "900",
+    marginTop: spacing.xs,
+  },
+  heroText: {
+    color: "#E6D7FF",
+    fontSize: 14,
+    lineHeight: 21,
   },
   imageRow: {
     alignItems: "center",
@@ -200,41 +254,46 @@ const styles = StyleSheet.create({
   },
   imageBox: {
     alignItems: "center",
-    backgroundColor: "#FFFFFFAA",
-    borderColor: "#6A5CFF",
-    borderRadius: 14,
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.primary,
+    borderRadius: 18,
     borderStyle: "dashed",
     borderWidth: 2,
-    height: 60,
+    height: 76,
     justifyContent: "center",
     overflow: "hidden",
-    width: 90,
+    width: 96,
   },
   imagePreview: {
     borderRadius: 14,
     height: "100%",
     width: "100%",
   },
-  plus: {
-    color: "#6A5CFF",
-    fontSize: 28,
-    fontWeight: "700",
+  imageCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  imageTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "900",
   },
   imageText: {
-    color: "#6A5CFF",
-    flex: 1,
-    fontSize: 15,
-    fontWeight: "500",
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
   },
   sectionTitle: {
     color: "#222222",
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "900",
     marginBottom: 10,
     marginTop: 18,
   },
   input: {
     backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderWidth: 1,
     borderRadius: 12,
     color: colors.text,
     fontSize: 14,
@@ -244,6 +303,8 @@ const styles = StyleSheet.create({
   },
   inputButton: {
     backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderWidth: 1,
     borderRadius: 12,
     justifyContent: "center",
     marginBottom: 12,
@@ -265,7 +326,7 @@ const styles = StyleSheet.create({
   },
   check: {
     alignItems: "center",
-    backgroundColor: "#FFFFFFAA",
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 12,
     flexDirection: "row",
     gap: 8,
@@ -274,17 +335,6 @@ const styles = StyleSheet.create({
   },
   activeCheck: {
     backgroundColor: "#E8E3FF",
-  },
-  radioDot: {
-    backgroundColor: colors.white,
-    borderColor: "#6A5CFF",
-    borderRadius: radii.pill,
-    borderWidth: 1.5,
-    height: 14,
-    width: 14,
-  },
-  radioDotActive: {
-    backgroundColor: "#6A5CFF",
   },
   checkText: {
     color: colors.text,

@@ -1,9 +1,17 @@
 import Constants from "expo-constants";
+import * as Device from "expo-device";
 import { Platform } from "react-native";
 
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
-const DEFAULT_BACKEND_PORT = 8000;
-const FALLBACK_BACKEND_PORTS = [8000, 8001];
+const DEFAULT_BACKEND_PORT = 8001;
+const FALLBACK_BACKEND_PORTS = [8001];
+const ANDROID_EMULATOR_HOST = "10.0.2.2";
+const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", ANDROID_EMULATOR_HOST]);
+const IS_PHYSICAL_ANDROID_DEVICE = Platform.OS === "android" && Boolean(Device.isDevice);
+
+function isPrivateIpv4Address(host: string) {
+  return /^(10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)$/.test(host);
+}
 
 const getHostFromExpo = () => {
   const possibleHosts = [
@@ -34,20 +42,62 @@ const getHostFromExpo = () => {
   return null;
 };
 
-const getDefaultApiUrl = (port = DEFAULT_BACKEND_PORT) => {
-  if (Platform.OS === "android") {
-    return `http://10.0.2.2:${port}`;
+const getExpoLanHost = () => {
+  const host = getHostFromExpo();
+  if (!host) {
+    return null;
   }
 
-  const expoHost = getHostFromExpo();
-  if (expoHost) {
-    return `http://${expoHost}:${port}`;
+  return isPrivateIpv4Address(host) ? host : null;
+};
+
+const getDefaultApiUrl = (port = DEFAULT_BACKEND_PORT) => {
+  const expoLanHost = getExpoLanHost();
+  if (expoLanHost) {
+    return `http://${expoLanHost}:${port}`;
+  }
+
+  if (Platform.OS === "android" && !Device.isDevice) {
+    return `http://${ANDROID_EMULATOR_HOST}:${port}`;
+  }
+
+  if (Platform.OS === "ios" && !Device.isDevice) {
+    return `http://127.0.0.1:${port}`;
   }
 
   return `http://127.0.0.1:${port}`;
 };
 
-const configuredApiUrl = trimTrailingSlash(process.env.EXPO_PUBLIC_API_URL || getDefaultApiUrl());
+function resolveConfiguredApiUrl() {
+  const rawConfiguredApiUrl = process.env.EXPO_PUBLIC_API_BASE_URL || process.env.EXPO_PUBLIC_API_URL;
+
+  if (!rawConfiguredApiUrl) {
+    return getDefaultApiUrl();
+  }
+
+  try {
+    const parsed = new URL(rawConfiguredApiUrl);
+    const hostname = parsed.hostname;
+    const port = Number(parsed.port || DEFAULT_BACKEND_PORT);
+    const expoLanHost = getExpoLanHost();
+
+    if (IS_PHYSICAL_ANDROID_DEVICE) {
+      if (LOOPBACK_HOSTS.has(hostname) && expoLanHost) {
+        return `http://${expoLanHost}:${port}`;
+      }
+
+      if (!isPrivateIpv4Address(hostname) && expoLanHost) {
+        return `http://${expoLanHost}:${port}`;
+      }
+    }
+
+    return trimTrailingSlash(rawConfiguredApiUrl);
+  } catch {
+    return getDefaultApiUrl();
+  }
+}
+
+const configuredApiUrl = trimTrailingSlash(resolveConfiguredApiUrl());
 let activeApiUrl = configuredApiUrl;
 
 function addCandidate(candidates: string[], value: string | null | undefined) {
@@ -76,6 +126,15 @@ function buildPortVariants(url: string) {
 }
 
 export const API_URL = configuredApiUrl;
+export const CONFIGURED_API_HOSTNAME = (() => {
+  try {
+    return new URL(configuredApiUrl).hostname;
+  } catch {
+    return null;
+  }
+})();
+export const API_URL_REQUIRES_LAN_ON_DEVICE =
+  IS_PHYSICAL_ANDROID_DEVICE && Boolean(CONFIGURED_API_HOSTNAME && LOOPBACK_HOSTS.has(CONFIGURED_API_HOSTNAME));
 
 export const getApiUrl = () => activeApiUrl;
 
@@ -90,15 +149,23 @@ export const getApiUrlCandidates = () => {
     addCandidate(candidates, variant);
   }
 
-  const expoHost = getHostFromExpo();
-  if (expoHost) {
+  const expoLanHost = getExpoLanHost();
+  if (expoLanHost) {
     for (const port of FALLBACK_BACKEND_PORTS) {
-      addCandidate(candidates, `http://${expoHost}:${port}`);
+      addCandidate(candidates, `http://${expoLanHost}:${port}`);
     }
   }
 
-  for (const port of FALLBACK_BACKEND_PORTS) {
-    addCandidate(candidates, getDefaultApiUrl(port));
+  if (Platform.OS === "android" && !Device.isDevice) {
+    for (const port of FALLBACK_BACKEND_PORTS) {
+      addCandidate(candidates, `http://${ANDROID_EMULATOR_HOST}:${port}`);
+    }
+  }
+
+  if (Platform.OS !== "android" || !Device.isDevice) {
+    for (const port of FALLBACK_BACKEND_PORTS) {
+      addCandidate(candidates, `http://127.0.0.1:${port}`);
+    }
   }
 
   return candidates;
@@ -115,6 +182,7 @@ export const buildApiUrl = (path = "") => {
     return path;
   }
 
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const cleanPath = path.replace(/\\/g, "/");
+  const normalizedPath = cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`;
   return `${apiUrl}${normalizedPath}`;
 };

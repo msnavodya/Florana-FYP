@@ -51,6 +51,7 @@ temp/
 
 # Local uploads / generated files
 backend/uploads/
+backend/data/payment_orders.json
 uploads/
 
 # Large ML artifacts and datasets

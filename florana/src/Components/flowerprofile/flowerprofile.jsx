@@ -96,7 +96,17 @@ export default function FlowerProfile() {
     Tulips: tulipsImg,
   };
 
-  const plantImage = plant?.image_path ? buildApiUrl(plant.image_path) : plantImages[plant?.name] || peonyImg;
+  const getPlantImage = () => {
+    const uploadedImage = plant?.image_path || plant?.imagePath || plant?.image;
+
+    if (uploadedImage) {
+      return buildApiUrl(uploadedImage);
+    }
+
+    return plantImages[plant?.name] || peonyImg;
+  };
+
+  const plantImage = getPlantImage();
   const sortedGrowth = [...growthData].sort((a, b) => new Date(a.date) - new Date(b.date));
 
   const chartData = {
@@ -148,7 +158,13 @@ export default function FlowerProfile() {
         </div>
 
         <div className="flower-image-box">
-          <img src={plantImage} alt={plant?.name} />
+          <img
+            src={plantImage}
+            alt={plant?.name || "Plant"}
+            onError={(event) => {
+              event.currentTarget.src = plantImages[plant?.name] || peonyImg;
+            }}
+          />
         </div>
 
         <div className="flower-card">

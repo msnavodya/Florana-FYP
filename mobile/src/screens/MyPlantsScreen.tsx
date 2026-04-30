@@ -191,6 +191,11 @@ export function MyPlantsScreen() {
             <Text style={styles.summaryPillText}>{copy.habits}</Text>
           </View>
 
+          <Pressable onPress={() => router.push("/plant-register")} style={styles.registerButton}>
+            <MaterialIcons name="add" size={18} color={colors.white} />
+            <Text style={styles.registerButtonText}>Register New Plant</Text>
+          </Pressable>
+
           {plants.length === 0 ? (
             <View style={styles.emptyCard}>
               <View style={styles.emptyIcon}>
@@ -248,6 +253,9 @@ export function MyPlantsScreen() {
                       {plant.info ? (
                         <Text style={[styles.plantInfoText, plant.warning ? styles.plantInfoTextDanger : null]}>{plant.info}</Text>
                       ) : null}
+                      <Text style={styles.plantMetaText}>
+                        {[plant.species, plant.location, plant.wateringFrequency].filter(Boolean).join(" • ") || "Open full profile for care details"}
+                      </Text>
 
                       {plant.badges?.length ? (
                         <View style={styles.badgeRow}>
@@ -426,6 +434,23 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     lineHeight: 20,
   },
+  registerButton: {
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    borderRadius: radii.md,
+    flexDirection: "row",
+    gap: spacing.xs,
+    justifyContent: "center",
+    marginBottom: spacing.md,
+    minHeight: 52,
+    paddingHorizontal: spacing.md,
+    ...shadows.soft,
+  },
+  registerButtonText: {
+    color: colors.white,
+    fontSize: 15,
+    fontWeight: "900",
+  },
   emptyCard: {
     alignItems: "center",
     backgroundColor: colors.surface,
@@ -547,6 +572,12 @@ const styles = StyleSheet.create({
   },
   plantInfoTextDanger: {
     color: "#A84C2A",
+  },
+  plantMetaText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: "700",
+    lineHeight: 19,
   },
   badgeRow: {
     flexDirection: "row",

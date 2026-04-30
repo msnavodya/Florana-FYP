@@ -30,19 +30,26 @@ export default function SeasonPage() {
     window.floranaSeasonStatusTimer = window.setTimeout(() => setStatus(""), 2400);
   };
 
+  const loadProducts = () => {
+    getProducts()
+      .then((response) => setProducts(response.data || []))
+      .catch(() => setProducts([]));
+  };
+
   useEffect(() => {
     const handleStorageChange = () => {
       setCurrency(localStorage.getItem("currency") || "LKR");
       syncCartCount();
     };
 
-    getProducts()
-      .then((response) => setProducts(response.data || []))
-      .catch(() => setProducts([]));
-
+    loadProducts();
     syncCartCount();
     window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    window.addEventListener("focus", loadProducts);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("focus", loadProducts);
+    };
   }, []);
 
   useEffect(() => {

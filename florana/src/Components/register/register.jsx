@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Menu as MenuIcon } from "lucide-react";
 import Menu from "../menu/menu";
 import LanguageSelector from "../language/LanguageSelector";
-import { createPlant } from "../../api";
+import { createPlant, getApiErrorMessage } from "../../api";
 import "./register.css";
 
 export default function Register() {
@@ -89,13 +89,14 @@ export default function Register() {
       navigate(`/flower/${encodeURIComponent(plantName)}`);
     } catch (error) {
       console.error("FULL ERROR:", error.response?.data || error.message);
-      alert(error.response?.data?.detail || "Failed to register plant");
+      alert(getApiErrorMessage(error));
     }
   };
 
   const sunlightOptions = ["Full Sun", "Partial Sun", "Shade"];
   const flowerCatalogOptions = ["Spring", "Summer", "Autumn", "Winter"];
-  const soilTypeOptions = ["Loamy", "Sandy", "Clay", "Peaty", "Chalky"];
+  const locationOptions = ["Home Garden", "Balcony", "Front Yard", "Back Yard", "Terrace", "Nursery", "Greenhouse"];
+  const soilTypeOptions = ["Loamy", "Sandy", "Clay", "Peaty", "Chalky", "Silty", "Well-drained Potting Mix"];
   const environmentOptions = ["Indoor", "Outdoor", "Greenhouse"];
   const climateOptions = ["Tropical", "Temperate", "Arid", "Subtropical"];
 
@@ -141,7 +142,10 @@ export default function Register() {
         <input className="input" placeholder={`Flower ID (Auto: F-${nextId})`} name="flowerId" value={form.flowerId} onChange={handleChange} />
 
         <h3 className="section-title">Environment</h3>
-        <input className="input" placeholder="Location" name="location" value={form.location} onChange={handleChange} />
+        <select className="input" name="location" value={form.location} onChange={handleChange}>
+          <option value="">Location</option>
+          {locationOptions.map((option) => <option key={option}>{option}</option>)}
+        </select>
 
         <select className="input" name="specificLocation" value={form.specificLocation} onChange={handleChange}>
           <option value="">Specific Location</option>

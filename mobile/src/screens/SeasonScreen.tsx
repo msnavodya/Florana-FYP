@@ -1,6 +1,6 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
 
 import { AppMenu } from "../components/AppMenu";
@@ -94,11 +94,22 @@ export function SeasonScreen() {
     statusTimer.current = setTimeout(() => setStatus(""), 2400);
   };
 
-  useEffect(() => {
-    void getProducts()
-      .then((response) => setProducts(response))
-      .catch(() => setProducts([]));
+  const loadProducts = useCallback(async () => {
+    try {
+      const response = await getProducts();
+      setProducts(response);
+    } catch {
+      setProducts([]);
+    }
+  }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      void loadProducts();
+    }, [loadProducts])
+  );
+
+  useEffect(() => {
     return () => {
       if (statusTimer.current) {
         clearTimeout(statusTimer.current);

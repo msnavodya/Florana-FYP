@@ -35,6 +35,26 @@ export const buildApiUrl = (path = "") => {
   return `${API_URL}${normalizedPath}`;
 };
 
+export const getApiErrorMessage = (error) => {
+  const data = error?.response?.data;
+
+  if (typeof data === "string") {
+    return data;
+  }
+
+  if (data?.detail) {
+    return Array.isArray(data.detail)
+      ? data.detail.map((item) => item.msg || item.message || String(item)).join("\n")
+      : data.detail;
+  }
+
+  if (data?.message) {
+    return data.message;
+  }
+
+  return error?.message || "Something went wrong. Please try again.";
+};
+
 
 export const signupUser = (payload) => API.post("/auth/signup", payload);
 

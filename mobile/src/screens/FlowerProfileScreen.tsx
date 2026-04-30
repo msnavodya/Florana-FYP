@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { FlatList, StyleSheet, Text, TextInput, View } from "react-native";
+import { FlatList, Image, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 
 import { AppMenu } from "../components/AppMenu";
 import { BottomNav } from "../components/BottomNav";
@@ -8,6 +9,7 @@ import { GrowthChart } from "../components/GrowthChart";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { TopBar } from "../components/TopBar";
+import { buildApiUrl } from "../lib/api/config";
 import { addGrowth, getGrowth, getPlantByName } from "../lib/api/plants";
 import { colors, radii, shadows, spacing } from "../theme/tokens";
 import type { GrowthRecord, Plant } from "../types/plants";
@@ -52,6 +54,23 @@ export function FlowerProfileScreen() {
     () => [...growthData].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
     [growthData]
   );
+  const imageUri = plant?.image_path ? buildApiUrl(plant.image_path) : null;
+  const detailRows = plant
+    ? [
+        ["Species", plant.species],
+        ["Flower ID", plant.flowerId],
+        ["Catalog", plant.flowerCatalog],
+        ["Location", plant.location],
+        ["Specific location", plant.specificLocation],
+        ["Climate", plant.climate],
+        ["Sunlight", plant.sunlight],
+        ["Soil", plant.soilType],
+        ["Watering", plant.wateringFrequency],
+        ["Fertilizer", plant.fertilizerSchedule],
+        ["Last watered", plant.lastWatered],
+        ["Initial size", plant.initialSize],
+      ].filter(([, value]) => Boolean(value && String(value).trim()))
+    : [];
 
   const handleAddGrowth = async () => {
     if (!newHeight || !plant?._id) {
@@ -80,21 +99,44 @@ export function FlowerProfileScreen() {
       {loading ? <Text style={styles.loading}>Loading...</Text> : null}
 
       {plant ? (
-        <View style={styles.content}>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.heroCard}>
-            <Text style={styles.heroTitle}>{plant.name}</Text>
-            <Text style={styles.heroBody}>{plant.species || "Plant profile and growth history"}</Text>
+            {imageUri ? (
+              <Image source={{ uri: imageUri }} style={styles.heroImage} />
+            ) : (
+              <View style={styles.heroImageFallback}>
+                <MaterialIcons name="local-florist" size={42} color="#DCCEF2" />
+              </View>
+            )}
+            <View style={styles.heroOverlay}>
+              <Text style={styles.heroTitle}>{plant.name}</Text>
+              <Text style={styles.heroBody}>{plant.species || "Plant profile and growth history"}</Text>
+              <View style={styles.heroMetaRow}>
+                <View style={styles.heroChip}>
+                  <MaterialIcons name="spa" size={14} color={colors.white} />
+                  <Text style={styles.heroChipText}>{plant.tracking === false ? "Not tracked" : "Tracking"}</Text>
+                </View>
+                {plant.sunlight ? (
+                  <View style={styles.heroChip}>
+                    <MaterialIcons name="wb-sunny" size={14} color={colors.white} />
+                    <Text style={styles.heroChipText}>{plant.sunlight}</Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
           </View>
 
           <View style={styles.infoCard}>
             <Text style={styles.sectionTitle}>Plant Details</Text>
-            <Text style={styles.row}>Sun: {plant.sunlight || "N/A"}</Text>
-            <Text style={styles.row}>Water: {plant.wateringFrequency || "N/A"}</Text>
-            <Text style={styles.row}>Type: {plant.species || "N/A"}</Text>
-            <Text style={styles.row}>Soil: {plant.soilType || "N/A"}</Text>
-            <Text style={styles.row}>Climate: {plant.climate || "N/A"}</Text>
-            <Text style={styles.row}>Location: {plant.location || "N/A"}</Text>
-            <Text style={styles.row}>Last Watered: {plant.lastWatered || "N/A"}</Text>
+            {detailRows.length === 0 ? <Text style={styles.muted}>No profile details saved yet.</Text> : null}
+            <View style={styles.detailsGrid}>
+              {detailRows.map(([label, value]) => (
+                <View key={label} style={styles.detailTile}>
+                  <Text style={styles.detailLabel}>{label}</Text>
+                  <Text style={styles.detailValue}>{value}</Text>
+                </View>
+              ))}
+            </View>
           </View>
 
           <View style={styles.infoCard}>
@@ -128,7 +170,7 @@ export function FlowerProfileScreen() {
             <TextInput placeholder="Notes (optional)" placeholderTextColor={colors.textMuted} style={[styles.input, styles.notesInput]} value={newNotes} onChangeText={setNewNotes} multiline />
             <PrimaryButton label="Add Record" onPress={() => void handleAddGrowth()} disabled={!plant?._id} />
           </View>
-        </View>
+        </ScrollView>
       ) : null}
 
       <BottomNav />
@@ -143,22 +185,64 @@ const styles = StyleSheet.create({
   },
   content: {
     gap: spacing.md,
+    paddingBottom: spacing.xl,
   },
   heroCard: {
     backgroundColor: colors.backgroundDeep,
-    borderRadius: radii.lg,
-    gap: spacing.xs,
-    padding: spacing.lg,
+    borderRadius: 28,
+    minHeight: 280,
+    overflow: "hidden",
     ...shadows.card,
+  },
+  heroImage: {
+    height: 280,
+    width: "100%",
+  },
+  heroImageFallback: {
+    alignItems: "center",
+    backgroundColor: colors.backgroundDeep,
+    height: 280,
+    justifyContent: "center",
+    width: "100%",
+  },
+  heroOverlay: {
+    backgroundColor: "rgba(36,24,61,0.82)",
+    bottom: 0,
+    gap: spacing.xs,
+    left: 0,
+    padding: spacing.lg,
+    position: "absolute",
+    right: 0,
   },
   heroTitle: {
     color: colors.white,
-    fontSize: 24,
-    fontWeight: "800",
+    fontSize: 28,
+    fontWeight: "900",
   },
   heroBody: {
     color: "#E6D7FF",
     fontSize: 14,
+    lineHeight: 21,
+  },
+  heroMetaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  heroChip: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.16)",
+    borderRadius: radii.pill,
+    flexDirection: "row",
+    gap: 6,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 7,
+  },
+  heroChipText: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: "800",
   },
   infoCard: {
     backgroundColor: colors.surface,
@@ -177,6 +261,29 @@ const styles = StyleSheet.create({
   row: {
     color: colors.text,
     fontSize: 14,
+    lineHeight: 20,
+  },
+  detailsGrid: {
+    gap: spacing.sm,
+  },
+  detailTile: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    padding: spacing.md,
+  },
+  detailLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: "800",
+    marginBottom: 4,
+    textTransform: "uppercase",
+  },
+  detailValue: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "800",
     lineHeight: 20,
   },
   muted: {

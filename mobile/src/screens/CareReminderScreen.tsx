@@ -331,6 +331,27 @@ function formatScheduleLabel(target: Date | null, fallback: string) {
   return `${target.toLocaleDateString([], { month: "short", day: "numeric" })}, ${timeLabel}`;
 }
 
+function formatCountdown(target: Date | null, fallback: string) {
+  if (!target) {
+    return fallback;
+  }
+
+  const remainingMs = target.getTime() - Date.now();
+  if (remainingMs <= 0) {
+    return "Now";
+  }
+
+  const totalMinutes = Math.max(1, Math.floor(remainingMs / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m left`;
+  }
+
+  return `${minutes}m left`;
+}
+
 function formatActivityMessage(message: string) {
   return `${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} - ${message}`;
 }
@@ -593,6 +614,7 @@ export function CareReminderScreen() {
   const nextReminderLabel = nextReminderDate
     ? formatScheduleLabel(nextReminderDate, copy.paused)
     : copy.paused;
+  const liveCountdownLabel = formatCountdown(nextReminderDate, copy.paused);
   const liveClockLabel = new Date(liveNow).toLocaleTimeString([], {
     hour: "numeric",
     minute: "2-digit",
@@ -600,7 +622,7 @@ export function CareReminderScreen() {
   });
 
   return (
-    <Screen>
+    <Screen contentStyle={compact ? styles.pageContentCompact : styles.pageContent}>
       <TopBar title={copy.title} subtitle={copy.subtitle} onMenuPress={() => setMenuOpen(true)} />
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
 
@@ -619,36 +641,38 @@ export function CareReminderScreen() {
         <Text style={styles.heroTitle}>{copy.title}</Text>
         <Text style={styles.heroSubtitle}>{copy.subtitle}</Text>
 
-        <View style={[styles.metricRow, compact ? styles.metricRowCompact : null]}>
-          <View style={styles.metricCard}>
+        <View style={[styles.heroMetricsWrap, compact ? styles.heroMetricsWrapCompact : null]}>
+          <View style={[styles.metricCard, compact ? styles.metricCardCompact : null]}>
             <Text style={styles.metricValue}>{activeTasks}</Text>
             <Text style={styles.metricLabel}>{copy.activeTasks}</Text>
           </View>
-          <View style={styles.metricCard}>
+          <View style={[styles.metricCard, compact ? styles.metricCardCompact : null]}>
             <Text style={styles.metricValue}>{notificationModes}</Text>
             <Text style={styles.metricLabel}>{copy.notifications}</Text>
           </View>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricValue} numberOfLines={1}>
-              {reminders.options.watering ? formatTimeLabel(reminders.wateringTime) : copy.paused}
-            </Text>
-            <Text style={styles.metricLabel}>{copy.next}</Text>
-          </View>
         </View>
 
-        <View style={styles.livePanel}>
-          <View style={styles.livePanelItem}>
-            <Text style={styles.livePanelLabel}>{copy.currentTime}</Text>
-            <Text style={styles.livePanelValue}>{liveClockLabel}</Text>
+        <View style={[styles.liveBoard, compact ? styles.liveBoardCompact : null]}>
+          <View style={styles.liveBoardCard}>
+            <Text style={styles.liveBoardLabel}>{copy.currentTime}</Text>
+            <Text style={styles.liveBoardValue}>{liveClockLabel}</Text>
           </View>
-          <View style={styles.livePanelDivider} />
-          <View style={styles.livePanelItem}>
-            <Text style={styles.livePanelLabel}>{copy.scheduledFor}</Text>
-            <Text style={styles.livePanelValue}>{nextReminderLabel}</Text>
+          <View style={styles.liveBoardCard}>
+            <Text style={styles.liveBoardLabel}>{copy.scheduledFor}</Text>
+            <Text style={styles.liveBoardValue} numberOfLines={1}>
+              {reminders.options.watering ? formatTimeLabel(reminders.wateringTime) : copy.paused}
+            </Text>
+          </View>
+          <View style={styles.liveBoardCard}>
+            <Text style={styles.liveBoardLabel}>{copy.next}</Text>
+            <Text style={styles.liveBoardValue} numberOfLines={1}>
+              {liveCountdownLabel}
+            </Text>
           </View>
         </View>
 
         <View style={styles.summaryRow}>
+          <Text style={styles.summaryChip}>{nextReminderLabel}</Text>
           <Text style={styles.summaryChip}>{`${copy.mode}: ${reminders.summaryMode}`}</Text>
           <Text style={styles.summaryChip}>{copy.autoSave}</Text>
         </View>
@@ -660,7 +684,7 @@ export function CareReminderScreen() {
         </View>
       ) : null}
 
-      <View style={styles.sectionCard}>
+      <View style={[styles.sectionCard, compact ? styles.sectionCardCompact : null]}>
         <View style={[styles.sectionHeader, compact ? styles.sectionHeaderCompact : null]}>
           <Text style={styles.sectionTitle}>{copy.options}</Text>
           <Text style={styles.sectionMeta}>{`${activeTasks} ${copy.activeLabel}`}</Text>
@@ -697,31 +721,48 @@ export function CareReminderScreen() {
       </View>
 
       {reminders.options.watering ? (
-        <View style={styles.sectionCard}>
+        <View style={[styles.sectionCard, styles.scheduleCard, compact ? styles.sectionCardCompact : null]}>
           <View style={[styles.sectionHeader, compact ? styles.sectionHeaderCompact : null]}>
             <Text style={styles.sectionTitle}>{copy.wateringTime}</Text>
             <Text style={styles.sectionMeta}>{nextReminderLabel}</Text>
           </View>
 
-          <View style={styles.timeCard}>
-            <TextInput
-              autoCapitalize="none"
-              keyboardType="numbers-and-punctuation"
-              maxLength={5}
-              placeholder={copy.timeFormatPlaceholder}
-              placeholderTextColor={colors.textMuted}
-              style={styles.timeInput}
-              value={wateringTimeInput}
-              onBlur={() => void commitWateringTime(wateringTimeInput)}
-              onChangeText={setWateringTimeInput}
-            />
-            <Pressable
-              accessibilityLabel="Save watering time"
-              onPress={() => void commitWateringTime(wateringTimeInput)}
-              style={styles.timeSaveButton}
-            >
-              <MaterialIcons name="check" size={18} color={colors.white} />
-            </Pressable>
+          <View style={[styles.scheduleShell, compact ? styles.scheduleShellCompact : null]}>
+            <View style={styles.scheduleOverview}>
+              <View style={styles.scheduleTimeCluster}>
+                <Text style={styles.scheduleTimeValue}>
+                  {formatTimeLabel(reminders.wateringTime)}
+                </Text>
+                <Text style={styles.scheduleTimeCaption}>{copy.scheduledFor}</Text>
+              </View>
+              <View style={styles.scheduleCountdownPill}>
+                <Text style={styles.scheduleCountdownText}>{liveCountdownLabel}</Text>
+              </View>
+            </View>
+
+            <View style={[styles.timeEditorRow, compact ? styles.timeEditorRowCompact : null]}>
+              <View style={styles.timeInputWrap}>
+                <MaterialIcons name="schedule" size={16} color={colors.textMuted} style={styles.timeInputIcon} />
+                <TextInput
+                  autoCapitalize="none"
+                  keyboardType="numbers-and-punctuation"
+                  maxLength={5}
+                  placeholder={copy.timeFormatPlaceholder}
+                  placeholderTextColor={colors.textMuted}
+                  style={styles.timeInput}
+                  value={wateringTimeInput}
+                  onBlur={() => void commitWateringTime(wateringTimeInput)}
+                  onChangeText={setWateringTimeInput}
+                />
+              </View>
+              <Pressable
+                accessibilityLabel="Save watering time"
+                onPress={() => void commitWateringTime(wateringTimeInput)}
+                style={[styles.timeSaveButton, compact ? styles.timeSaveButtonCompact : null]}
+              >
+                <MaterialIcons name="check" size={18} color={colors.white} />
+              </Pressable>
+            </View>
           </View>
 
           <Text style={styles.helperText}>{copy.timeHint}</Text>
@@ -758,7 +799,7 @@ export function CareReminderScreen() {
         </View>
       ) : null}
 
-      <View style={styles.sectionCard}>
+      <View style={[styles.sectionCard, compact ? styles.sectionCardCompact : null]}>
         <View style={[styles.sectionHeader, compact ? styles.sectionHeaderCompact : null]}>
           <Text style={styles.sectionTitle}>{copy.customNotes}</Text>
           <Text style={styles.sectionMeta}>{`${reminders.customNotes.length} ${copy.savedLabel}`}</Text>
@@ -791,7 +832,7 @@ export function CareReminderScreen() {
         ))}
       </View>
 
-      <View style={styles.sectionCard}>
+      <View style={[styles.sectionCard, compact ? styles.sectionCardCompact : null]}>
         <View style={[styles.sectionHeader, compact ? styles.sectionHeaderCompact : null]}>
           <Text style={styles.sectionTitle}>{copy.summary}</Text>
           <Text style={styles.sectionMeta}>{reminders.summaryMode}</Text>
@@ -838,7 +879,7 @@ export function CareReminderScreen() {
         </View>
       </View>
 
-      <View style={styles.sectionCard}>
+      <View style={[styles.sectionCard, compact ? styles.sectionCardCompact : null]}>
         <View style={[styles.sectionHeader, compact ? styles.sectionHeaderCompact : null]}>
           <Text style={styles.sectionTitle}>{copy.notifications}</Text>
           <Text style={styles.sectionMeta}>{`${notificationModes} ${copy.enabledLabel}`}</Text>
@@ -899,7 +940,7 @@ export function CareReminderScreen() {
       </View>
 
       {reminders.inAppMessages.length > 0 ? (
-        <View style={styles.sectionCard}>
+        <View style={[styles.sectionCard, compact ? styles.sectionCardCompact : null]}>
           <View style={[styles.sectionHeader, compact ? styles.sectionHeaderCompact : null]}>
             <Text style={styles.sectionTitle}>{copy.careMessages}</Text>
             <Text style={styles.sectionMeta}>{`${reminders.inAppMessages.length} ${copy.recentLabel}`}</Text>
@@ -922,11 +963,16 @@ export function CareReminderScreen() {
 }
 
 const styles = StyleSheet.create({
-  heroCard: {
-    backgroundColor: "#584089",
-    borderRadius: 28,
+  pageContent: {
+    gap: spacing.md,
+  },
+  pageContentCompact: {
     gap: spacing.sm,
-    marginBottom: spacing.md,
+  },
+  heroCard: {
+    backgroundColor: "#543A88",
+    borderRadius: 30,
+    gap: spacing.md,
     padding: spacing.lg,
     ...shadows.card,
   },
@@ -976,7 +1022,7 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     color: colors.white,
-    fontSize: 26,
+    fontSize: 27,
     fontWeight: "900",
   },
   heroSubtitle: {
@@ -984,19 +1030,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
   },
-  metricRow: {
+  heroMetricsWrap: {
     flexDirection: "row",
     gap: spacing.sm,
   },
-  metricRowCompact: {
+  heroMetricsWrapCompact: {
     flexDirection: "column",
   },
   metricCard: {
     backgroundColor: "rgba(255,255,255,0.12)",
-    borderRadius: 20,
+    borderRadius: 22,
     flex: 1,
-    minHeight: 82,
+    minHeight: 84,
     padding: spacing.md,
+  },
+  metricCardCompact: {
+    minHeight: 74,
   },
   metricValue: {
     color: colors.white,
@@ -1009,29 +1058,27 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginTop: 4,
   },
-  livePanel: {
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderRadius: 22,
+  liveBoard: {
     flexDirection: "row",
     gap: spacing.sm,
+  },
+  liveBoardCompact: {
+    flexDirection: "column",
+  },
+  liveBoardCard: {
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 20,
+    flex: 1,
+    minHeight: 74,
     padding: spacing.md,
   },
-  livePanelItem: {
-    flex: 1,
-  },
-  livePanelDivider: {
-    backgroundColor: "rgba(255,255,255,0.14)",
-    height: "100%",
-    width: 1,
-  },
-  livePanelLabel: {
+  liveBoardLabel: {
     color: "rgba(255,255,255,0.72)",
     fontSize: 11,
     fontWeight: "700",
     textTransform: "uppercase",
   },
-  livePanelValue: {
+  liveBoardValue: {
     color: colors.white,
     fontSize: 15,
     fontWeight: "800",
@@ -1057,7 +1104,6 @@ const styles = StyleSheet.create({
     borderColor: "#DAC8FF",
     borderRadius: radii.md,
     borderWidth: 1,
-    marginBottom: spacing.md,
     padding: spacing.md,
     ...shadows.soft,
   },
@@ -1072,9 +1118,15 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
     gap: spacing.md,
-    marginBottom: spacing.md,
-    padding: spacing.lg,
+    padding: 20,
     ...shadows.soft,
+  },
+  sectionCardCompact: {
+    borderRadius: 20,
+    padding: spacing.md,
+  },
+  scheduleCard: {
+    paddingBottom: spacing.md,
   },
   sectionHeader: {
     alignItems: "center",
@@ -1100,9 +1152,12 @@ const styles = StyleSheet.create({
   optionRow: {
     alignItems: "center",
     backgroundColor: colors.surfaceMuted,
-    borderRadius: 20,
+    borderColor: "rgba(124,92,255,0.1)",
+    borderRadius: 18,
+    borderWidth: 1,
     flexDirection: "row",
     gap: spacing.md,
+    minHeight: 74,
     padding: spacing.md,
   },
   optionIconWrap: {
@@ -1129,9 +1184,9 @@ const styles = StyleSheet.create({
   },
   toggleButton: {
     borderRadius: radii.pill,
-    minWidth: 66,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
+    minWidth: 72,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 9,
   },
   toggleOn: {
     backgroundColor: colors.primaryDark,
@@ -1150,43 +1205,106 @@ const styles = StyleSheet.create({
   toggleTextOff: {
     color: colors.text,
   },
-  timeCard: {
-    alignItems: "center",
-    backgroundColor: colors.surfaceMuted,
+  scheduleShell: {
+    backgroundColor: "#F5F0FF",
+    borderColor: "rgba(124,92,255,0.1)",
     borderRadius: 20,
-    flexDirection: "row",
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  scheduleShellCompact: {
+    borderRadius: 18,
     gap: spacing.sm,
     padding: spacing.sm,
   },
-  timeInput: {
+  scheduleOverview: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  scheduleTimeCluster: {
+    flex: 1,
+  },
+  scheduleTimeValue: {
+    color: colors.text,
+    fontSize: 28,
+    fontWeight: "900",
+  },
+  scheduleTimeCaption: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: "700",
+    marginTop: 2,
+    textTransform: "uppercase",
+  },
+  scheduleCountdownPill: {
+    backgroundColor: colors.white,
+    borderColor: "rgba(124,92,255,0.16)",
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+  },
+  scheduleCountdownText: {
+    color: colors.primaryDark,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  timeEditorRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  timeEditorRowCompact: {
+    alignItems: "stretch",
+  },
+  timeInputWrap: {
+    alignItems: "center",
     backgroundColor: colors.white,
     borderColor: colors.border,
-    borderRadius: radii.md,
+    borderRadius: 16,
     borderWidth: 1,
+    flex: 1,
+    flexDirection: "row",
+    minHeight: 46,
+    paddingHorizontal: spacing.sm,
+  },
+  timeInputIcon: {
+    marginRight: 6,
+  },
+  timeInput: {
     color: colors.text,
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "800",
-    minHeight: 50,
-    paddingHorizontal: spacing.md,
+    minHeight: 44,
+    paddingRight: spacing.xs,
   },
   timeSaveButton: {
     alignItems: "center",
     backgroundColor: colors.primaryDark,
-    borderRadius: 16,
-    height: 50,
+    borderRadius: 14,
+    height: 46,
     justifyContent: "center",
-    width: 50,
+    width: 46,
+  },
+  timeSaveButtonCompact: {
+    width: 44,
   },
   presetRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.sm,
   },
   presetButton: {
     backgroundColor: colors.surfaceMuted,
-    borderRadius: 18,
-    flex: 1,
-    padding: spacing.md,
+    borderColor: "rgba(124,92,255,0.1)",
+    borderRadius: 16,
+    borderWidth: 1,
+    minWidth: "31%",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   presetButtonActive: {
     backgroundColor: "#E8DFFF",
@@ -1195,7 +1313,7 @@ const styles = StyleSheet.create({
   },
   presetLabel: {
     color: colors.text,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "800",
   },
   presetLabelActive: {
@@ -1203,7 +1321,7 @@ const styles = StyleSheet.create({
   },
   presetTime: {
     color: colors.textMuted,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
     marginTop: 4,
   },
@@ -1227,21 +1345,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: colors.text,
     flex: 1,
-    minHeight: 50,
+    minHeight: 46,
     paddingHorizontal: spacing.md,
   },
   addButton: {
     alignItems: "center",
     backgroundColor: colors.primaryDark,
-    borderRadius: 16,
-    height: 50,
+    borderRadius: 14,
+    height: 46,
     justifyContent: "center",
-    width: 50,
+    width: 46,
   },
   customNoteRow: {
     alignItems: "center",
     backgroundColor: colors.surfaceMuted,
     borderRadius: 18,
+    borderColor: "rgba(124,92,255,0.08)",
+    borderWidth: 1,
     flexDirection: "row",
     justifyContent: "space-between",
     padding: spacing.md,
@@ -1270,10 +1390,10 @@ const styles = StyleSheet.create({
   summaryButton: {
     alignItems: "center",
     backgroundColor: "#ECE8F1",
-    borderRadius: 16,
+    borderRadius: 14,
     flex: 1,
     justifyContent: "center",
-    minHeight: 48,
+    minHeight: 44,
     paddingHorizontal: spacing.md,
   },
   summaryButtonActive: {
@@ -1290,11 +1410,11 @@ const styles = StyleSheet.create({
   testButton: {
     alignItems: "center",
     backgroundColor: colors.primaryDark,
-    borderRadius: 18,
+    borderRadius: 16,
     flexDirection: "row",
     gap: spacing.sm,
     justifyContent: "center",
-    minHeight: 52,
+    minHeight: 48,
     paddingHorizontal: spacing.lg,
   },
   testButtonText: {
@@ -1308,7 +1428,9 @@ const styles = StyleSheet.create({
   messageBox: {
     alignItems: "flex-start",
     backgroundColor: colors.surfaceMuted,
+    borderColor: "rgba(124,92,255,0.08)",
     borderRadius: 18,
+    borderWidth: 1,
     flexDirection: "row",
     gap: spacing.sm,
     padding: spacing.md,

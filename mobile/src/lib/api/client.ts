@@ -1,6 +1,13 @@
 import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 
-import { API_URL, getApiUrl, getApiUrlCandidates, setApiUrl } from "./config";
+import {
+  API_URL,
+  API_URL_REQUIRES_LAN_ON_DEVICE,
+  CONFIGURED_API_HOSTNAME,
+  getApiUrl,
+  getApiUrlCandidates,
+  setApiUrl,
+} from "./config";
 
 export class ApiError extends Error {
   status: number;
@@ -136,11 +143,15 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     }
   }
 
+  const lanSetupHint = API_URL_REQUIRES_LAN_ON_DEVICE
+    ? ` On Expo Go on a real Android phone, ${CONFIGURED_API_HOSTNAME} is not reachable. Set EXPO_PUBLIC_API_BASE_URL (or EXPO_PUBLIC_API_URL) to your computer's LAN IP, for example http://192.168.1.10:8000, and make sure the backend is listening on 0.0.0.0.`
+    : "";
+
   throw new ApiError(
-    `Cannot reach the backend. Tried: ${candidateUrls.join(", ")}. Current configured URL: ${API_URL}.`,
+    `Cannot reach the backend. Tried: ${candidateUrls.join(", ")}. Current configured URL: ${API_URL}.${lanSetupHint}`,
     503,
     lastError?.message,
   );
-  }
+}
 
 export { API_URL };

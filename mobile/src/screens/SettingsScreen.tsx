@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
     ...shadows.soft,
   },
   heroCard: {
-    backgroundColor: "#355F73",
+    backgroundColor: "#603982",
     borderRadius: 30,
     marginBottom: spacing.md,
     padding: spacing.lg,
@@ -421,16 +421,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   statusCard: {
-    backgroundColor: "rgba(255,255,255,0.94)",
-    borderColor: colors.border,
+   
+    backgroundColor: "#F6F0FF",
+    borderColor: "#DAC8FF",
     borderRadius: radii.md,
     borderWidth: 1,
-    marginBottom: spacing.md,
     padding: spacing.md,
     ...shadows.soft,
   },
   statusText: {
-    color: "#24513B",
+    color: "#c79deb",
     fontSize: 13,
     fontWeight: "700",
   },
@@ -516,7 +516,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   togglePillActive: {
-    backgroundColor: "#355F73",
+    backgroundColor: "#bf91f6",
   },
   togglePillText: {
     color: colors.text,

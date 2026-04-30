@@ -26,7 +26,7 @@ def get_products():
     for product in records:
         products.append(
             {
-                "id": str(product.get("_id", "")),
+                "id": str(product.get("_id") or product.get("id") or ""),
                 "name": product.get("name", ""),
                 "price": product.get("price", 0),
                 "season": product.get("season", "Spring"),

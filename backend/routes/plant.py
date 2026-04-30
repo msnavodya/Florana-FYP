@@ -4,6 +4,7 @@ import shutil
 from typing import Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from bson import ObjectId
 
 try:
     from .. import database
@@ -16,6 +17,14 @@ except ImportError:
 
 
 router = APIRouter()
+
+
+def serialize_plant(plant: dict) -> dict:
+    if "_id" in plant:
+        plant["_id"] = str(plant["_id"])
+    if "id" not in plant and plant.get("_id"):
+        plant["id"] = str(plant["_id"])
+    return plant
 
 
 @router.post("/plants/")
@@ -62,7 +71,11 @@ async def create_plant(
             "initialSize": initialSize,
             "tracking": str(tracking).lower() == "true",
             "image_path": image_path,
+            "health": "Stable",
+            "warning": False,
+            "badges": [item for item in [species, flowerCatalog, sunlight] if item],
             "created_at": local_store.now_iso(),
+            "updated_at": local_store.now_iso(),
         }
 
         plants_collection = database.get_plants_collection()
@@ -71,6 +84,7 @@ async def create_plant(
 
         result = plants_collection.insert_one(plant)
         plant["_id"] = str(result.inserted_id)
+        plant["id"] = str(result.inserted_id)
         return plant
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -80,22 +94,21 @@ async def create_plant(
 def get_all_plants():
     plants_collection = database.get_plants_collection()
     plants = local_store.list_items(local_store.PLANTS_FILE) if plants_collection is None else list(plants_collection.find({}))
-    for plant in plants:
-        if "_id" in plant:
-            plant["_id"] = str(plant["_id"])
-    return plants
+    return [serialize_plant(plant) for plant in plants]
 
 
 @router.get("/plants/by-name/{name}")
 def get_plant_by_name(name: str):
     plants_collection = database.get_plants_collection()
     if plants_collection is None:
-        plant = local_store.find_item(local_store.PLANTS_FILE, lambda item: item.get("name") == name)
+        plant = local_store.find_item(local_store.PLANTS_FILE, lambda item: item.get("name") == name or item.get("_id") == name or item.get("id") == name)
     else:
-        plant = plants_collection.find_one({"name": name})
+        query_options = [{"name": name}, {"flowerId": name}]
+        if ObjectId.is_valid(name):
+            query_options.append({"_id": ObjectId(name)})
+        plant = plants_collection.find_one({"$or": query_options})
 
     if not plant:
         raise HTTPException(status_code=404, detail="Plant not found")
 
-    plant["_id"] = str(plant["_id"])
-    return plant
+    return serialize_plant(plant)

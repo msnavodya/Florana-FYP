@@ -1,12 +1,15 @@
 # backend/main.py
 
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 import os
 import io
 import json
+import socket
+import ipaddress
+import logging
 import numpy as np
 from PIL import Image
 from datetime import datetime
@@ -57,6 +60,13 @@ except Exception:
 
 FIREBASE_KEY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "firebase-key.json")
 
+logger = logging.getLogger("florana.backend")
+if not logging.getLogger().handlers:
+    logging.basicConfig(
+        level=os.getenv("LOG_LEVEL", "INFO").upper(),
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    )
+
 if firebase_admin and os.path.exists(FIREBASE_KEY_PATH):
     try:
         cred = credentials.Certificate(FIREBASE_KEY_PATH)
@@ -67,6 +77,44 @@ if firebase_admin and os.path.exists(FIREBASE_KEY_PATH):
 else:
     print("Firebase disabled: firebase-key.json not found")
 
+
+def _env_list(name: str, default: str) -> list[str]:
+    raw_value = os.getenv(name, default)
+    return [item.strip() for item in raw_value.split(",") if item.strip()]
+
+
+def _is_private_ipv4(ip_address: str) -> bool:
+    try:
+        parsed = ipaddress.ip_address(ip_address)
+    except ValueError:
+        return False
+
+    return bool(parsed.version == 4 and parsed.is_private)
+
+
+def _get_lan_ips() -> list[str]:
+    candidates: set[str] = set()
+
+    try:
+        hostname_ips = socket.gethostbyname_ex(socket.gethostname())[2]
+        for ip_address in hostname_ips:
+            if _is_private_ipv4(ip_address):
+                candidates.add(ip_address)
+    except Exception:
+        pass
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe_socket:
+            probe_socket.connect(("8.8.8.8", 80))
+            ip_address = probe_socket.getsockname()[0]
+            if _is_private_ipv4(ip_address):
+                candidates.add(ip_address)
+    except Exception:
+        pass
+
+    return sorted(candidates)
+
+
 # ----------------- FastAPI App Setup -----------------
 app = FastAPI(title="Florana Backend")
 
@@ -74,12 +122,15 @@ app = FastAPI(title="Florana Backend")
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 # CORS
+allowed_origins = _env_list("ALLOWED_ORIGINS", "*")
+allow_all_origins = "*" in allowed_origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=["*"] if allow_all_origins else allowed_origins,
+    allow_credentials=not allow_all_origins,
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_origin_regex=None if allow_all_origins else r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+)(:\d+)?$",
 )
 
 
@@ -87,13 +138,22 @@ app.add_middleware(
 @app.on_event("startup")
 def startup_event():
     """Print startup information."""
+    server_host = os.getenv("HOST", "0.0.0.0")
+    server_port = int(os.getenv("PORT", "8001"))
+    lan_ips = _get_lan_ips()
+
     print("\n" + "=" * 60)
     print("FLORANA BACKEND STARTUP")
     print("=" * 60)
-    print("Server: check the Uvicorn URL shown below")
+    print(f"Server bind: http://{server_host}:{server_port}")
     print("Docs path: /docs")
     print("Health path: /health")
     print(f"Database: {database.connection_status}")
+    if lan_ips:
+        print("LAN URLs for Expo Go:")
+        for ip_address in lan_ips:
+            print(f"   http://{ip_address}:{server_port}")
+    print(f"CORS origins: {'*' if allow_all_origins else ', '.join(allowed_origins)}")
 
     if database.connection_status == "disconnected":
         print("\nWARNING: MongoDB is not connected!")
@@ -118,6 +178,7 @@ app.include_router(shop_router)
 
 # ================= HEALTH CHECK ENDPOINT =================
 @app.get("/health")
+@app.get("/api/health")
 def health_check():
     """Check backend and database health status."""
     db_status = database.check_db_connection()
@@ -135,6 +196,7 @@ def health_check():
 
 
 @app.get("/")
+@app.get("/api")
 def read_root():
     """Root endpoint."""
     return {
@@ -215,6 +277,25 @@ def save_plant(name: str, disease: str, confidence: float):
         local_store.create_item(local_store.PLANTS_FILE, record)
         return
     plants_collection.insert_one(record)
+
+
+def _get_request_client(request: Request) -> str:
+    if request.client and request.client.host:
+        return request.client.host
+    return "unknown"
+
+
+def log_prediction_request(request: Request, file: UploadFile | None, file_size: int | None = None):
+    logger.info(
+        "Prediction request path=%s client=%s content_type=%s content_length=%s filename=%s file_content_type=%s file_size=%s",
+        request.url.path,
+        _get_request_client(request),
+        request.headers.get("content-type"),
+        request.headers.get("content-length"),
+        file.filename if file else None,
+        file.content_type if file else None,
+        file_size,
+    )
 
 
 def predict_image(file_bytes: bytes):
@@ -390,13 +471,35 @@ def build_quick_tips():
 
 # ----------------- AI ROUTES -----------------
 @app.post("/predict")
-async def predict(file: UploadFile | None = File(None)):
+@app.post("/diagnose")
+@app.post("/api/predict")
+@app.post("/api/diagnose")
+async def predict(request: Request, file: UploadFile | None = File(None)):
+    log_prediction_request(request, file)
+
     if file is None or not file.filename:
+        logger.warning("Prediction request rejected: missing file from client=%s", _get_request_client(request))
         raise HTTPException(status_code=400, detail="Image file is required")
     if not file.filename.lower().endswith((".jpg", ".jpeg", ".png")):
+        logger.warning(
+            "Prediction request rejected: invalid format filename=%s client=%s",
+            file.filename,
+            _get_request_client(request),
+        )
         raise HTTPException(status_code=400, detail="Invalid image format")
+
     file_bytes = await file.read()
-    prediction, confidence, top_predictions = predict_image(file_bytes)
+    log_prediction_request(request, file, len(file_bytes))
+
+    try:
+        prediction, confidence, top_predictions = predict_image(file_bytes)
+    except HTTPException:
+        logger.exception("Prediction failed with HTTPException for client=%s", _get_request_client(request))
+        raise
+    except Exception:
+        logger.exception("Prediction failed unexpectedly for client=%s", _get_request_client(request))
+        raise
+
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     filename = f"{timestamp}_{file.filename}"
     file_path = build_upload_disk_path(filename)
@@ -404,6 +507,13 @@ async def predict(file: UploadFile | None = File(None)):
         f.write(file_bytes)
     save_prediction(filename, prediction, confidence)
     save_plant(filename, prediction, confidence)
+    logger.info(
+        "Prediction succeeded client=%s filename=%s prediction=%s confidence=%.4f",
+        _get_request_client(request),
+        filename,
+        prediction,
+        confidence,
+    )
     return {
         "status": "success",
         "prediction": prediction,
@@ -415,6 +525,7 @@ async def predict(file: UploadFile | None = File(None)):
 
 # ----------------- HISTORY -----------------
 @app.get("/history")
+@app.get("/api/history")
 def get_history():
     prediction_collection = database.get_prediction_collection()
     if prediction_collection is None:
@@ -426,6 +537,7 @@ def get_history():
 
 # ----------------- PLANTS -----------------
 @app.get("/plants")
+@app.get("/api/plants")
 def get_all_plants():
     plants_collection = database.get_plants_collection()
     records = (
@@ -450,11 +562,13 @@ def get_all_plants():
 
 
 @app.get("/quick-tips")
+@app.get("/api/quick-tips")
 def get_quick_tips():
     return build_quick_tips()
 
 
 @app.delete("/plants/{plant_id}")
+@app.delete("/api/plants/{plant_id}")
 def delete_plant(plant_id: str):
     try:
         plants_collection = database.get_plants_collection()
@@ -513,6 +627,7 @@ def schedule_care(reminder: dict):
 
 
 @app.post("/care-reminder")
+@app.post("/api/care-reminder")
 async def set_care_reminder(data: dict):
     time = data.get("time")
     token = data.get("token")
@@ -523,3 +638,14 @@ async def set_care_reminder(data: dict):
     care_reminders.append(reminder)
     schedule_care(reminder)
     return {"message": "Care reminder set successfully"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "backend.main:app",
+        host=os.getenv("HOST", "0.0.0.0"),
+        port=int(os.getenv("PORT", "8001")),
+        reload=os.getenv("RELOAD", "false").lower() == "true",
+    )

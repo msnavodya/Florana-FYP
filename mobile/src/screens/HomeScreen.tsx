@@ -41,6 +41,13 @@ type DiagnosisState = {
   tone: "healthy" | "warning" | "error";
 };
 
+function resolveModelState(aiModel?: { loaded?: boolean; status?: string | null }): ModelState {
+  return {
+    loaded: Boolean(aiModel?.loaded),
+    status: aiModel?.status === "ready" ? "ready" : aiModel?.status === "offline" ? "offline" : "checking",
+  };
+}
+
 function formatRelativeTime(dateString?: string | null) {
   if (!dateString) {
     return "Just now";
@@ -137,6 +144,15 @@ export function HomeScreen() {
 
   const greeting = user?.full_name ? t("hello_user", { name: user.full_name }) : t("hello_guest");
 
+  const refreshModelState = async () => {
+    try {
+      const response = await getBackendHealth();
+      setModelState(resolveModelState(response.ai_model));
+    } catch {
+      setModelState({ loaded: false, status: "offline" });
+    }
+  };
+
   const modelLabel = useMemo(() => {
     if (modelState.loaded) {
       return t("model_live");
@@ -159,16 +175,12 @@ export function HomeScreen() {
     const syncModelState = async () => {
       try {
         const response = await getBackendHealth();
-        const aiModel = response.ai_model;
 
         if (!active) {
           return;
         }
 
-        setModelState({
-          loaded: Boolean(aiModel?.loaded),
-          status: aiModel?.status === "ready" ? "ready" : aiModel?.status === "offline" ? "offline" : "checking",
-        });
+        setModelState(resolveModelState(response.ai_model));
       } catch {
         if (!active) {
           return;
@@ -299,7 +311,7 @@ export function HomeScreen() {
         message: error instanceof Error ? error.message : t("diagnosis_failed"),
         tone: "error",
       });
-      setModelState({ loaded: false, status: "offline" });
+      void refreshModelState();
     } finally {
       setLoading(false);
     }
