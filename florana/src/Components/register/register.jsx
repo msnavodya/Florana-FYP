@@ -95,7 +95,7 @@ export default function Register() {
 
   const sunlightOptions = ["Full Sun", "Partial Sun", "Shade"];
   const flowerCatalogOptions = ["Spring", "Summer", "Autumn", "Winter"];
-  const locationOptions = ["Home Garden", "Balcony", "Front Yard", "Back Yard", "Terrace", "Nursery", "Greenhouse"];
+  const locationOptions = ["Matara", "Galle", "Colombo", "Kandy", "Gampaha", "Jaffna", "Kurunegala", "Anuradhapura", "Batticaloa", "Ratnapura", "Negombo", "Badulla", "Trincomalee", "Nuwara Eliya", "Hambantota"];
   const soilTypeOptions = ["Loamy", "Sandy", "Clay", "Peaty", "Chalky", "Silty", "Well-drained Potting Mix"];
   const environmentOptions = ["Indoor", "Outdoor", "Greenhouse"];
   const climateOptions = ["Tropical", "Temperate", "Arid", "Subtropical"];
@@ -143,7 +143,7 @@ export default function Register() {
 
         <h3 className="section-title">Environment</h3>
         <select className="input" name="location" value={form.location} onChange={handleChange}>
-          <option value="">Location</option>
+          <option value="">Select city in Sri Lanka</option>
           {locationOptions.map((option) => <option key={option}>{option}</option>)}
         </select>
 

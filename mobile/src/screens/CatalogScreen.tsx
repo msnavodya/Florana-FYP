@@ -339,21 +339,32 @@ export function CatalogScreen() {
               <Pressable
                 key={season}
                 onPress={() => router.push(`/season/${season.toLowerCase()}`)}
-                style={styles.seasonCard}
+                style={styles.seasonHeroCard}
               >
-                  <Image source={seasonImages[season]} style={styles.seasonImage} />
-                  <View style={styles.seasonOverlay}>
-                    <Text style={styles.seasonName}>{season}</Text>
-                  </View>
+                <Image source={seasonImages[season]} style={styles.seasonHeroImage} />
+                <View style={styles.seasonHeroScrim} />
+                <View style={styles.seasonHeroCopy}>
+                  <Text style={styles.seasonName}>{season}</Text>
+                  <Text style={styles.seasonMeta}>Browse {season.toLowerCase()} plant listings</Text>
+                </View>
+                <View style={styles.seasonHeroIcon}>
+                  <MaterialIcons name="chevron-right" size={22} color={colors.white} />
+                </View>
               </Pressable>
             ))}
 
             <Pressable
               onPress={() => router.push("/season/all")}
-              style={[styles.seasonCard, styles.allPlantsCard]}
+              style={styles.allPlantsCard}
             >
-              <MaterialIcons name="spa" size={26} color={colors.primaryDark} />
-              <Text style={styles.allPlantsText}>{copy.allPlants}</Text>
+              <View style={styles.allPlantsIcon}>
+                <MaterialIcons name="spa" size={24} color={colors.primaryDark} />
+              </View>
+              <View style={styles.allPlantsCopy}>
+                <Text style={styles.allPlantsText}>{copy.allPlants}</Text>
+                <Text style={styles.allPlantsMeta}>Browse every saved listing</Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={22} color={colors.primaryDark} />
             </Pressable>
           </View>
 
@@ -679,54 +690,89 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   seasonGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
+    gap: 12,
   },
-  seasonCard: {
-    borderRadius: 24,
+  seasonHeroCard: {
+    alignItems: "center",
+    backgroundColor: colors.surfaceMuted,
+    borderColor: "rgba(255,255,255,0.7)",
+    borderRadius: 20,
+    borderWidth: 1,
+    flexDirection: "row",
+    height: 104,
     overflow: "hidden",
     position: "relative",
-    width: "48%",
     ...shadows.soft,
   },
-  seasonCardActive: {
-    shadowColor: colors.primaryDark,
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.24,
-    shadowRadius: 28,
-    elevation: 6,
-  },
-  seasonImage: {
-    height: 140,
+  seasonHeroImage: {
+    ...StyleSheet.absoluteFillObject,
+    height: "100%",
     width: "100%",
   },
-  seasonOverlay: {
-    backgroundColor: "rgba(18, 13, 28, 0.22)",
-    bottom: 0,
-    left: 0,
-    padding: spacing.md,
-    position: "absolute",
-    right: 0,
+  seasonHeroScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(16, 10, 29, 0.38)",
+  },
+  seasonHeroCopy: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    zIndex: 1,
   },
   seasonName: {
     color: colors.white,
-    fontSize: 16,
-    fontWeight: "800",
+    fontSize: 21,
+    fontWeight: "900",
+  },
+  seasonMeta: {
+    color: "rgba(255,255,255,0.84)",
+    fontSize: 13,
+    fontWeight: "700",
+    marginTop: 4,
+  },
+  seasonHeroIcon: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderRadius: 18,
+    height: 40,
+    justifyContent: "center",
+    marginRight: spacing.md,
+    width: 40,
+    zIndex: 1,
   },
   allPlantsCard: {
     alignItems: "center",
     backgroundColor: "#F7F8F2",
+    borderColor: colors.border,
+    borderRadius: 20,
+    borderWidth: 1,
+    flexBasis: "100%",
+    flexDirection: "row",
+    gap: spacing.md,
+    minHeight: 86,
+    padding: spacing.md,
+    ...shadows.soft,
+  },
+  allPlantsIcon: {
+    alignItems: "center",
+    backgroundColor: "#E8F7EF",
+    borderRadius: 18,
+    height: 44,
     justifyContent: "center",
-    minHeight: 140,
-    padding: spacing.lg,
+    width: 44,
+  },
+  allPlantsCopy: {
+    flex: 1,
+    gap: 3,
   },
   allPlantsText: {
     color: colors.primaryDark,
-    fontSize: 16,
-    fontWeight: "800",
-    marginTop: spacing.sm,
-    textAlign: "center",
+    fontSize: 17,
+    fontWeight: "900",
+  },
+  allPlantsMeta: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: "700",
   },
   sectionHeader: {
     alignItems: "center",

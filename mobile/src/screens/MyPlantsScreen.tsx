@@ -1,6 +1,6 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { AppMenu } from "../components/AppMenu";
@@ -99,6 +99,12 @@ export function MyPlantsScreen() {
     const interval = setInterval(() => void loadPlants(), 30000);
     return () => clearInterval(interval);
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadPlants();
+    }, [])
+  );
 
   const handleDelete = (plant: Plant) => {
     const plantId = plant.id || plant._id;

@@ -190,7 +190,7 @@ const cartCopy: Record<
 export function CartScreen() {
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
-  const { items, currency, removeItem, clearCart, subtotal, totalItems } = useCart();
+  const { items, currency, removeItem, updateQuantity, clearCart, subtotal, totalItems } = useCart();
   const { languageCode, t } = useLanguage();
   const copy = cartCopy[languageCode] || cartCopy.en;
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -290,6 +290,20 @@ export function CartScreen() {
         },
       },
     ]);
+  };
+
+  const decreaseItem = async (itemId: string, itemName: string, quantity: number) => {
+    if (quantity <= 1) {
+      handleRemoveItem(itemId, itemName);
+      return;
+    }
+
+    await updateQuantity(itemId, quantity - 1);
+    showStatus(`Removed one ${itemName}.`);
+  };
+
+  const increaseItem = async (itemId: string, quantity: number) => {
+    await updateQuantity(itemId, quantity + 1);
   };
 
   const selectPaymentMethod = (method: CheckoutMethod) => {
@@ -452,9 +466,29 @@ export function CartScreen() {
                 </Text>
               </View>
 
-              <Pressable accessibilityLabel="Remove item" onPress={() => handleRemoveItem(item.id, item.name)} style={styles.deleteButton}>
-                <MaterialIcons name="close" size={16} color="#B33D68" />
-              </Pressable>
+              <View style={styles.itemActions}>
+                <View style={styles.quantityStepper}>
+                  <Pressable
+                    accessibilityLabel={`Remove one ${item.name}`}
+                    onPress={() => void decreaseItem(item.id, item.name, item.quantity)}
+                    style={styles.quantityButton}
+                  >
+                    <MaterialIcons name="remove" size={16} color={colors.primaryDark} />
+                  </Pressable>
+                  <Text style={styles.quantityValue}>{item.quantity}</Text>
+                  <Pressable
+                    accessibilityLabel={`Add one ${item.name}`}
+                    onPress={() => void increaseItem(item.id, item.quantity)}
+                    style={styles.quantityButton}
+                  >
+                    <MaterialIcons name="add" size={16} color={colors.primaryDark} />
+                  </Pressable>
+                </View>
+
+                <Pressable accessibilityLabel="Remove item" onPress={() => handleRemoveItem(item.id, item.name)} style={styles.deleteButton}>
+                  <MaterialIcons name="delete-outline" size={17} color="#B33D68" />
+                </Pressable>
+              </View>
             </View>
           ))
         ) : (
@@ -801,7 +835,7 @@ const styles = StyleSheet.create({
     ...shadows.soft,
   },
   item: {
-    alignItems: "center",
+    alignItems: "flex-start",
     backgroundColor: colors.white,
     borderColor: colors.border,
     borderRadius: 22,
@@ -829,6 +863,34 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 14,
     fontWeight: "700",
+  },
+  itemActions: {
+    alignItems: "flex-end",
+    gap: spacing.sm,
+    marginLeft: spacing.sm,
+  },
+  quantityStepper: {
+    alignItems: "center",
+    backgroundColor: "#F5F0FA",
+    borderColor: colors.border,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    flexDirection: "row",
+    minHeight: 36,
+    overflow: "hidden",
+  },
+  quantityButton: {
+    alignItems: "center",
+    height: 36,
+    justifyContent: "center",
+    width: 34,
+  },
+  quantityValue: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "900",
+    minWidth: 26,
+    textAlign: "center",
   },
   deleteButton: {
     alignItems: "center",

@@ -575,17 +575,21 @@ def delete_plant(plant_id: str):
         if plants_collection is None:
             deleted_count = local_store.delete_item(
                 local_store.PLANTS_FILE,
-                lambda item: item.get("_id") == plant_id,
+                lambda item: item.get("_id") == plant_id or item.get("id") == plant_id,
             )
         else:
+            if not ObjectId.is_valid(plant_id):
+                raise HTTPException(status_code=400, detail="Invalid plant ID")
             result = plants_collection.delete_one({"_id": ObjectId(plant_id)})
             deleted_count = result.deleted_count
 
         if deleted_count == 0:
             raise HTTPException(status_code=404, detail="Plant not found")
         return {"message": "Plant deleted successfully"}
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ----------------- CARE REMINDER -----------------

@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { FlatList, Image, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, FlatList, Image, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
 import { AppMenu } from "../components/AppMenu";
@@ -24,6 +24,7 @@ export function FlowerProfileScreen() {
   const [newHeight, setNewHeight] = useState("");
   const [newHealth, setNewHealth] = useState("");
   const [newNotes, setNewNotes] = useState("");
+  const [savingGrowth, setSavingGrowth] = useState(false);
   const decodedName = decodeURIComponent(plantName || "");
 
   useEffect(() => {
@@ -73,22 +74,38 @@ export function FlowerProfileScreen() {
     : [];
 
   const handleAddGrowth = async () => {
-    if (!newHeight || !plant?._id) {
+    const heightValue = Number(newHeight);
+
+    if (!plant?._id) {
+      Alert.alert("Profile unavailable", "Open a saved plant profile before adding growth records.");
       return;
     }
 
-    const formData = new FormData();
-    formData.append("plant_id", plant._id);
-    formData.append("height", newHeight);
-    formData.append("health", newHealth || "Good");
-    formData.append("notes", newNotes);
+    if (!Number.isFinite(heightValue) || heightValue <= 0) {
+      Alert.alert("Invalid height", "Enter a height greater than 0 cm.");
+      return;
+    }
 
-    await addGrowth(formData);
-    const growthResult = await getGrowth(plant._id);
-    setGrowthData(growthResult.data || []);
-    setNewHeight("");
-    setNewHealth("");
-    setNewNotes("");
+    try {
+      setSavingGrowth(true);
+      const formData = new FormData();
+      formData.append("plant_id", plant._id);
+      formData.append("height", String(heightValue));
+      formData.append("health", newHealth.trim() || "Good");
+      formData.append("notes", newNotes.trim());
+
+      await addGrowth(formData);
+      const growthResult = await getGrowth(plant._id);
+      setGrowthData(growthResult.data || []);
+      setNewHeight("");
+      setNewHealth("");
+      setNewNotes("");
+      Alert.alert("Growth saved", "The plant profile has been updated.");
+    } catch (error) {
+      Alert.alert("Save failed", error instanceof Error ? error.message : "Unable to add growth record.");
+    } finally {
+      setSavingGrowth(false);
+    }
   };
 
   return (
@@ -168,7 +185,7 @@ export function FlowerProfileScreen() {
             <TextInput placeholder="Height (cm)" placeholderTextColor={colors.textMuted} style={styles.input} value={newHeight} onChangeText={setNewHeight} keyboardType="decimal-pad" />
             <TextInput placeholder="Health (e.g. Good, Bad)" placeholderTextColor={colors.textMuted} style={styles.input} value={newHealth} onChangeText={setNewHealth} />
             <TextInput placeholder="Notes (optional)" placeholderTextColor={colors.textMuted} style={[styles.input, styles.notesInput]} value={newNotes} onChangeText={setNewNotes} multiline />
-            <PrimaryButton label="Add Record" onPress={() => void handleAddGrowth()} disabled={!plant?._id} />
+            <PrimaryButton label={savingGrowth ? "Saving..." : "Add Record"} onPress={() => void handleAddGrowth()} disabled={!plant?._id || savingGrowth} />
           </View>
         </ScrollView>
       ) : null}

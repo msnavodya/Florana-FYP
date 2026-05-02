@@ -1,7 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import { useState } from "react";
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Alert, Animated, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
 import { AppMenu } from "../components/AppMenu";
@@ -14,11 +14,132 @@ import { appendImageAsset } from "../lib/api/upload";
 import { colors, radii, shadows, spacing } from "../theme/tokens";
 
 const sunlightOptions = ["Full Sun", "Partial Sun", "Shade"] as const;
-const flowerCatalogOptions = ["Spring", "Summer", "Autumn", "Winter"] as const;
-const locationOptions = ["Home Garden", "Balcony", "Front Yard", "Back Yard", "Terrace", "Nursery", "Greenhouse"] as const;
-const soilTypeOptions = ["Loamy", "Sandy", "Clay", "Peaty", "Chalky", "Silty", "Well-drained Potting Mix"] as const;
-const environmentOptions = ["Indoor", "Outdoor", "Greenhouse"] as const;
-const climateOptions = ["Tropical", "Temperate", "Arid", "Subtropical"] as const;
+const flowerCatalogOptions = ["Roses", "Orchids", "Sunflowers", "Lilies", "Jasmine", "Tulips", "Marigolds", "Lavender", "Hibiscus", "Daisies", "Chrysanthemums", "Bougainvillea", "Lotus", "Water Lily", "Anthurium"] as const;
+const locationOptions = ["Colombo", "Kandy", "Galle", "Jaffna", "Negombo", "Anuradhapura", "Batticaloa"] as const;
+const soilTypeOptions = ["Sandy Soil", "Clay Soil", "Loamy Soil", "Silt Soil", "Peaty Soil", "Chalky Soil", "Saline Soil", "Organic Compost Soil", "Coco Peat", "Potting Mix", "Garden Soil", "Hydroponic Medium"] as const;
+const environmentOptions = ["Greenhouse", "Rooftop Garden", "Indoor Plant Room", "Hydroponic Farm", "Nursery Area", "Botanical Garden", "Backyard Garden", "Balcony Garden", "Urban Farm", "Polytunnel", "Shade House", "Vertical Farming Unit", "Vegetable Plot", "Flower Garden", "Orchard Area"] as const;
+const climateOptions = ["Tropical", "Subtropical", "Monsoon", "Arid", "Temperate", "Humid", "Dry Zone", "Wet Zone"] as const;
+
+type DropdownField = "flowerCatalog" | "location" | "specificLocation" | "climate" | "soilType";
+
+type SearchableDropdownProps = {
+  error?: string;
+  label: string;
+  onChange: (value: string) => void;
+  options: readonly string[];
+  placeholder: string;
+  required?: boolean;
+  value: string;
+};
+
+function SearchableDropdown({ error, label, onChange, options, placeholder, required, value }: SearchableDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const progress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(progress, {
+      duration: 180,
+      toValue: open ? 1 : 0,
+      useNativeDriver: false,
+    }).start();
+  }, [open, progress]);
+
+  const filteredOptions = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) {
+      return options;
+    }
+
+    return options.filter((option) => option.toLowerCase().includes(normalizedQuery));
+  }, [options, query]);
+
+  const menuHeight = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 246],
+  });
+
+  const chevronRotation = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "180deg"],
+  });
+
+  return (
+    <View style={styles.dropdownBlock}>
+      <View style={styles.dropdownLabelRow}>
+        <Text style={styles.dropdownLabel}>{label}</Text>
+        {required ? <Text style={styles.requiredLabel}>Required</Text> : null}
+      </View>
+
+      <Pressable
+        accessibilityHint={`Opens ${label} options`}
+        accessibilityLabel={value ? `${label}, selected ${value}` : `${label}, ${placeholder}`}
+        accessibilityRole="button"
+        onPress={() => setOpen((current) => !current)}
+        style={({ pressed }) => [
+          styles.dropdownButton,
+          open ? styles.dropdownButtonOpen : null,
+          error ? styles.dropdownButtonError : null,
+          pressed ? styles.dropdownButtonPressed : null,
+        ]}
+      >
+        <Text style={[styles.dropdownValue, !value ? styles.placeholderText : null]} numberOfLines={1}>
+          {value || placeholder}
+        </Text>
+        <Animated.View style={{ transform: [{ rotate: chevronRotation }] }}>
+          <MaterialIcons name="keyboard-arrow-down" size={24} color={open ? "#7B61FF" : colors.textMuted} />
+        </Animated.View>
+      </Pressable>
+
+      {error ? <Text style={styles.validationText}>{error}</Text> : null}
+
+      <Animated.View pointerEvents={open ? "auto" : "none"} style={[styles.dropdownMenu, { maxHeight: menuHeight, opacity: progress }]}>
+        <View style={styles.dropdownSearchRow}>
+          <MaterialIcons name="search" size={18} color={colors.textMuted} />
+          <TextInput
+            accessibilityLabel={`Search ${label}`}
+            onChangeText={setQuery}
+            placeholder="Search"
+            placeholderTextColor="#9A93AA"
+            style={styles.dropdownSearchInput}
+            value={query}
+          />
+        </View>
+
+        <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false} style={styles.dropdownOptions}>
+          {filteredOptions.length ? (
+            filteredOptions.map((option) => {
+              const selected = value === option;
+              return (
+                <Pressable
+                  accessibilityRole="button"
+                  key={option}
+                  onPress={() => {
+                    onChange(option);
+                    setOpen(false);
+                    setQuery("");
+                  }}
+                  style={({ pressed }) => [
+                    styles.dropdownOption,
+                    selected ? styles.dropdownOptionSelected : null,
+                    pressed ? styles.dropdownOptionPressed : null,
+                  ]}
+                >
+                  <Text style={[styles.dropdownOptionText, selected ? styles.dropdownOptionTextSelected : null]}>
+                    {option}
+                  </Text>
+                  {selected ? <MaterialIcons name="check" size={18} color="#7B61FF" /> : null}
+                </Pressable>
+              );
+            })
+          ) : (
+            <Text style={styles.emptyOptionText}>No matches found</Text>
+          )}
+        </ScrollView>
+      </Animated.View>
+    </View>
+  );
+}
 
 export function RegisterPlantScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -56,20 +177,6 @@ export function RegisterPlantScreen() {
     if (!result.canceled) {
       updateField("image", result.assets[0]);
     }
-  };
-
-  const pickChoice = (title: string, field: "flowerCatalog" | "location" | "specificLocation" | "climate" | "soilType", options: readonly string[]) => {
-    Alert.alert(
-      title,
-      "Choose an option",
-      [
-        ...options.map((option) => ({
-          text: option,
-          onPress: () => updateField(field, option),
-        })),
-        { text: "Cancel", style: "cancel" as const },
-      ]
-    );
   };
 
   const handleSubmit = async () => {
@@ -115,6 +222,8 @@ export function RegisterPlantScreen() {
     }
   };
 
+  const updateDropdown = (field: DropdownField) => (value: string) => updateField(field, value);
+
   return (
     <Screen>
       <TopBar title="Register Plant" onMenuPress={() => setMenuOpen(true)} />
@@ -147,29 +256,48 @@ export function RegisterPlantScreen() {
           <Text style={styles.sectionTitle}>Basic Info</Text>
           <TextInput placeholder="Plant Name" placeholderTextColor="#999" style={styles.input} value={form.name} onChangeText={(value) => updateField("name", value)} />
           <TextInput placeholder="Plant Species" placeholderTextColor="#999" style={styles.input} value={form.species} onChangeText={(value) => updateField("species", value)} />
-          <Pressable onPress={() => pickChoice("Flower Catalog", "flowerCatalog", flowerCatalogOptions)} style={styles.inputButton}>
-            <Text style={[styles.inputButtonText, !form.flowerCatalog ? styles.placeholderText : null]}>
-              {form.flowerCatalog || "Flower Catalog"}
-            </Text>
-          </Pressable>
           <TextInput placeholder={`Flower ID (Auto: F-${nextId})`} placeholderTextColor="#999" style={styles.input} value={form.flowerId} onChangeText={(value) => updateField("flowerId", value)} />
 
-          <Text style={styles.sectionTitle}>Environment</Text>
-          <Pressable onPress={() => pickChoice("Location", "location", locationOptions)} style={styles.inputButton}>
-            <Text style={[styles.inputButtonText, !form.location ? styles.placeholderText : null]}>
-              {form.location || "Location"}
-            </Text>
-          </Pressable>
-          <Pressable onPress={() => pickChoice("Specific Location", "specificLocation", environmentOptions)} style={styles.inputButton}>
-            <Text style={[styles.inputButtonText, !form.specificLocation ? styles.placeholderText : null]}>
-              {form.specificLocation || "Specific Location"}
-            </Text>
-          </Pressable>
-          <Pressable onPress={() => pickChoice("Climate", "climate", climateOptions)} style={styles.inputButton}>
-            <Text style={[styles.inputButtonText, !form.climate ? styles.placeholderText : null]}>
-              {form.climate || "Climate"}
-            </Text>
-          </Pressable>
+          <View style={styles.environmentPanel}>
+            <Text style={styles.environmentTitle}>Environment</Text>
+            <SearchableDropdown
+              error={!form.location ? "Choose a city to improve climate recommendations." : undefined}
+              label="City in Sri Lanka"
+              onChange={updateDropdown("location")}
+              options={locationOptions}
+              placeholder="Select city in Sri Lanka"
+              required
+              value={form.location}
+            />
+            <SearchableDropdown
+              label="Specific Location"
+              onChange={updateDropdown("specificLocation")}
+              options={environmentOptions}
+              placeholder="Specific Location"
+              value={form.specificLocation}
+            />
+            <SearchableDropdown
+              label="Climate"
+              onChange={updateDropdown("climate")}
+              options={climateOptions}
+              placeholder="Climate"
+              value={form.climate}
+            />
+            <SearchableDropdown
+              label="Flower Catalog"
+              onChange={updateDropdown("flowerCatalog")}
+              options={flowerCatalogOptions}
+              placeholder="Select Flower Type"
+              value={form.flowerCatalog}
+            />
+            <SearchableDropdown
+              label="Soil Type"
+              onChange={updateDropdown("soilType")}
+              options={soilTypeOptions}
+              placeholder="Select Soil Type"
+              value={form.soilType}
+            />
+          </View>
 
           <Text style={styles.sectionTitle}>Sunlight</Text>
           <View style={styles.optionRow}>
@@ -182,11 +310,6 @@ export function RegisterPlantScreen() {
           </View>
 
           <Text style={styles.sectionTitle}>Care</Text>
-          <Pressable onPress={() => pickChoice("Soil Type", "soilType", soilTypeOptions)} style={styles.inputButton}>
-            <Text style={[styles.inputButtonText, !form.soilType ? styles.placeholderText : null]}>
-              {form.soilType || "Soil Type"}
-            </Text>
-          </Pressable>
           <TextInput placeholder="Watering Frequency" placeholderTextColor="#999" style={styles.input} value={form.wateringFrequency} onChangeText={(value) => updateField("wateringFrequency", value)} />
           <TextInput placeholder="Fertilizer Schedule" placeholderTextColor="#999" style={styles.input} value={form.fertilizerSchedule} onChangeText={(value) => updateField("fertilizerSchedule", value)} />
           <TextInput placeholder="Last Watered" placeholderTextColor="#999" style={styles.input} value={form.lastWatered} onChangeText={(value) => updateField("lastWatered", value)} />
@@ -214,7 +337,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
   },
   formShell: {
-    backgroundColor: "rgba(255,255,255,0.96)",
+    backgroundColor: "#F5F5F7",
     borderRadius: 26,
     padding: 18,
     ...shadows.card,
@@ -301,22 +424,132 @@ const styles = StyleSheet.create({
     minHeight: 48,
     paddingHorizontal: 12,
   },
-  inputButton: {
-    backgroundColor: colors.white,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 12,
-    justifyContent: "center",
-    marginBottom: 12,
-    minHeight: 48,
-    paddingHorizontal: 12,
-  },
-  inputButtonText: {
-    color: colors.text,
-    fontSize: 14,
-  },
   placeholderText: {
-    color: "#999999",
+    color: "#9A93AA",
+    fontWeight: "500",
+  },
+  environmentPanel: {
+    backgroundColor: "#F5F5F7",
+    borderRadius: 22,
+    gap: 14,
+    marginTop: 18,
+  },
+  environmentTitle: {
+    color: "#24183D",
+    fontSize: 22,
+    fontWeight: "900",
+    letterSpacing: 0,
+  },
+  dropdownBlock: {
+    gap: 8,
+  },
+  dropdownLabelRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  dropdownLabel: {
+    color: "#433958",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  requiredLabel: {
+    color: "#7B61FF",
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+  },
+  dropdownButton: {
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderColor: "rgba(123, 97, 255, 0.16)",
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: 56,
+    paddingHorizontal: 16,
+    ...shadows.soft,
+  },
+  dropdownButtonOpen: {
+    borderColor: "#7B61FF",
+  },
+  dropdownButtonError: {
+    borderColor: "rgba(143,45,86,0.5)",
+  },
+  dropdownButtonPressed: {
+    backgroundColor: "#FBFAFF",
+  },
+  dropdownValue: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "700",
+    paddingRight: spacing.sm,
+  },
+  validationText: {
+    color: colors.danger,
+    fontSize: 12,
+    fontWeight: "600",
+    lineHeight: 17,
+  },
+  dropdownMenu: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "rgba(123, 97, 255, 0.14)",
+    borderRadius: 18,
+    borderWidth: 1,
+    overflow: "hidden",
+    ...shadows.soft,
+  },
+  dropdownSearchRow: {
+    alignItems: "center",
+    backgroundColor: "#FAF9FF",
+    borderBottomColor: "rgba(123, 97, 255, 0.12)",
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+  },
+  dropdownSearchInput: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 14,
+    minHeight: 44,
+  },
+  dropdownOptions: {
+    maxHeight: 190,
+  },
+  dropdownOption: {
+    alignItems: "center",
+    borderBottomColor: "rgba(123, 97, 255, 0.08)",
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
+  },
+  dropdownOptionSelected: {
+    backgroundColor: "#EFEAFF",
+  },
+  dropdownOptionPressed: {
+    backgroundColor: "#F5F1FF",
+  },
+  dropdownOptionText: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  dropdownOptionTextSelected: {
+    color: "#5A3FE0",
+    fontWeight: "900",
+  },
+  emptyOptionText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    padding: spacing.md,
+    textAlign: "center",
   },
   optionRow: {
     flexDirection: "row",

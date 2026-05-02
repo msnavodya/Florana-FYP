@@ -1,31 +1,42 @@
 # Florana FYP
 
-Florana is a plant-care and plant-shop system with a FastAPI backend, an Expo mobile app, and a legacy React web client. The current main client is the `mobile/` app.
+Florana is a final-year plant care and plant shop system. It combines a FastAPI backend, an Expo React Native mobile app, a legacy React web client, and an ML pipeline for plant disease image classification.
 
-## Main Features
+The main product experience is the `mobile/` app. The backend exposes authentication, plant management, growth tracking, disease prediction, catalog, cart/payment, feedback, and reminder APIs.
 
-- User signup and login
+## Features
+
+- User registration and login
 - Plant disease prediction from uploaded images
-- Plant registration with image upload, location, sunlight, soil, climate, tracking, and care details
-- My Plants dashboard with plant profile deletion
-- Flower profile with uploaded image display and growth tracking charts
+- Plant registration with image upload, city, sunlight, soil, climate, tracking, and care details
+- My Plants dashboard with plant profile view and deletion
+- Flower profile pages with uploaded images and growth charts
 - Seasonal shop catalog for Spring, Summer, Autumn, and Winter plants
-- Sell Plants flow with validated product saving, image upload, listing preview, and season catalog display
-- Product listing deletion from catalog and season screens
-- Cart with persistent items, remove confirmation, currency switching, and checkout flow
-- Care reminders, feedback, quick tips, profile, settings, help, and about screens
+- Sell Plants flow with product validation, image upload, listing preview, and catalog updates
+- Product deletion from catalog and season screens
+- Cart with saved items, remove confirmation, currency switching, and checkout flow
+- Care reminders, quick tips, feedback, profile, settings, help, and about screens
+- Local JSON fallback storage when MongoDB is not configured
 
 ## Project Structure
 
-- `mobile/` - main Expo mobile app
-- `backend/` - FastAPI backend, local JSON fallback storage, MongoDB support, uploads, prediction, plants, growth, shop, payment, feedback, and reminders routes
+- `mobile/` - active Expo React Native app
+- `backend/` - FastAPI API, auth, local storage, MongoDB support, uploads, prediction, plants, growth, shop, payment, feedback, and reminders
 - `florana/` - legacy React web client
-- `frontend/` - separate Expo payment demo
-- `uploads/` - uploaded plant/product images served by the backend
+- `ml_pipeline/` - TensorFlow image classification training and dataset tooling
+- `uploads/` - local uploaded images served by the backend during development
+- `PAYMENT_SYSTEM_GUIDE.md` - payment flow documentation
 
-## Quick Start
+## Requirements
 
-Install dependencies where needed:
+- Node.js and npm
+- Python 3.10+ recommended
+- Expo Go or an Android/iOS emulator for mobile testing
+- Optional MongoDB connection for persistent database storage
+
+## Installation
+
+Install root, mobile, and legacy web dependencies:
 
 ```bash
 npm install
@@ -33,7 +44,45 @@ npm --prefix mobile install
 npm --prefix florana install
 ```
 
-Start the backend:
+Install backend Python dependencies inside the project virtual environment:
+
+```bash
+.\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
+```
+
+If you are not using the existing `.venv`, create and activate one first:
+
+```bash
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r backend\requirements.txt
+```
+
+## Environment Setup
+
+Backend environment example:
+
+```bash
+copy backend\.env.example backend\.env
+```
+
+Mobile environment example:
+
+```bash
+copy mobile\.env.example mobile\.env
+```
+
+For Expo Go on a real phone, set the mobile API URL to your computer LAN IP:
+
+```text
+EXPO_PUBLIC_API_BASE_URL=http://YOUR_LAN_IP:8001
+```
+
+Keep the phone and computer on the same Wi-Fi network. If you run the backend on a different port, update `EXPO_PUBLIC_API_BASE_URL` to match.
+
+## Running The Project
+
+Start the backend from the repository root:
 
 ```bash
 npm run backend:start
@@ -57,11 +106,17 @@ Run the legacy React web client:
 npm run legacy:web:start
 ```
 
-## Backend
+Build the legacy React web client:
 
-The backend starts through `backend/run_backend.py` and serves the API on port `8001` by default from the root scripts.
+```bash
+npm run legacy:web:build
+```
 
-Useful endpoints include:
+## API Overview
+
+The backend runs on port `8001` by default when started with the root npm scripts.
+
+Important endpoints include:
 
 - `GET /health`
 - `POST /auth/signup`
@@ -83,50 +138,39 @@ Uploaded images are served from:
 /uploads/<filename>
 ```
 
-## Mobile Environment
+## ML Pipeline
 
-Copy:
+The `ml_pipeline/` folder contains scripts and documentation for downloading image datasets, training a TensorFlow model, and exporting model artifacts. See `ml_pipeline/README.md` for the full workflow.
 
-```bash
-mobile/.env.example
-```
-
-to:
-
-```bash
-mobile/.env
-```
-
-For Expo Go on a real phone, set the backend URL to your computer LAN IP:
-
-```text
-EXPO_PUBLIC_API_BASE_URL=http://YOUR_LAN_IP:8001
-```
-
-Keep the phone and computer on the same Wi-Fi network.
+Do not commit generated datasets, local credentials, or large generated model outputs unless they are intentionally part of a release.
 
 ## Verification
 
-Mobile typecheck:
+Run the mobile TypeScript check:
 
 ```bash
 npm run mobile:typecheck
 ```
 
-Legacy web build:
+Run a backend syntax check:
+
+```bash
+.\.venv\Scripts\python.exe -m py_compile backend\main.py backend\routes\plant.py backend\routes\shop.py
+```
+
+Build the legacy web client:
 
 ```bash
 npm run legacy:web:build
 ```
 
-Backend route syntax check:
+## Git Notes
 
-```bash
-python -m py_compile backend/routes/plant.py backend/routes/shop.py
-```
+Ignored local files include virtual environments, `node_modules`, environment files, local uploads, generated caches, and large local datasets. Commit source code, configuration examples, documentation, and intended static assets only.
 
-## Notes
+## Current Status
 
-- The mobile app is the active product experience.
-- The backend supports MongoDB when configured, and falls back to local JSON files when MongoDB is unavailable.
-- Shop listings now return full saved product data, so mobile and web catalog screens can update immediately after saving.
+- Main branch: `main`
+- GitHub remote: `https://github.com/msnavodya/Florana-FYP.git`
+- Active client: `mobile/`
+- Backend default port: `8001`
