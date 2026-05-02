@@ -1,6 +1,6 @@
 # Florana FYP
 
-Florana is a final-year plant care and plant shop system. It combines a FastAPI backend, an Expo React Native mobile app, a legacy React web client, and an ML pipeline for plant disease image classification.
+Florana is a my final-year project  plant care and plant shop system. It combines a FastAPI backend, an Expo React Native mobile app, a legacy React web client, and an ML pipeline for plant disease image classification.
 
 The main product experience is the `mobile/` app. The backend exposes authentication, plant management, growth tracking, disease prediction, catalog, cart/payment, feedback, and reminder APIs.
 
