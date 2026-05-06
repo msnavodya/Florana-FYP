@@ -31,6 +31,19 @@ Main capabilities:
 - Seasonal plant shop with cart and checkout flow
 - Admin dashboard for managing users, plants, products, feedback, and orders
 
+## Project Completion Status
+
+Florana is structured as a multi-module final-year project with the main mobile application, backend API, admin dashboard, legacy web client, and ML training workflow included in one repository.
+
+Completed project areas:
+
+- Mobile application screens and navigation are implemented in `mobile/src/screens/`.
+- Backend API routes are implemented in `backend/routes/` and `backend/main.py`.
+- Disease prediction model files are included in `backend/ai/`.
+- Admin dashboard pages are implemented in `admin-dashboard/src/pages/`.
+- ML dataset download and training workflow is documented and scripted in `ml_pipeline/`.
+- Root npm scripts are available for running the backend, mobile app, admin dashboard, and legacy web client.
+
 ## 3. Features
 
 ### Core Features
@@ -59,12 +72,48 @@ Main capabilities:
 
 ### Planned / Future Advanced Features
 
-- Live weather integration for care recommendations
-- Community plant sharing features
+- Live weather API integration for care recommendations
+- Community plant sharing and discussion features
 - Push notification improvements
 - Chatbot plant assistant
 - Plant doctor consultation workflow
 - IoT sensor integration for soil moisture and environment tracking
+
+### Implemented Mobile Screens
+
+- Welcome
+- Login and registration
+- Home dashboard
+- Disease prediction
+- My Plants
+- Register Plant
+- Plant profile / flower profile
+- Growth chart view
+- Quick Tips
+- Care Reminder
+- Catalog
+- Season catalog
+- Product details
+- Cart
+- Feedback
+- Profile
+- Settings
+- Help
+- About
+
+### Implemented Admin Dashboard Pages
+
+- Dashboard summary
+- Users
+- Plants
+- Products and shop products
+- Orders / payments
+- Feedback
+- Care reminders
+- Growth tracking
+- Disease predictions
+- Reports and analytics
+- Settings
 
 ## 4. Tech Stack
 
@@ -100,6 +149,8 @@ Main capabilities:
 - Python
 - Uvicorn
 - Pydantic
+- python-jose
+- Passlib
 - JWT authentication utilities
 - Local JSON fallback storage
 
@@ -121,6 +172,15 @@ Main capabilities:
 - Cloudinary for optional ML dataset download workflow
 - Stripe configuration support for payment intent flow
 - Firebase Admin SDK support for notification integration when configured
+
+## Prerequisites
+
+- Node.js and npm
+- Python 3.10+ recommended
+- Expo Go or Android/iOS emulator for mobile testing
+- MongoDB for persistent storage
+- Optional Cloudinary account for ML dataset download workflow
+- Optional Stripe keys for live card payment testing
 
 ## 5. System Architecture
 
@@ -307,6 +367,22 @@ backend/ai/class_names.json
 
 To train or update the model, use the workflow in `ml_pipeline/`.
 
+### Root Scripts
+
+| Script | Purpose |
+| --- | --- |
+| `npm run backend:start` | Start FastAPI backend on port `8000` |
+| `npm run backend:start:reload` | Start backend with reload |
+| `npm start` | Start Expo mobile app |
+| `npm run android` | Start Expo Android target |
+| `npm run ios` | Start Expo iOS target |
+| `npm run web` | Start Expo web target |
+| `npm run admin:start` | Start admin dashboard |
+| `npm run admin:build` | Build admin dashboard |
+| `npm run legacy:web:start` | Start legacy React web client |
+| `npm run legacy:web:build` | Build legacy React web client |
+| `npm run mobile:typecheck` | Run mobile TypeScript check |
+
 ## 9. Environment Variables
 
 Copy the example files before running locally:
@@ -330,7 +406,7 @@ ALLOWED_ORIGINS=http://localhost:8081,http://127.0.0.1:8081,http://localhost:808
 ALLOWED_RETURN_URL_PREFIXES=exp://,exps://,florana-payments://,https://auth.expo.io/
 ```
 
-JWT signing is currently configured in `backend/utils/security.py`. For production, move the secret into an environment variable such as `JWT_SECRET_KEY`.
+Current development JWT signing is configured in `backend/utils/security.py`. For production deployment, move the secret into an environment variable such as `JWT_SECRET_KEY`.
 
 ### Mobile `.env`
 
@@ -406,7 +482,7 @@ Uploaded images are served from:
 
 ## 11. Screenshots
 
-Add final app screenshots to `docs/screenshots/` before submission or GitHub presentation.
+The project contains image assets for the mobile and legacy web clients in `mobile/assets/` and `florana/src/Components/Assets/`. For GitHub presentation or final evaluation, capture the following runtime screens from the completed application:
 
 Recommended screenshots:
 
@@ -458,8 +534,20 @@ Dataset workflow:
 - Backend model file: `backend/ai/plant_disease_model.keras`
 - Class labels file: `backend/ai/class_names.json`
 - Confidence threshold: backend returns `Needs closer inspection` for low-confidence predictions
+- Current backend class count: 5
+- Current classes: Botrytis, Fresh Leaf, Leaf Spot, Powdery Mildew, Rust
 
-Accuracy depends on the training dataset and the latest trained model. Add final training accuracy, validation accuracy, dataset size, and confusion matrix details after model evaluation.
+Accuracy depends on the dataset used for the latest training run. The repository includes the trained backend model artifact and the full training pipeline, so final validation accuracy and confusion matrix results can be recorded from the training output.
+
+## Current Repository Status
+
+- Main branch: `main`
+- GitHub repository: `https://github.com/msnavodya/Florana-FYP.git`
+- Main client: `mobile/`
+- Backend default port: `8000`
+- Database: MongoDB with local JSON fallback
+- Upload storage during development: local `/uploads`
+- AI model runtime files: `backend/ai/plant_disease_model.keras` and `backend/ai/class_names.json`
 
 ## 14. Future Enhancements
 
@@ -480,7 +568,7 @@ Accuracy depends on the training dataset and the latest trained model. Add final
 
 ## 16. License
 
-This project is currently prepared for academic/final-year project submission. Add an open-source license such as MIT before public reuse or distribution.
+This project is prepared for academic/final-year project submission. No separate open-source license file is currently included in the repository.
 
 ## 17. Contact
 
@@ -488,6 +576,7 @@ This project is currently prepared for academic/final-year project submission. A
 - GitHub Profile: [msnavodya](https://github.com/msnavodya)
 - Email: sadininavodya@gmail.com
 - LinkedIn: www.linkedin.com/in/sadini-navodya-0305362ab
+- Project contact can be made through the GitHub repository profile and issues.
 
 ## Verification
 
