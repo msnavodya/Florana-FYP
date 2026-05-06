@@ -1,35 +1,35 @@
-# Florana - Flower Plant Care & Disease Detection Mobile Application
+# Florana - Smart Flower Plant Care & Disease Detection Mobile Application
 
-Florana is a final-year project for plant care, disease detection, growth tracking, and plant shopping. It combines an Expo React Native mobile app, a FastAPI backend, a TensorFlow/Keras disease prediction model, an admin dashboard, and a legacy React web client.
+Florana is a final-year project for flower plant care, flower plant disease detection, growth tracking, and flower plant shopping. It combines an Expo React Native mobile app, a FastAPI backend, a TensorFlow/Keras disease prediction model, an admin dashboard, and a legacy React web client.
 
 ## 1. Project Title
 
 Project name:
 
 ```text
-Florana - Smart Plant Care & Disease Detection Mobile Application
+Florana - Smart Flower Plant Care & Disease Detection Mobile Application
 ```
 
 Tagline:
 
 ```text
-AI-powered plant health monitoring, care management, and seasonal plant shopping platform.
+AI-powered flower plant health monitoring, care management, and seasonal flower shopping platform.
 ```
 
 ## 2. Project Overview / Description
 
-Florana helps plant owners identify plant diseases from uploaded images, register and monitor their plants, manage care reminders, and browse or sell seasonal plants through a built-in shop.
+Florana helps flower plant owners identify flower plant diseases from uploaded images, register and monitor their flowering plants, manage care reminders, and browse or sell seasonal flower plants through a built-in shop.
 
-The project is designed for home gardeners, plant collectors, small plant sellers, and students who need a practical plant health management system. It solves common problems such as delayed disease identification, missed plant care tasks, disconnected plant records, and manual plant shop/order handling.
+The project is designed for home gardeners, flower plant collectors, small flower plant sellers, and students who need a practical flower plant health management system. It solves common problems such as delayed disease identification, missed flower care tasks, disconnected flower plant records, and manual flower shop/order handling.
 
 Main capabilities:
 
-- AI-powered plant disease detection from image uploads
-- Plant health monitoring and plant profile management
+- AI-powered flower plant disease detection from image uploads
+- Flower plant health monitoring and flower profile management
 - Growth tracking with charts
 - Care reminders and quick tips
-- Seasonal plant shop with cart and checkout flow
-- Admin dashboard for managing users, plants, products, feedback, and orders
+- Seasonal flower plant shop with cart and checkout flow
+- Admin dashboard for managing users, flower plants, products, feedback, and orders
 
 ## Project Completion Status
 
@@ -49,34 +49,34 @@ Completed project areas:
 ### Core Features
 
 - User registration and login
-- Plant disease prediction from image upload
-- Plant registration with image, city, sunlight, soil, climate, and care details
-- My Plants dashboard with plant profile view and delete support
-- Plant care tracking and growth history
+- Flower plant disease prediction from image upload
+- Flower plant registration with image, city, sunlight, soil, climate, and care details
+- My Flower Plants dashboard with flower profile view and delete support
+- Flower plant care tracking and growth history
 - Care reminders and custom care notes
-- Plant shop with seasonal catalog, product details, cart, and checkout
-- Sell Plants flow for adding shop listings
+- Flower plant shop with seasonal catalog, product details, cart, and checkout
+- Sell Flower Plants flow for adding shop listings
 - Feedback, profile, settings, help, and about screens
 - Local JSON fallback storage when MongoDB is not connected
 
 ### Advanced Features
 
-- Location-aware plant registration using Sri Lankan city options
-- Seasonal catalog for Spring, Summer, Autumn, and Winter plants
-- Personalized quick tips based on time, season, and tracked plants
-- Growth tracking charts for registered plants
+- Location-aware flower plant registration using Sri Lankan city options
+- Seasonal catalog for Spring, Summer, Autumn, and Winter flower plants
+- Personalized quick tips based on time, season, and tracked flower plants
+- Growth tracking charts for registered flower plants
 - Multi-language app text support
 - Currency switching for shop prices
-- Admin analytics summary for users, plants, products, feedback, payments, and revenue
+- Admin analytics summary for users, flower plants, products, feedback, payments, and revenue
 - Optional Cloudinary dataset download workflow for ML training
 
 ### Planned / Future Advanced Features
 
-- Live weather API integration for care recommendations
-- Community plant sharing and discussion features
+- Live weather API integration for flower care recommendations
+- Community flower plant sharing and discussion features
 - Push notification improvements
-- Chatbot plant assistant
-- Plant doctor consultation workflow
+- Chatbot flower care assistant
+- Flower plant doctor consultation workflow
 - IoT sensor integration for soil moisture and environment tracking
 
 ### Implemented Mobile Screens
@@ -85,9 +85,9 @@ Completed project areas:
 - Login and registration
 - Home dashboard
 - Disease prediction
-- My Plants
-- Register Plant
-- Plant profile / flower profile
+- My Flower Plants
+- Register Flower Plant
+- Flower plant profile / flower profile
 - Growth chart view
 - Quick Tips
 - Care Reminder
@@ -105,7 +105,7 @@ Completed project areas:
 
 - Dashboard summary
 - Users
-- Plants
+- Flower Plants
 - Products and shop products
 - Orders / payments
 - Feedback
@@ -202,7 +202,7 @@ Uploads served from /uploads during development
 Main flow:
 
 - Users interact with the Expo mobile app.
-- The mobile app sends auth, plant, prediction, shop, payment, feedback, and reminder requests to the FastAPI API.
+- The mobile app sends auth, flower plant, prediction, shop, payment, feedback, and reminder requests to the FastAPI API.
 - The backend stores records in MongoDB when available.
 - If MongoDB is unavailable, the backend falls back to local JSON storage.
 - Uploaded images are saved locally and served through `/uploads`.
@@ -437,13 +437,13 @@ Important backend routes:
 | `GET` | `/health` | Check backend, database, and AI model status |
 | `POST` | `/auth/signup` | Register user |
 | `POST` | `/auth/login` | Login user |
-| `POST` | `/predict` | Predict plant disease from uploaded image |
+| `POST` | `/predict` | Predict flower plant disease from uploaded image |
 | `GET` | `/history` | Get prediction history |
-| `GET` | `/plants` | Get legacy/simple plant list |
-| `GET` | `/plants/` | Get registered plants |
-| `POST` | `/plants/` | Register plant |
-| `DELETE` | `/plants/{plant_id}` | Delete plant |
-| `GET` | `/plants/by-name/{name}` | Get plant profile by name |
+| `GET` | `/plants` | Get legacy/simple flower plant list |
+| `GET` | `/plants/` | Get registered flower plants |
+| `POST` | `/plants/` | Register flower plant |
+| `DELETE` | `/plants/{plant_id}` | Delete flower plant |
+| `GET` | `/plants/by-name/{name}` | Get flower plant profile by name |
 | `POST` | `/growth/` | Add growth record |
 | `GET` | `/growth/{plant_id}` | Get growth records |
 | `GET` | `/quick-tips` | Get personalized care tips |
@@ -466,11 +466,11 @@ Admin routes are protected and use the `/admin` prefix:
 | --- | --- | --- |
 | `GET` | `/admin/summary` | Admin dashboard summary |
 | `GET` | `/admin/users` | Manage users |
-| `GET` | `/admin/plants` | Manage plants |
+| `GET` | `/admin/plants` | Manage flower plants |
 | `GET` | `/admin/products` | Manage shop products |
 | `GET` | `/admin/feedback` | Manage feedback |
 | `GET` | `/admin/payments` | Manage orders/payments |
-| `DELETE` | `/admin/plants/{plant_id}` | Delete plant as admin |
+| `DELETE` | `/admin/plants/{plant_id}` | Delete flower plant as admin |
 | `DELETE` | `/admin/products/{product_id}` | Delete product as admin |
 | `DELETE` | `/admin/payments/{payment_id}` | Delete payment record as admin |
 
@@ -491,8 +491,8 @@ Recommended screenshots:
 | Welcome screen | `docs/screenshots/welcome.png` |
 | Home screen | `docs/screenshots/home.png` |
 | Disease detection | `docs/screenshots/disease-detection.png` |
-| My Plants dashboard | `docs/screenshots/my-plants.png` |
-| Plant profile and growth chart | `docs/screenshots/plant-profile.png` |
+| My Flower Plants dashboard | `docs/screenshots/my-plants.png` |
+| Flower plant profile and growth chart | `docs/screenshots/plant-profile.png` |
 | Seasonal shop catalog | `docs/screenshots/shop.png` |
 | Cart / checkout | `docs/screenshots/cart.png` |
 | Admin dashboard | `docs/screenshots/admin-dashboard.png` |
@@ -551,14 +551,14 @@ Accuracy depends on the dataset used for the latest training run. The repository
 
 ## 14. Future Enhancements
 
-- Live weather-based plant care recommendations
+- Live weather-based flower plant care recommendations
 - Push notifications through Firebase for scheduled reminders
-- Chatbot assistant for plant care questions
-- Plant doctor consultation booking
-- Community forum or shared plant posts
+- Chatbot assistant for flower care questions
+- Flower plant doctor consultation booking
+- Community forum or shared flower plant posts
 - IoT soil moisture and temperature integration
 - Cloud deployment for backend, admin dashboard, and database
-- Cloud image storage for uploaded plant and product images
+- Cloud image storage for uploaded flower plant and product images
 - More disease classes and larger training dataset
 
 ## 15. Contributors
