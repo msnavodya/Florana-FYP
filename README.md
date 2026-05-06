@@ -1,4 +1,4 @@
-# Florana - Smart Plant Care & Disease Detection Mobile Application
+# Florana - Flower Plant Care & Disease Detection Mobile Application
 
 Florana is a final-year project for plant care, disease detection, growth tracking, and plant shopping. It combines an Expo React Native mobile app, a FastAPI backend, a TensorFlow/Keras disease prediction model, an admin dashboard, and a legacy React web client.
 
