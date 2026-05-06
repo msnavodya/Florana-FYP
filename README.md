@@ -486,8 +486,8 @@ This project is currently prepared for academic/final-year project submission. A
 
 - GitHub Repository: [Florana-FYP](https://github.com/msnavodya/Florana-FYP)
 - GitHub Profile: [msnavodya](https://github.com/msnavodya)
-- Email: Add your email address here
-- LinkedIn: Add your LinkedIn profile here
+- Email: sadininavodya@gmail.com
+- LinkedIn: www.linkedin.com/in/sadini-navodya-0305362ab
 
 ## Verification
 
