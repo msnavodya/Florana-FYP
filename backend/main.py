@@ -1,19 +1,53 @@
-# backend/main.py
-
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-
 import os
+import sys
 import io
 import json
 import socket
 import ipaddress
 import logging
+import urllib.error
+import urllib.request
 import numpy as np
+from pathlib import Path
 from PIL import Image
 from datetime import datetime
 from bson import ObjectId
+
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
+
+def _get_cli_port(default_port: int = 8000) -> int:
+    if "--port" in sys.argv:
+        try:
+            return int(sys.argv[sys.argv.index("--port") + 1])
+        except (IndexError, ValueError):
+            return default_port
+
+    return int(os.getenv("PORT", str(default_port)))
+
+
+def _read_existing_health(port: int) -> dict | None:
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=1.5) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except (OSError, urllib.error.URLError, json.JSONDecodeError):
+        return None
+
+
+def _is_raw_uvicorn_command() -> bool:
+    command = Path(sys.argv[0]).stem.lower()
+    return command.startswith("uvicorn") and os.getenv("FLORANA_BACKEND_RUNNER") != "1"
+
+
+if _is_raw_uvicorn_command():
+    requested_port = _get_cli_port()
+    existing_health = _read_existing_health(requested_port)
+    if existing_health and existing_health.get("server") == "Florana Backend":
+        print(f"Florana backend is already running on http://127.0.0.1:{requested_port}")
+        print("Use npm run backend:start to reuse it, or npm run backend:restart to start fresh.")
+        sys.exit(0)
 
 try:
     from tensorflow.keras.models import load_model
@@ -650,6 +684,7 @@ async def set_care_reminder(data: dict):
 if __name__ == "__main__":
     import uvicorn
 
+    os.environ["FLORANA_BACKEND_RUNNER"] = "1"
     uvicorn.run(
         "backend.main:app",
         host=os.getenv("HOST", "0.0.0.0"),

@@ -10,10 +10,32 @@ This Expo app is the main Florana client in this repo.
 
 1. Copy `.env.example` to `.env`.
 2. Set `EXPO_PUBLIC_API_BASE_URL` to your computer's LAN IP, for example `http://192.168.8.116:8000`.
-3. Start Expo with `npm start`. The helper script will try to start the backend on the same port configured in `EXPO_PUBLIC_API_BASE_URL`, or `8000` by default.
-4. Install dependencies with `npm install`.
-5. If the backend is already running, Expo will reuse it.
-6. Press `a` for Android, `i` for iOS, or scan the QR code with Expo Go.
+3. Install dependencies with `npm install`.
+4. Start Expo with `npm start`.
+5. The Expo helper script checks the backend on the same port configured in `EXPO_PUBLIC_API_BASE_URL`, or `8000` by default.
+6. If the backend is already running, Expo will reuse it. If the backend is not running, the helper will try to start it.
+7. Press `a` for Android, `i` for iOS, or scan the QR code with Expo Go.
+
+## Why Expo Shows Backend Messages
+
+`npm start`, `npm run android`, and `npm run ios` run `mobile/scripts/start-expo.js`.
+That script manages both the mobile session and the local backend connection:
+
+- It checks `http://127.0.0.1:8000/health`.
+- If Florana backend is healthy, it reuses the existing backend.
+- If the backend is missing, it starts `backend/run_backend.py`.
+- It passes the correct API URL to Expo for the current session.
+
+So seeing backend text in the Expo terminal is normal for this project. For the
+cleanest daily workflow, start the backend first from the repo root:
+
+```bash
+npm run backend:start
+npm start
+```
+
+Use `npm run backend:restart` when you need a fresh backend process, and
+`npm run backend:stop` when you want to close the backend completely.
 
 ## Backend URL notes
 
@@ -25,12 +47,28 @@ This Expo app is the main Florana client in this repo.
 
 ## Backend checklist for Expo Go
 
-1. Start the backend with `npm run backend:start` from the repo root, or run `python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000`.
-2. Use `npm run backend:start:reload` only if you specifically need auto-reload. The non-reload server is the stable default for the TensorFlow disease model on this setup.
-3. Keep the phone and laptop on the same Wi-Fi network.
-4. Allow inbound TCP traffic to Python or port `8000` in Windows Defender Firewall.
-5. Open `http://YOUR_LAN_IP:8000/health` from the phone browser. If this fails in the browser, Expo Go will fail too.
-6. Avoid `localhost`, `127.0.0.1`, and `10.0.2.2` on a real phone. Those only work on the same machine or inside the Android emulator.
+1. Start the backend with `npm run backend:start` from the repo root. This safely reuses an already-running Florana backend on port `8000`.
+2. Use `npm run backend:restart` when you want to stop the old backend and start a fresh one.
+3. Use `npm run backend:stop` if you need to close the backend completely.
+4. Use `npm run backend:start:reload` only if you specifically need auto-reload. The non-reload server is the stable default for the TensorFlow disease model on this setup.
+5. Keep the phone and laptop on the same Wi-Fi network.
+6. Allow inbound TCP traffic to Python or port `8000` in Windows Defender Firewall.
+7. Open `http://YOUR_LAN_IP:8000/health` from the phone browser. If this fails in the browser, Expo Go will fail too.
+8. Avoid `localhost`, `127.0.0.1`, and `10.0.2.2` on a real phone. Those only work on the same machine or inside the Android emulator.
+
+## Command Summary
+
+| Command | Purpose |
+| --- | --- |
+| `npm start` | Start Expo and reuse/start backend if needed |
+| `npm run android` | Start Expo Android and reuse/start backend if needed |
+| `npm run ios` | Start Expo iOS and reuse/start backend if needed |
+| `npm run web` | Start Expo web only |
+| `npm run typecheck` | Run TypeScript check |
+| `npm run backend:start` | Start or reuse backend when run from repo root or `backend/` |
+| `npm run backend:status` | Check backend health |
+| `npm run backend:restart` | Restart backend |
+| `npm run backend:stop` | Stop backend |
 
 ## Mobile coverage
 

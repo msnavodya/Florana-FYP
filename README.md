@@ -276,11 +276,27 @@ Start the FastAPI backend from the repository root:
 npm run backend:start
 ```
 
+This command is safe to run every day. If the Florana backend is already using
+port `8000`, it will reuse that server instead of starting a second Uvicorn
+process.
+
 Run with reload only during development:
 
 ```bash
 npm run backend:start:reload
 ```
+
+Check or restart the backend:
+
+```bash
+npm run backend:status
+npm run backend:restart
+npm run backend:stop
+```
+
+Avoid starting the backend with raw `uvicorn main:app --port 8000` while another
+backend is already open, because Uvicorn will try to bind the same port again
+and Windows will raise `[Errno 10048]`.
 
 Backend default URL:
 
@@ -295,6 +311,14 @@ http://localhost:8000/docs
 ```
 
 ### Mobile App
+
+The mobile app uses `mobile/scripts/start-expo.js`. This helper starts Expo and
+also checks the backend before Expo opens:
+
+- If a healthy Florana backend is already running on port `8000`, Expo reuses it.
+- If no backend is running, the helper tries to start the backend automatically.
+- If another service is using the backend port, the helper chooses the next
+  available backend port and passes that URL to Expo for the current session.
 
 Start the Expo app:
 
@@ -321,6 +345,20 @@ npm run web
 ```
 
 For Expo Go on a real phone, set `EXPO_PUBLIC_API_BASE_URL` to your computer LAN IP and keep both devices on the same Wi-Fi network.
+
+Recommended daily startup:
+
+```bash
+npm run backend:start
+npm start
+```
+
+If you only run `npm start`, backend messages may appear in the same terminal
+because the Expo helper is checking or starting the backend for you. That is
+expected behavior in this project.
+
+Do not use raw `uvicorn main:app --host 0.0.0.0 --port 8000` for daily startup.
+Use the npm backend scripts so duplicate backend processes are handled safely.
 
 ### Admin Dashboard
 
@@ -373,9 +411,12 @@ To train or update the model, use the workflow in `ml_pipeline/`.
 | --- | --- |
 | `npm run backend:start` | Start FastAPI backend on port `8000` |
 | `npm run backend:start:reload` | Start backend with reload |
-| `npm start` | Start Expo mobile app |
-| `npm run android` | Start Expo Android target |
-| `npm run ios` | Start Expo iOS target |
+| `npm run backend:status` | Check whether backend is healthy |
+| `npm run backend:restart` | Stop the old backend and start a fresh backend |
+| `npm run backend:stop` | Stop the backend on port `8000` |
+| `npm start` | Start Expo mobile app and reuse/start backend if needed |
+| `npm run android` | Start Expo Android target and reuse/start backend if needed |
+| `npm run ios` | Start Expo iOS target and reuse/start backend if needed |
 | `npm run web` | Start Expo web target |
 | `npm run admin:start` | Start admin dashboard |
 | `npm run admin:build` | Build admin dashboard |
