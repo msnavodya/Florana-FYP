@@ -268,7 +268,7 @@
 }
 
 .product-card img {
-  height: 132px;
+  height: 190px;
   border-radius: 16px;
 }
 
@@ -288,6 +288,11 @@
 .product-card h4 {
   margin: 10px 0 4px;
   color: #2d2342;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
 }
 
 .product-card p {
@@ -305,6 +310,12 @@
 .product-card button {
   width: 100%;
   margin-top: 12px;
+}
+
+.product-card .delete-listing-btn {
+  background: #fff0f4;
+  color: #b33d68;
+  border: 1px solid rgba(179, 61, 104, 0.22);
 }
 
 .sell-form {
@@ -384,8 +395,11 @@
     gap: 10px;
   }
 
-  .season-card img,
-  .product-card img {
+  .season-card img {
     height: 116px;
+  }
+
+  .product-card img {
+    height: 170px;
   }
 }

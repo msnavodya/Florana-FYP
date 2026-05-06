@@ -10,6 +10,7 @@ import { BottomNav } from "../components/BottomNav";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useSettings } from "../context/SettingsContext";
 import { storageKeys } from "../lib/storage/keys";
@@ -25,8 +26,9 @@ export function SettingsScreen() {
   const [status, setStatus] = useState("");
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { user, signOut } = useAuth();
+  const { clearCart } = useCart();
   const { language, setLanguage, t } = useLanguage();
-  const { settings, saveSettings, resetSettings, clearFeedbacks } = useSettings();
+  const { settings, saveSettings, resetSettings, clearFeedbacks, fontScale } = useSettings();
 
   useEffect(() => {
     return () => {
@@ -176,16 +178,16 @@ export function SettingsScreen() {
           </View>
 
           <Pressable onPress={() => void cycleFontSize()} style={styles.settingRow}>
-            <Text style={styles.settingLabel}>{t("font_size")}</Text>
+            <Text style={[styles.settingLabel, { fontSize: 15 * fontScale }]}>{t("font_size")}</Text>
             <View style={styles.settingValuePill}>
-              <Text style={styles.settingValueText}>{settings.fontSize}</Text>
+              <Text style={[styles.settingValueText, { fontSize: 12 * fontScale }]}>{settings.fontSize}</Text>
             </View>
           </Pressable>
 
           <Pressable onPress={() => void cycleLanguage()} style={styles.settingRow}>
-            <Text style={styles.settingLabel}>{t("language")}</Text>
+            <Text style={[styles.settingLabel, { fontSize: 15 * fontScale }]}>{t("language")}</Text>
             <View style={styles.settingValuePill}>
-              <Text style={styles.settingValueText}>{language}</Text>
+              <Text style={[styles.settingValueText, { fontSize: 12 * fontScale }]}>{language}</Text>
             </View>
           </Pressable>
         </View>
@@ -262,15 +264,19 @@ export function SettingsScreen() {
 
           <View style={styles.actionList}>
             <PrimaryButton label="Export my data" onPress={() => void handleExportData()} />
-            <PrimaryButton label="Clear cart" onPress={() => void handleClearKey(storageKeys.cart, "Cart cleared from this device.")} variant="secondary" />
+            <PrimaryButton
+              label="Clear cart"
+              onPress={() => void clearCart().then(() => showStatus("Your cart deleted."))}
+              variant="secondary"
+            />
             <PrimaryButton
               label="Clear feedback history"
-              onPress={() => void clearFeedbacks().then(() => showStatus("Saved feedback history removed."))}
+              onPress={() => void clearFeedbacks().then(() => showStatus("Your feedback history deleted."))}
               variant="secondary"
             />
             <PrimaryButton
               label={t("clear_search_history")}
-              onPress={() => void handleClearKey(storageKeys.searchHistory, "Search history cleared.")}
+              onPress={() => void handleClearKey(storageKeys.searchHistory, "Your search history deleted.")}
               variant="secondary"
             />
           </View>

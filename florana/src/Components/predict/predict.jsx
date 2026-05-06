@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Menu as MenuIcon } from "lucide-react";
 import { predictImage } from "../../api";
+import { buildDiagnosisResult } from "../../utils/diseaseCare";
 import LanguageSelector from "../language/LanguageSelector";
 import Menu from "../menu/menu";
 import "./predict.css";
@@ -36,11 +37,12 @@ export default function Predict() {
 
     try {
       const response = await predictImage(file);
-      const { prediction, confidence } = response.data;
-      const percent = typeof confidence === "number" ? (confidence * 100).toFixed(2) : confidence;
-      const isHealthy = prediction === "Healthy Plant";
-      const status = isHealthy ? "Healthy Plant" : "Unhealthy Plant - Disease Detected";
-      setMessage(`${status} (${prediction}) - Confidence: ${percent}%`);
+      const result = buildDiagnosisResult({
+        prediction: response.data.prediction,
+        confidence: response.data.confidence,
+        topPredictions: response.data.top_predictions,
+      });
+      setMessage(result);
     } catch (error) {
       console.error(error);
       setMessage(`Error: ${error.response?.data?.detail || "Backend not reachable"}`);
@@ -79,7 +81,16 @@ export default function Predict() {
           {loading ? "Processing..." : "Predict Disease"}
         </button>
 
-        {message ? <p className="status-message">{message}</p> : null}
+        {typeof message === "string" && message ? <p className="status-message">{message}</p> : null}
+        {message && typeof message !== "string" ? (
+          <div className="status-message">
+            <p>
+              {message.status} ({message.prediction}) - {message.confidenceText}
+            </p>
+            {message.careInfo ? <p>Protection: {message.careInfo.protection}</p> : null}
+            {message.careInfo ? <p>Working time: {message.careInfo.workingTime}</p> : null}
+          </div>
+        ) : null}
       </div>
     </div>
   );

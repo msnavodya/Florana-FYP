@@ -14,8 +14,8 @@ export function WelcomeScreen() {
 
   return (
     <Screen contentStyle={[styles.content, compact ? styles.contentCompact : null]}>
-      <Image source={brandAssets.logo} style={[styles.logo, compact ? styles.logoCompact : null]} />
-      <ImageBackground imageStyle={styles.heroImage} source={brandAssets.welcome} style={[styles.heroCard, compact ? styles.heroCardCompact : null]}></ImageBackground>
+      <Image resizeMode="contain" source={brandAssets.logo} style={[styles.logo, compact ? styles.logoCompact : null]} />
+      <ImageBackground imageStyle={styles.heroImage} resizeMode="cover" source={brandAssets.welcome} style={[styles.heroCard, compact ? styles.heroCardCompact : null]} />
 
       <Text style={[styles.title, compact ? styles.titleCompact : null]}>{t("welcome_headline")}</Text>
 

@@ -1,8 +1,8 @@
 # Florana FYP
 
-Florana is a my final-year project  plant care and plant shop system. It combines a FastAPI backend, an Expo React Native mobile app, a legacy React web client, and an ML pipeline for plant disease image classification.
+Florana is a final-year plant care and plant shop system. It combines a FastAPI backend, an Expo React Native mobile app, an admin dashboard, a legacy React web client, and an ML pipeline for plant disease image classification.
 
-The main product experience is the `mobile/` app. The backend exposes authentication, plant management, growth tracking, disease prediction, catalog, cart/payment, feedback, and reminder APIs.
+The main product experience is the `mobile/` app. The backend exposes authentication, plant management, growth tracking, disease prediction, shop catalog, cart/payment, feedback, admin, and reminder APIs.
 
 ## Features
 
@@ -11,17 +11,20 @@ The main product experience is the `mobile/` app. The backend exposes authentica
 - Plant registration with image upload, city, sunlight, soil, climate, tracking, and care details
 - My Plants dashboard with plant profile view and deletion
 - Flower profile pages with uploaded images and growth charts
+- Personalized quick tips based on time, season, and tracked plants
 - Seasonal shop catalog for Spring, Summer, Autumn, and Winter plants
 - Sell Plants flow with product validation, image upload, listing preview, and catalog updates
 - Product deletion from catalog and season screens
 - Cart with saved items, remove confirmation, currency switching, and checkout flow
 - Care reminders, quick tips, feedback, profile, settings, help, and about screens
+- Admin dashboard for users, plants, products, feedback, orders/payments, analytics, and reports
 - Local JSON fallback storage when MongoDB is not configured
 
 ## Project Structure
 
 - `mobile/` - active Expo React Native app
 - `backend/` - FastAPI API, auth, local storage, MongoDB support, uploads, prediction, plants, growth, shop, payment, feedback, and reminders
+- `admin-dashboard/` - Vite React admin dashboard for system management
 - `florana/` - legacy React web client
 - `ml_pipeline/` - TensorFlow image classification training and dataset tooling
 - `uploads/` - local uploaded images served by the backend during development
@@ -36,11 +39,12 @@ The main product experience is the `mobile/` app. The backend exposes authentica
 
 ## Installation
 
-Install root, mobile, and legacy web dependencies:
+Install root, mobile, admin dashboard, and legacy web dependencies:
 
 ```bash
 npm install
 npm --prefix mobile install
+npm --prefix admin-dashboard install
 npm --prefix florana install
 ```
 
@@ -80,6 +84,8 @@ EXPO_PUBLIC_API_BASE_URL=http://YOUR_LAN_IP:8000
 
 Keep the phone and computer on the same Wi-Fi network. If you run the backend on a different port, update `EXPO_PUBLIC_API_BASE_URL` to match.
 
+For local admin dashboard or web client use, make sure the backend is running on the same API URL expected by those clients. The default backend port is `8000`.
+
 ## Running The Project
 
 Start the backend from the repository root:
@@ -106,6 +112,18 @@ Run the mobile app in a browser:
 
 ```bash
 npm run web
+```
+
+Start the admin dashboard:
+
+```bash
+npm run admin:start
+```
+
+Build the admin dashboard:
+
+```bash
+npm run admin:build
 ```
 
 Run the legacy React web client:
@@ -138,6 +156,7 @@ Important endpoints include:
 - `GET /shop/products`
 - `POST /shop/products`
 - `DELETE /shop/products/{product_id}`
+- `GET /quick-tips`
 - `POST /predict`
 
 Uploaded images are served from:
@@ -145,6 +164,18 @@ Uploaded images are served from:
 ```text
 /uploads/<filename>
 ```
+
+Admin endpoints are protected and use the `/admin` prefix:
+
+- `GET /admin/summary`
+- `GET /admin/users`
+- `GET /admin/plants`
+- `GET /admin/products`
+- `GET /admin/feedback`
+- `GET /admin/payments`
+- `DELETE /admin/plants/{plant_id}`
+- `DELETE /admin/products/{product_id}`
+- `DELETE /admin/payments/{payment_id}`
 
 ## ML Pipeline
 
@@ -158,6 +189,12 @@ Run the mobile TypeScript check:
 
 ```bash
 npm run mobile:typecheck
+```
+
+Build the admin dashboard:
+
+```bash
+npm run admin:build
 ```
 
 Run a backend syntax check:

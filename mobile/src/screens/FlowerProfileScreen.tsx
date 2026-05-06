@@ -119,7 +119,7 @@ export function FlowerProfileScreen() {
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.heroCard}>
             {imageUri ? (
-              <Image source={{ uri: imageUri }} style={styles.heroImage} />
+              <Image resizeMode="cover" source={{ uri: imageUri }} style={styles.heroImage} />
             ) : (
               <View style={styles.heroImageFallback}>
                 <MaterialIcons name="local-florist" size={42} color="#DCCEF2" />
@@ -207,18 +207,18 @@ const styles = StyleSheet.create({
   heroCard: {
     backgroundColor: colors.backgroundDeep,
     borderRadius: 28,
-    minHeight: 280,
+    minHeight: 340,
     overflow: "hidden",
     ...shadows.card,
   },
   heroImage: {
-    height: 280,
+    height: 340,
     width: "100%",
   },
   heroImageFallback: {
     alignItems: "center",
     backgroundColor: colors.backgroundDeep,
-    height: 280,
+    height: 340,
     justifyContent: "center",
     width: "100%",
   },

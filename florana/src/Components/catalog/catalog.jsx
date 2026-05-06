@@ -120,6 +120,17 @@ export default function Catalog() {
     }
   };
 
+  const handleDeleteProduct = async (product) => {
+    if (!window.confirm(`Delete ${product.name}?`)) {
+      return;
+    }
+
+    await deleteProduct(product.id);
+    setProducts((current) => current.filter((item) => item.id !== product.id));
+    fetchProductsList();
+    showStatus(`${product.name} deleted.`);
+  };
+
   const filteredProducts = products.filter((product) =>
     (product.name || "").toLowerCase().includes(search.toLowerCase())
   );
@@ -224,6 +235,7 @@ export default function Catalog() {
                       <p>{product.season}</p>
                       <p className="price">{formatPrice(product.price)}</p>
                       <button onClick={() => addToCart(product)}>Add to Cart</button>
+                      <button className="delete-listing-btn" onClick={() => handleDeleteProduct(product)}>Delete</button>
                     </div>
                   ))
                 ) : (
@@ -275,15 +287,7 @@ export default function Catalog() {
                     <h4>{product.name}</h4>
                     <p>{product.season}</p>
                     <p className="price">{formatPrice(product.price)}</p>
-                    <button
-                      onClick={async () => {
-                        if (window.confirm(`Delete ${product.name}?`)) {
-                          await deleteProduct(product.id);
-                          fetchProductsList();
-                          showStatus(`${product.name} deleted.`);
-                        }
-                      }}
-                    >
+                    <button className="delete-listing-btn" onClick={() => handleDeleteProduct(product)}>
                       Delete
                     </button>
                   </div>

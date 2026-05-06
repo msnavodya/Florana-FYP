@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Menu as MenuIcon } from "lucide-react";
 import { predictImage } from "../../api";
+import { buildDiagnosisResult } from "../../utils/diseaseCare";
 import { useTranslation } from "../language/LanguageContext";
 import logo from "../Assets/floranalogo.jpg";
 import LanguageSelector from "../language/LanguageSelector";
@@ -101,11 +102,13 @@ export default function Home() {
 
     try {
       const response = await predictImage(file);
-      const { prediction, confidence } = response.data;
-      const percent = typeof confidence === "number" ? (confidence * 100).toFixed(2) : confidence;
-      const isHealthy = prediction === "Healthy Plant";
-      const status = isHealthy ? "Healthy Plant" : "Unhealthy Plant - Disease Detected";
-      setDiagnosis(`${status} (${prediction}) - Confidence: ${percent}%`);
+      setDiagnosis(
+        buildDiagnosisResult({
+          prediction: response.data.prediction,
+          confidence: response.data.confidence,
+          topPredictions: response.data.top_predictions,
+        })
+      );
     } catch (error) {
       setDiagnosis(`Error: ${error.response?.data?.detail || "Backend not reachable"}`);
     } finally {
@@ -149,7 +152,17 @@ export default function Home() {
 
       {diagnosis ? (
         <div className="diagnosis-alert">
-          <strong>Result: {diagnosis}</strong>
+          {typeof diagnosis === "string" ? (
+            <strong>Result: {diagnosis}</strong>
+          ) : (
+            <div>
+              <strong>
+                Result: {diagnosis.status} ({diagnosis.prediction}) - {diagnosis.confidenceText}
+              </strong>
+              {diagnosis.careInfo ? <p>Protection: {diagnosis.careInfo.protection}</p> : null}
+              {diagnosis.careInfo ? <p>Working time: {diagnosis.careInfo.workingTime}</p> : null}
+            </div>
+          )}
           <button onClick={() => setDiagnosis(null)}>x</button>
         </div>
       ) : null}

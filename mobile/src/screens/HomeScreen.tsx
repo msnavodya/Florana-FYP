@@ -38,7 +38,14 @@ type ModelState = {
 type DiagnosisState = {
   title: string;
   message: string;
+  protection?: string;
+  workingTime?: string;
   tone: "healthy" | "warning" | "error";
+};
+
+type DiseaseCareInfo = {
+  protection: string;
+  workingTime: string;
 };
 
 function resolveModelState(aiModel?: { loaded?: boolean; status?: string | null }): ModelState {
@@ -81,6 +88,71 @@ function formatRelativeTime(dateString?: string | null) {
 function isHealthyPrediction(prediction: string) {
   const normalized = prediction.trim().toLowerCase();
   return normalized.includes("healthy") || normalized.includes("fresh leaf");
+}
+
+function normalizeDiseaseKey(prediction: string) {
+  return prediction
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+const diseaseCareInfo: Record<string, DiseaseCareInfo> = {
+  appledisease: {
+    protection: "Spray a copper-based fungicide early in the season and remove infected leaves.",
+    workingTime: "Start immediately; check new growth over 7-14 days.",
+  },
+  applehealthy: {
+    protection: "Maintain good airflow, proper watering, and regular nutrient balance.",
+    workingTime: "Keep this routine weekly; visible health stays stable over 1-2 weeks.",
+  },
+  botrytis: {
+    protection: "Reduce humidity and remove infected plant parts immediately.",
+    workingTime: "Act the same day; improvement usually appears in 3-7 days.",
+  },
+  freshleaf: {
+    protection: "Avoid overwatering and protect from pests with neem oil spray.",
+    workingTime: "Apply care weekly; fresh leaves should remain healthy within 7 days.",
+  },
+  healthy: {
+    protection: "Maintain good airflow, proper watering, and regular nutrient balance.",
+    workingTime: "Keep this routine weekly; visible health stays stable over 1-2 weeks.",
+  },
+  healthyplant: {
+    protection: "Maintain good airflow, proper watering, and regular nutrient balance.",
+    workingTime: "Keep this routine weekly; visible health stays stable over 1-2 weeks.",
+  },
+  healthyleafrose: {
+    protection: "Ensure full sunlight and regular pruning for airflow.",
+    workingTime: "Maintain weekly; rose leaves usually stay strong through the next growth cycle.",
+  },
+  leafspot: {
+    protection: "Avoid wetting leaves; use fungicide if it spreads.",
+    workingTime: "Remove spotted leaves now; monitor for 7-10 days.",
+  },
+  powderymildew: {
+    protection: "Spray sulfur or baking soda solution and improve air circulation.",
+    workingTime: "Treat every 7 days; powdery patches should reduce in 1-2 weeks.",
+  },
+  rust: {
+    protection: "Remove infected leaves and apply fungicide regularly.",
+    workingTime: "Start today; repeat treatment weekly for 2-3 weeks.",
+  },
+  roserust: {
+    protection: "Remove infected leaves and apply fungicide regularly.",
+    workingTime: "Start today; repeat treatment weekly for 2-3 weeks.",
+  },
+  rosesawfly: {
+    protection: "Spray insecticidal soap or neem oil on affected leaves.",
+    workingTime: "Apply in the evening; check damage and larvae again in 2-4 days.",
+  },
+  roseslug: {
+    protection: "Spray insecticidal soap or neem oil on affected leaves.",
+    workingTime: "Apply in the evening; check damage and larvae again in 2-4 days.",
+  },
+};
+
+function getDiseaseCareInfo(prediction: string) {
+  return diseaseCareInfo[normalizeDiseaseKey(prediction)];
 }
 
 function getDiagnosisToneColors(tone: DiagnosisState["tone"]) {
@@ -294,6 +366,9 @@ export function HomeScreen() {
       const healthy = isHealthyPrediction(response.prediction);
       const confidence = formatPredictionConfidence(response.confidence);
       const alternatePrediction = response.top_predictions?.find((item) => item.label !== response.prediction);
+      const careInfo =
+        getDiseaseCareInfo(response.prediction) ??
+        (alternatePrediction ? getDiseaseCareInfo(alternatePrediction.label) : undefined);
       const message =
         response.prediction === "Needs closer inspection" && alternatePrediction
           ? `${response.prediction} - Best guess: ${alternatePrediction.label} (${formatPredictionConfidence(alternatePrediction.confidence)}% confidence)`
@@ -302,6 +377,8 @@ export function HomeScreen() {
       setDiagnosis({
         title: healthy ? t("healthy_plant") : t("disease_detected"),
         message,
+        protection: careInfo?.protection,
+        workingTime: careInfo?.workingTime,
         tone: healthy ? "healthy" : "warning",
       });
       setModelState({ loaded: true, status: "ready" });
@@ -356,12 +433,24 @@ export function HomeScreen() {
             <View style={styles.diagnosisCopyRow}>
               <MaterialIcons
                 name={diagnosis.tone === "healthy" ? "verified" : "warning-amber"}
-                size={18}
+                size={26}
                 color={diagnosisColors.iconColor}
               />
               <View style={styles.diagnosisCopy}>
                 <Text style={[styles.diagnosisTitle, { color: diagnosisColors.title }]}>{diagnosis.title}</Text>
                 <Text style={[styles.diagnosisBody, { color: diagnosisColors.body }]}>{diagnosis.message}</Text>
+                {diagnosis.protection ? (
+                  <Text style={styles.diagnosisProtectionText}>
+                    <Text style={styles.diagnosisProtectionLabel}>Protection: </Text>
+                    {diagnosis.protection}
+                  </Text>
+                ) : null}
+                {diagnosis.workingTime ? (
+                  <Text style={styles.diagnosisWorkingText}>
+                    <Text style={styles.diagnosisWorkingLabel}>Working time: </Text>
+                    {diagnosis.workingTime}
+                  </Text>
+                ) : null}
               </View>
             </View>
             <Pressable onPress={() => setDiagnosis(null)} style={styles.diagnosisClose}>
@@ -530,38 +619,67 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   diagnosisAlert: {
-    alignItems: "center",
-    borderRadius: 22,
+    alignItems: "flex-start",
+    borderRadius: 24,
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: spacing.md,
-    padding: spacing.md,
+    minHeight: 154,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    ...shadows.card,
   },
   diagnosisCopyRow: {
-    alignItems: "center",
+    alignItems: "flex-start",
     flex: 1,
     flexDirection: "row",
-    gap: spacing.sm,
+    gap: spacing.md,
     marginRight: spacing.sm,
   },
   diagnosisCopy: {
     flex: 1,
   },
   diagnosisTitle: {
-    fontSize: 15,
-    fontWeight: "800",
+    fontSize: 19,
+    fontWeight: "900",
   },
   diagnosisBody: {
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 4,
+    fontSize: 15,
+    fontWeight: "800",
+    lineHeight: 22,
+    marginTop: 6,
+  },
+  diagnosisProtectionText: {
+    color: "#0F5F46",
+    fontSize: 15,
+    fontWeight: "800",
+    lineHeight: 22,
+    marginTop: 10,
+  },
+  diagnosisProtectionLabel: {
+    color: "#0B7A4B",
+    fontSize: 16,
+    fontWeight: "900",
+  },
+  diagnosisWorkingText: {
+    color: "#8A3F00",
+    fontSize: 15,
+    fontWeight: "800",
+    lineHeight: 22,
+    marginTop: 8,
+  },
+  diagnosisWorkingLabel: {
+    color: "#B45309",
+    fontSize: 16,
+    fontWeight: "900",
   },
   diagnosisClose: {
     alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.45)",
     borderRadius: radii.pill,
-    height: 28,
+    height: 34,
     justifyContent: "center",
-    width: 28,
+    width: 34,
   },
   sectionTitle: {
     color: colors.white,

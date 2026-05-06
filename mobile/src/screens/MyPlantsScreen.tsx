@@ -1,7 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { AppMenu } from "../components/AppMenu";
 import { BottomNav } from "../components/BottomNav";
@@ -81,6 +81,16 @@ export function MyPlantsScreen() {
   const [plants, setPlants] = useState<Plant[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [status, setStatus] = useState("");
+  const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showStatus = (message: string) => {
+    setStatus(message);
+    if (statusTimer.current) {
+      clearTimeout(statusTimer.current);
+    }
+    statusTimer.current = setTimeout(() => setStatus(""), 2600);
+  };
 
   const loadPlants = async () => {
     try {
@@ -97,7 +107,12 @@ export function MyPlantsScreen() {
   useEffect(() => {
     void loadPlants();
     const interval = setInterval(() => void loadPlants(), 30000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (statusTimer.current) {
+        clearTimeout(statusTimer.current);
+      }
+    };
   }, []);
 
   useFocusEffect(
@@ -106,31 +121,23 @@ export function MyPlantsScreen() {
     }, [])
   );
 
-  const handleDelete = (plant: Plant) => {
+  const handleDelete = async (plant: Plant) => {
     const plantId = plant.id || plant._id;
     if (!plantId || deletingId) {
       return;
     }
 
-    Alert.alert("Delete Plant", `Delete ${plant.name}? This removes the plant profile from My Plants.`, [
-      { text: "Keep Plant", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          setDeletingId(plantId);
-          try {
-            await deletePlant(plantId);
-            setPlants((previous) => previous.filter((entry) => (entry.id || entry._id) !== plantId));
-            await loadPlants();
-          } catch (error) {
-            Alert.alert("Delete failed", error instanceof Error ? error.message : "Check backend connectivity and try again.");
-          } finally {
-            setDeletingId(null);
-          }
-        },
-      },
-    ]);
+    setDeletingId(plantId);
+    try {
+      await deletePlant(plantId);
+      setPlants((previous) => previous.filter((entry) => (entry.id || entry._id) !== plantId));
+      showStatus(`Your ${plant.name} deleted.`);
+      await loadPlants();
+    } catch (error) {
+      showStatus(error instanceof Error ? error.message : "Check backend connectivity and try again.");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const attentionCount = useMemo(() => plants.filter((plant) => plant.warning).length, [plants]);
@@ -198,6 +205,12 @@ export function MyPlantsScreen() {
             <Text style={styles.summaryPillText}>{copy.habits}</Text>
           </View>
 
+          {status ? (
+            <View style={styles.statusCard}>
+              <Text style={styles.statusText}>{status}</Text>
+            </View>
+          ) : null}
+
           <Pressable onPress={() => router.push("/plant-register")} style={styles.registerButton}>
             <MaterialIcons name="add" size={18} color={colors.white} />
             <Text style={styles.registerButtonText}>Register New Plant</Text>
@@ -220,7 +233,7 @@ export function MyPlantsScreen() {
                 return (
                   <Pressable
                     key={id}
-                    onPress={() => router.push(`/flower/${encodeURIComponent(plant.name)}`)}
+                    onPress={() => router.push(`/flower/${encodeURIComponent(plant.id || plant._id || plant.name)}`)}
                     style={[styles.plantCard, plant.warning ? styles.plantCardWarning : null]}
                   >
                     <Pressable
@@ -228,7 +241,7 @@ export function MyPlantsScreen() {
                       disabled={deletingId === (plant.id || plant._id)}
                       onPress={(event) => {
                         event.stopPropagation();
-                        handleDelete(plant);
+                        void handleDelete(plant);
                       }}
                       style={styles.deleteButton}
                     >
@@ -240,7 +253,7 @@ export function MyPlantsScreen() {
                     </Pressable>
 
                     {imageUri ? (
-                      <Image source={{ uri: imageUri }} style={styles.plantImage} />
+                      <Image resizeMode="cover" source={{ uri: imageUri }} style={styles.plantImage} />
                     ) : (
                       <View style={styles.plantImageFallback}>
                         <MaterialIcons name="local-florist" size={30} color={colors.textMuted} />
@@ -374,13 +387,13 @@ const styles = StyleSheet.create({
   },
   heading: {
     color: colors.text,
-    fontSize: 28,
-    fontWeight: "900",
+    fontSize: 25,
+    fontWeight: "800",
     marginTop: spacing.xs,
   },
   subtitle: {
     color: colors.textMuted,
-    fontSize: 14,
+    fontSize: 12,
     lineHeight: 22,
     marginTop: spacing.xs,
   },
@@ -391,7 +404,7 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     backgroundColor: colors.surface,
-    borderRadius: 22,
+    borderRadius: 24,
     flex: 1,
     flexDirection: "row",
     gap: spacing.sm,
@@ -400,6 +413,7 @@ const styles = StyleSheet.create({
   },
   warningCard: {
     backgroundColor: "#FFF7F1",
+    borderRadius: 24,
   },
   summaryIcon: {
     alignItems: "center",
@@ -416,7 +430,7 @@ const styles = StyleSheet.create({
   },
   summaryStrong: {
     color: colors.text,
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "900",
   },
   summaryLabel: {
@@ -440,6 +454,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     lineHeight: 20,
+  },
+  statusCard: {
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    ...shadows.soft,
+  },
+  statusText: {
+    color: "#24513B",
+    fontSize: 13,
+    fontWeight: "800",
   },
   registerButton: {
     alignItems: "center",
@@ -525,7 +553,7 @@ const styles = StyleSheet.create({
   },
   plantImage: {
     borderRadius: 20,
-    height: 180,
+    height: 220,
     marginBottom: spacing.md,
     width: "100%",
   },
@@ -533,7 +561,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.surfaceMuted,
     borderRadius: 20,
-    height: 180,
+    height: 220,
     justifyContent: "center",
     marginBottom: spacing.md,
     width: "100%",

@@ -17,14 +17,14 @@ export function PlantCard({ plant, onDelete, deleting = false }: PlantCardProps)
   const imageUri = plant.image_path ? buildApiUrl(plant.image_path) : null;
 
   return (
-    <Pressable onPress={() => router.push(`/flower/${encodeURIComponent(plant.name)}`)} style={[styles.card, compact ? styles.cardCompact : null, plant.warning ? styles.warningCard : null]}>
+    <Pressable onPress={() => router.push(`/flower/${encodeURIComponent(plant.id || plant._id || plant.name)}`)} style={[styles.card, compact ? styles.cardCompact : null, plant.warning ? styles.warningCard : null]}>
       {onDelete ? (
         <Pressable onPress={onDelete} style={styles.deleteButton}>
           <Text style={styles.deleteText}>{deleting ? "..." : "Delete"}</Text>
         </Pressable>
       ) : null}
 
-      {imageUri ? <Image source={{ uri: imageUri }} style={[styles.image, compact ? styles.imageCompact : null]} /> : <View style={[styles.imageFallback, compact ? styles.imageCompact : null]}><Text style={styles.imageFallbackText}>Plant</Text></View>}
+      {imageUri ? <Image resizeMode="cover" source={{ uri: imageUri }} style={[styles.image, compact ? styles.imageCompact : null]} /> : <View style={[styles.imageFallback, compact ? styles.imageCompact : null]}><Text style={styles.imageFallbackText}>Plant</Text></View>}
       <View style={styles.info}>
         <Text style={[styles.name, compact ? styles.nameCompact : null]}>{plant.name}{plant.warning ? " !" : ""}</Text>
         {plant.info ? <Text style={[styles.meta, plant.warning ? styles.warningText : null]}>{plant.info}</Text> : null}

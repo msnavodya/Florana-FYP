@@ -29,7 +29,7 @@ export function DataTable({ columns, data, loading, error, empty = 'No records f
             {!loading && !error && data.map((row) => (
               <tr key={row.id || row.email || row.name} className="hover:bg-forest-50/40">
                 {columns.map((column) => (
-                  <td key={column.key} className="whitespace-nowrap px-5 py-4 text-slate-700">
+                  <td key={column.key} className="max-w-md px-5 py-4 align-top text-slate-700">
                     {column.render ? column.render(row) : row[column.key]}
                   </td>
                 ))}

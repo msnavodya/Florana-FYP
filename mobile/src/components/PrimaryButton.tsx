@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, useWindowDimensions } from "react-native";
 
+import { useSettings } from "../context/SettingsContext";
 import { colors, radii, shadows, spacing } from "../theme/tokens";
 
 interface PrimaryButtonProps {
@@ -16,6 +17,7 @@ export function PrimaryButton({
   variant = "primary",
 }: PrimaryButtonProps) {
   const { width } = useWindowDimensions();
+  const { fontScale } = useSettings();
   const compact = width < 390;
 
   return (
@@ -35,6 +37,7 @@ export function PrimaryButton({
         style={[
           styles.label,
           compact ? styles.labelCompact : null,
+          { fontSize: (compact ? 15 : 16) * fontScale },
           variant === "secondary" ? styles.secondaryLabel : null,
         ]}
       >

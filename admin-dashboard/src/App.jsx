@@ -2,9 +2,10 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AdminLayout } from './layouts/AdminLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
+import Feedback from './pages/Feedback';
 import Login from './pages/Login';
+import Orders from './pages/Orders';
 import Plants from './pages/Plants';
-import Products from './pages/Products';
 import Users from './pages/Users';
 
 export default function App() {
@@ -15,7 +16,8 @@ export default function App() {
         <Route element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="plants" element={<Plants />} />
-          <Route path="products" element={<Products />} />
+          <Route path="feedback" element={<Feedback />} />
+          <Route path="payments" element={<Orders />} />
           <Route path="users" element={<Users />} />
         </Route>
       </Route>

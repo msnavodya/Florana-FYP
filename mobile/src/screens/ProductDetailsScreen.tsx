@@ -47,7 +47,7 @@ export function ProductDetailsScreen() {
         </View>
       </View>
 
-      {product.image ? <Image source={{ uri: buildApiUrl(product.image) }} style={styles.image} /> : <View style={styles.imageFallback}><Text style={styles.imageFallbackText}>No photo available</Text></View>}
+      {product.image ? <Image resizeMode="cover" source={{ uri: buildApiUrl(product.image) }} style={styles.image} /> : <View style={styles.imageFallback}><Text style={styles.imageFallbackText}>No photo available</Text></View>}
 
       <View style={styles.card}>
         <Text style={styles.meta}>Season: {product.season}</Text>
@@ -90,8 +90,8 @@ const styles = StyleSheet.create({
   },
   eyebrow: { color: colors.primary, fontSize: 13, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase" },
   title: { color: colors.text, fontSize: 30, fontWeight: "800", marginTop: spacing.xs },
-  image: { borderRadius: radii.lg, height: 260, marginBottom: spacing.lg, width: "100%" },
-  imageFallback: { alignItems: "center", backgroundColor: colors.surfaceMuted, borderRadius: radii.lg, height: 260, justifyContent: "center", marginBottom: spacing.lg },
+  image: { borderRadius: radii.lg, height: 340, marginBottom: spacing.lg, width: "100%" },
+  imageFallback: { alignItems: "center", backgroundColor: colors.surfaceMuted, borderRadius: radii.lg, height: 340, justifyContent: "center", marginBottom: spacing.lg },
   imageFallbackText: { color: colors.textMuted, fontSize: 14, fontWeight: "600" },
   card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radii.lg, borderWidth: 1, gap: spacing.md, padding: spacing.lg },
   meta: { color: colors.textMuted, fontSize: 15, fontWeight: "600" },

@@ -1,7 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
@@ -77,7 +77,9 @@ export function RegisterScreen() {
         contact: contact.trim() || null,
         location: location || null,
       });
-      router.replace("/home");
+      Alert.alert("Account saved", "Your Florana account was created successfully.", [
+        { text: "Continue", onPress: () => router.replace("/home") },
+      ]);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : t("register_failed"));
     } finally {

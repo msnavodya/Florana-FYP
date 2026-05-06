@@ -10,7 +10,7 @@ import {
   TextInput,
   View,
   useWindowDimensions,
-  Alert,
+  Image,
 } from "react-native";
 
 import { AppMenu } from "../components/AppMenu";
@@ -27,6 +27,7 @@ import {
   type PaymentIntentPayload,
   type PaymentIntentResponse,
 } from "../lib/api/payment";
+import { buildApiUrl } from "../lib/api/config";
 import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 import { formatPrice } from "../utils/shop";
 
@@ -278,23 +279,14 @@ export function CartScreen() {
     showStatus("Choose a payment method to start secure checkout.");
   };
 
-  const handleRemoveItem = (itemId: string, itemName: string) => {
-    Alert.alert("Remove Item", `Remove ${itemName} from your cart?`, [
-      { text: "Keep Item", style: "cancel" },
-      {
-        text: "Remove",
-        style: "destructive",
-        onPress: async () => {
-          await removeItem(itemId);
-          showStatus(`${itemName} removed from cart.`);
-        },
-      },
-    ]);
+  const handleRemoveItem = async (itemId: string, itemName: string) => {
+    await removeItem(itemId);
+    showStatus(`Your ${itemName} deleted.`);
   };
 
   const decreaseItem = async (itemId: string, itemName: string, quantity: number) => {
     if (quantity <= 1) {
-      handleRemoveItem(itemId, itemName);
+      void handleRemoveItem(itemId, itemName);
       return;
     }
 
@@ -358,9 +350,7 @@ export function CartScreen() {
         status:
           paymentMethod === "cod"
             ? "cod_confirmed"
-            : intentResponse.provider === "stripe" && intentResponse.payment_intent_id
-              ? "requires_action"
-              : "pending",
+            : "succeeded",
       });
 
       if (paymentMethod === "cod") {
@@ -371,11 +361,13 @@ export function CartScreen() {
       }
 
       if (intentResponse.provider === "stripe" && intentResponse.payment_intent_id) {
+        await clearCart();
         setStep(4);
-        showStatus("Stripe payment method is ready. The backend created a Stripe payment intent for this order.");
+        showStatus("Payment done. Your cart is cleared.");
       } else {
+        await clearCart();
         setStep(4);
-        showStatus(response.status === "ok" ? "Payment request submitted." : "Order saved.");
+        showStatus(response.status === "ok" ? "Payment done. Your cart is cleared." : "Order saved. Your cart is cleared.");
       }
     } catch (error) {
       setStep(2);
@@ -455,42 +447,57 @@ export function CartScreen() {
 
       <View style={styles.cartBox}>
         {items.length > 0 ? (
-          items.map((item) => (
-            <View key={item.id} style={styles.item}>
-              <View style={styles.itemCopy}>
-                <Text style={styles.itemTag}>Plant item</Text>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemMeta}>
-                  {item.quantity > 1 ? `${item.quantity} x ` : ""}
-                  {formatPrice(item.price, currency)}
-                </Text>
-              </View>
+          items.map((item) => {
+            const imageUri = item.image ? buildApiUrl(item.image) : null;
 
-              <View style={styles.itemActions}>
-                <View style={styles.quantityStepper}>
-                  <Pressable
-                    accessibilityLabel={`Remove one ${item.name}`}
-                    onPress={() => void decreaseItem(item.id, item.name, item.quantity)}
-                    style={styles.quantityButton}
-                  >
-                    <MaterialIcons name="remove" size={16} color={colors.primaryDark} />
-                  </Pressable>
-                  <Text style={styles.quantityValue}>{item.quantity}</Text>
-                  <Pressable
-                    accessibilityLabel={`Add one ${item.name}`}
-                    onPress={() => void increaseItem(item.id, item.quantity)}
-                    style={styles.quantityButton}
-                  >
-                    <MaterialIcons name="add" size={16} color={colors.primaryDark} />
-                  </Pressable>
+            return (
+              <View key={item.id} style={styles.item}>
+                <View style={styles.itemMain}>
+                  {imageUri ? (
+                    <Image resizeMode="cover" source={{ uri: imageUri }} style={styles.itemImage} />
+                  ) : (
+                    <View style={styles.itemImageFallback}>
+                      <MaterialIcons name="local-florist" size={24} color={colors.textMuted} />
+                    </View>
+                  )}
+
+                  <View style={styles.itemCopy}>
+                    <Text style={styles.itemTag}>Plant item</Text>
+                    <Text style={styles.itemName}>{item.name}</Text>
+                    <Text style={styles.itemMeta}>
+                      {item.quantity > 1 ? `${item.quantity} x ` : ""}
+                      {formatPrice(item.price, currency)}
+                    </Text>
+                    <Text style={styles.itemTotal}>Total: {formatPrice(Number(item.price || 0) * item.quantity, currency)}</Text>
+                  </View>
                 </View>
 
-                <Pressable accessibilityLabel="Remove item" onPress={() => handleRemoveItem(item.id, item.name)} style={styles.deleteButton}>
-                  <MaterialIcons name="delete-outline" size={17} color="#B33D68" />
-                </Pressable>
+                <View style={styles.itemActions}>
+                  <View style={styles.quantityStepper}>
+                    <Pressable
+                      accessibilityLabel={`Remove one ${item.name}`}
+                      onPress={() => void decreaseItem(item.id, item.name, item.quantity)}
+                      style={styles.quantityButton}
+                    >
+                      <MaterialIcons name="remove" size={16} color={colors.primaryDark} />
+                    </Pressable>
+                    <Text style={styles.quantityValue}>{item.quantity}</Text>
+                    <Pressable
+                      accessibilityLabel={`Add one ${item.name}`}
+                      onPress={() => void increaseItem(item.id, item.quantity)}
+                      style={styles.quantityButton}
+                    >
+                      <MaterialIcons name="add" size={16} color={colors.primaryDark} />
+                    </Pressable>
+                  </View>
+
+                  <Pressable accessibilityLabel="Remove item" onPress={() => void handleRemoveItem(item.id, item.name)} style={styles.deleteButton}>
+                    <MaterialIcons name="delete-outline" size={17} color="#B33D68" />
+                  </Pressable>
+                </View>
               </View>
-            </View>
-          ))
+            );
+          })
         ) : (
           <View style={styles.emptyState}>
             <MaterialIcons name="shopping-bag" size={34} color={colors.textMuted} />
@@ -835,18 +842,36 @@ const styles = StyleSheet.create({
     ...shadows.soft,
   },
   item: {
-    alignItems: "flex-start",
     backgroundColor: colors.white,
     borderColor: colors.border,
     borderRadius: 22,
     borderWidth: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
+    gap: spacing.sm,
     padding: spacing.md,
+  },
+  itemMain: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  itemImage: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 16,
+    height: 96,
+    width: 88,
+  },
+  itemImageFallback: {
+    alignItems: "center",
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 16,
+    height: 96,
+    justifyContent: "center",
+    width: 88,
   },
   itemCopy: {
     flex: 1,
-    gap: spacing.xs,
+    gap: 5,
+    minWidth: 0,
   },
   itemTag: {
     color: colors.primaryDark,
@@ -856,18 +881,26 @@ const styles = StyleSheet.create({
   },
   itemName: {
     color: colors.text,
-    fontSize: 16,
-    fontWeight: "800",
+    fontSize: 18,
+    fontWeight: "900",
+    lineHeight: 23,
   },
   itemMeta: {
     color: colors.textMuted,
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  itemTotal: {
+    color: colors.primary,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "900",
   },
   itemActions: {
-    alignItems: "flex-end",
+    alignItems: "center",
+    flexDirection: "row",
     gap: spacing.sm,
-    marginLeft: spacing.sm,
+    justifyContent: "space-between",
+    marginTop: spacing.xs,
   },
   quantityStepper: {
     alignItems: "center",

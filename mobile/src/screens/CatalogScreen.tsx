@@ -2,7 +2,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
+import { Image, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
 
 import { AppMenu } from "../components/AppMenu";
 import { BottomNav } from "../components/BottomNav";
@@ -111,7 +111,7 @@ const seasonImages = {
 export function CatalogScreen() {
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
-  const { totalItems } = useCart();
+  const { totalItems, removeItem } = useCart();
   const { t, languageCode } = useLanguage();
   const copy = catalogCopy[languageCode] || catalogCopy.en;
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -232,31 +232,23 @@ export function CatalogScreen() {
     }
   };
 
-  const handleDelete = (product: Product) => {
+  const handleDelete = async (product: Product) => {
     if (deletingProductId) {
       return;
     }
 
-    Alert.alert("Remove Listing", `Remove ${product.name} from the shop? This will also remove it from season screens.`, [
-      { text: "Keep Listing", style: "cancel" },
-      {
-        text: copy.remove,
-        style: "destructive",
-        onPress: async () => {
-          try {
-            setDeletingProductId(product.id);
-            await deleteProduct(product.id);
-            setProducts((current) => current.filter((item) => item.id !== product.id));
-            showStatus(`${product.name} removed from the shop.`);
-            await loadProducts();
-          } catch (error) {
-            showStatus(error instanceof Error ? error.message : "Delete failed.");
-          } finally {
-            setDeletingProductId(null);
-          }
-        },
-      },
-    ]);
+    try {
+      setDeletingProductId(product.id);
+      await deleteProduct(product.id);
+      await removeItem(product.id);
+      setProducts((current) => current.filter((item) => item.id !== product.id));
+      showStatus(`Your ${product.name} deleted.`);
+      await loadProducts();
+    } catch (error) {
+      showStatus(error instanceof Error ? error.message : "Delete failed.");
+    } finally {
+      setDeletingProductId(null);
+    }
   };
 
   return (
@@ -334,6 +326,22 @@ export function CatalogScreen() {
 
       {activeTab === "buy" ? (
         <>
+          <Pressable
+            onPress={() => router.push("/season/all")}
+            style={[styles.allPlantsCard, compact ? styles.allPlantsCardCompact : null]}
+          >
+            <View style={[styles.allPlantsIcon, compact ? styles.allPlantsIconCompact : null]}>
+              <MaterialIcons name="local-florist" size={26} color={colors.white} />
+            </View>
+            <View style={styles.allPlantsCopy}>
+              <Text style={[styles.allPlantsText, compact ? styles.allPlantsTextCompact : null]}>{copy.allPlants}</Text>
+              <Text style={[styles.allPlantsMeta, compact ? styles.allPlantsMetaCompact : null]}>Browse every saved listing</Text>
+            </View>
+            <View style={styles.allPlantsArrow}>
+              <MaterialIcons name="chevron-right" size={22} color={colors.primaryDark} />
+            </View>
+          </Pressable>
+
           <View style={styles.seasonGrid}>
             {seasons.map((season) => (
               <Pressable
@@ -341,7 +349,7 @@ export function CatalogScreen() {
                 onPress={() => router.push(`/season/${season.toLowerCase()}`)}
                 style={styles.seasonHeroCard}
               >
-                <Image source={seasonImages[season]} style={styles.seasonHeroImage} />
+                <Image resizeMode="cover" source={seasonImages[season]} style={styles.seasonHeroImage} />
                 <View style={styles.seasonHeroScrim} />
                 <View style={styles.seasonHeroCopy}>
                   <Text style={styles.seasonName}>{season}</Text>
@@ -352,31 +360,30 @@ export function CatalogScreen() {
                 </View>
               </Pressable>
             ))}
-
-            <Pressable
-              onPress={() => router.push("/season/all")}
-              style={styles.allPlantsCard}
-            >
-              <View style={styles.allPlantsIcon}>
-                <MaterialIcons name="spa" size={24} color={colors.primaryDark} />
-              </View>
-              <View style={styles.allPlantsCopy}>
-                <Text style={styles.allPlantsText}>{copy.allPlants}</Text>
-                <Text style={styles.allPlantsMeta}>Browse every saved listing</Text>
-              </View>
-              <MaterialIcons name="chevron-right" size={22} color={colors.primaryDark} />
-            </Pressable>
           </View>
 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{copy.available}</Text>
-            <Text style={styles.sectionMeta}>{loading ? "Loading..." : `${filteredProducts.length} listed`}</Text>
+            <View style={styles.sectionTitleBlock}>
+              <Text style={styles.sectionEyebrow}>Live marketplace</Text>
+              <Text style={styles.sectionTitle}>{copy.available}</Text>
+            </View>
+            <View style={styles.sectionCountBadge}>
+              <Text style={styles.sectionCountValue}>{loading ? "..." : filteredProducts.length}</Text>
+              <Text style={styles.sectionCountLabel}>{loading ? "Loading" : "Listed"}</Text>
+            </View>
           </View>
 
           {filteredProducts.length > 0 ? (
             <View style={styles.productList}>
               {filteredProducts.map((product) => (
-                <ProductCard key={product.id} actionLabel={copy.addToCart} product={product} />
+                <ProductCard
+                  key={product.id}
+                  actionLabel={copy.addToCart}
+                  deleting={deletingProductId === product.id}
+                  onAdded={(savedProduct) => showStatus(`${savedProduct.name} saved to cart.`)}
+                  onDelete={(productToDelete) => void handleDelete(productToDelete)}
+                  product={product}
+                />
               ))}
             </View>
           ) : (
@@ -434,7 +441,7 @@ export function CatalogScreen() {
 
             <Pressable onPress={() => void pickImage()} style={[styles.photoPicker, newPlant.image ? styles.photoPickerSelected : null]}>
               {newPlant.image ? (
-                <Image source={{ uri: newPlant.image.uri }} style={styles.previewImage} />
+                <Image resizeMode="cover" source={{ uri: newPlant.image.uri }} style={styles.previewImage} />
               ) : (
                 <View style={styles.photoPlaceholder}>
                   <MaterialIcons name="add-a-photo" size={24} color={colors.primaryDark} />
@@ -486,7 +493,7 @@ export function CatalogScreen() {
                 return (
                   <View key={product.id} style={styles.manageCard}>
                     {imageUri ? (
-                      <Image source={{ uri: imageUri }} style={styles.manageImage} />
+                      <Image resizeMode="cover" source={{ uri: imageUri }} style={styles.manageImage} />
                     ) : (
                       <View style={styles.manageImageFallback}>
                         <Text style={styles.manageImageFallbackText}>No Image</Text>
@@ -501,7 +508,7 @@ export function CatalogScreen() {
                     <PrimaryButton
                       disabled={deletingProductId === product.id}
                       label={deletingProductId === product.id ? "Removing..." : copy.remove}
-                      onPress={() => handleDelete(product)}
+                      onPress={() => void handleDelete(product)}
                       variant="secondary"
                     />
                   </View>
@@ -741,55 +748,123 @@ const styles = StyleSheet.create({
   },
   allPlantsCard: {
     alignItems: "center",
-    backgroundColor: "#F7F8F2",
-    borderColor: colors.border,
-    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
+    borderColor: "rgba(44,122,87,0.16)",
+    borderRadius: 22,
     borderWidth: 1,
-    flexBasis: "100%",
     flexDirection: "row",
     gap: spacing.md,
-    minHeight: 86,
-    padding: spacing.md,
-    ...shadows.soft,
+    height: 104,
+    justifyContent: "space-between",
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+    ...shadows.card,
+  },
+  allPlantsCardCompact: {
+    borderRadius: 20,
+    gap: spacing.sm,
+    height: 96,
+    paddingHorizontal: spacing.md,
   },
   allPlantsIcon: {
     alignItems: "center",
-    backgroundColor: "#E8F7EF",
-    borderRadius: 18,
-    height: 44,
+    backgroundColor: "#2C7A57",
+    borderRadius: 20,
+    height: 48,
     justifyContent: "center",
-    width: 44,
+    width: 48,
+  },
+  allPlantsIconCompact: {
+    borderRadius: 18,
+    height: 42,
+    width: 42,
   },
   allPlantsCopy: {
     flex: 1,
-    gap: 3,
+    justifyContent: "center",
   },
   allPlantsText: {
-    color: colors.primaryDark,
-    fontSize: 17,
+    color: colors.text,
+    fontSize: 19,
     fontWeight: "900",
+    lineHeight: 24,
+  },
+  allPlantsTextCompact: {
+    fontSize: 17,
+    lineHeight: 22,
   },
   allPlantsMeta: {
     color: colors.textMuted,
     fontSize: 13,
     fontWeight: "700",
+    lineHeight: 18,
+    marginTop: 3,
+  },
+  allPlantsMetaCompact: {
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  allPlantsArrow: {
+    alignItems: "center",
+    backgroundColor: "#E8F7EF",
+    borderRadius: 18,
+    height: 38,
+    justifyContent: "center",
+    width: 38,
   },
   sectionHeader: {
     alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.96)",
+    borderColor: colors.border,
+    borderRadius: 24,
+    borderWidth: 1,
     flexDirection: "row",
+    gap: spacing.md,
     justifyContent: "space-between",
     marginBottom: spacing.md,
     marginTop: spacing.lg,
+    minHeight: 104,
+    padding: spacing.lg,
+    ...shadows.soft,
+  },
+  sectionTitleBlock: {
+    flex: 1,
+    gap: 4,
+  },
+  sectionEyebrow: {
+    color: colors.primaryDark,
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
   },
   sectionTitle: {
     color: colors.text,
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: "900",
+    lineHeight: 28,
   },
-  sectionMeta: {
+  sectionCountBadge: {
+    alignItems: "center",
+    backgroundColor: "#F4EEF9",
+    borderColor: "rgba(106,82,203,0.12)",
+    borderRadius: 20,
+    borderWidth: 1,
+    minWidth: 76,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  sectionCountValue: {
+    color: colors.primaryDark,
+    fontSize: 22,
+    fontWeight: "900",
+    lineHeight: 26,
+  },
+  sectionCountLabel: {
     color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: "700",
+    fontSize: 11,
+    fontWeight: "900",
+    textTransform: "uppercase",
   },
   productList: {
     gap: spacing.md,
@@ -896,7 +971,7 @@ const styles = StyleSheet.create({
     borderStyle: "dashed",
     borderWidth: 1,
     justifyContent: "center",
-    minHeight: 180,
+    minHeight: 250,
     overflow: "hidden",
   },
   photoPickerSelected: {
@@ -920,7 +995,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   previewImage: {
-    height: 210,
+    height: 250,
     width: "100%",
   },
   photoActions: {
@@ -988,14 +1063,14 @@ const styles = StyleSheet.create({
   },
   manageImage: {
     borderRadius: 18,
-    height: 160,
+    height: 210,
     width: "100%",
   },
   manageImageFallback: {
     alignItems: "center",
     backgroundColor: colors.surfaceMuted,
     borderRadius: 18,
-    height: 160,
+    height: 210,
     justifyContent: "center",
   },
   manageImageFallbackText: {

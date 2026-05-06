@@ -1,4 +1,4 @@
-import { Boxes, Leaf, Users as UsersIcon } from 'lucide-react';
+import { CreditCard, Leaf, MessageSquare, Users as UsersIcon } from 'lucide-react';
 import {
   Area,
   AreaChart,
@@ -20,16 +20,20 @@ import { buySellActivity, diseaseDetectedUsage, usageHistory } from '../services
 import { useApi } from '../hooks/useApi';
 
 export default function Dashboard() {
+  const summary = useApi(api.getSummary, []);
   const plants = useApi(api.getPlants, []);
-  const products = useApi(api.getProducts, []);
   const users = useApi(api.getUsers, []);
-  const loading = plants.loading || products.loading || users.loading;
-  const error = plants.error || products.error || users.error;
+  const payments = useApi(api.getPayments, []);
+  const feedback = useApi(api.getFeedback, []);
+  const loading = summary.loading || plants.loading || users.loading || payments.loading || feedback.loading;
+  const error = summary.error || plants.error || users.error || payments.error || feedback.error;
+  const counts = summary.data?.counts || {};
 
   const cards = [
-    { title: 'Total Plants', value: plants.data.length, icon: Leaf },
-    { title: 'Total Products', value: products.data.length, icon: Boxes },
-    { title: 'Total Users', value: users.data.length, icon: UsersIcon },
+    { title: 'Total Plants', value: counts.plants ?? plants.data.length, icon: Leaf },
+    { title: 'Total Users', value: counts.users ?? users.data.length, icon: UsersIcon },
+    { title: 'Feedback', value: counts.feedback ?? feedback.data.length, icon: MessageSquare },
+    { title: 'Payments', value: counts.payments ?? payments.data.length, icon: CreditCard },
   ];
 
   return (

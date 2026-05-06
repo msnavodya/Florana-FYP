@@ -1,7 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
+import { Image, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
 
 import { AppMenu } from "../components/AppMenu";
 import { BottomNav } from "../components/BottomNav";
@@ -77,7 +77,7 @@ export function SeasonScreen() {
   const safeSeason = seasonTabs.includes(routeSeason as (typeof seasonTabs)[number]) ? routeSeason : "all";
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
-  const { totalItems, currency, addItem } = useCart();
+  const { totalItems, currency, addItem, removeItem } = useCart();
   const { t, languageCode } = useLanguage();
   const copy = seasonCopy[languageCode] || seasonCopy.en;
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -134,31 +134,23 @@ export function SeasonScreen() {
     showStatus(`${product.name} added to cart.`);
   };
 
-  const handleDeleteProduct = (product: Product) => {
+  const handleDeleteProduct = async (product: Product) => {
     if (deletingProductId) {
       return;
     }
 
-    Alert.alert("Remove Listing", `Remove ${product.name} from the shop?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Remove",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            setDeletingProductId(product.id);
-            await deleteProduct(product.id);
-            setProducts((current) => current.filter((item) => item.id !== product.id));
-            showStatus(`${product.name} removed.`);
-            await loadProducts();
-          } catch (error) {
-            showStatus(error instanceof Error ? error.message : "Unable to remove listing.");
-          } finally {
-            setDeletingProductId(null);
-          }
-        },
-      },
-    ]);
+    try {
+      setDeletingProductId(product.id);
+      await deleteProduct(product.id);
+      await removeItem(product.id);
+      setProducts((current) => current.filter((item) => item.id !== product.id));
+      showStatus(`Your ${product.name} deleted.`);
+      await loadProducts();
+    } catch (error) {
+      showStatus(error instanceof Error ? error.message : "Unable to remove listing.");
+    } finally {
+      setDeletingProductId(null);
+    }
   };
 
   const title = safeSeason === "all" ? copy.allPlants : `${safeSeason.toUpperCase()} ${copy.plantsSuffix}`;
@@ -261,7 +253,7 @@ export function SeasonScreen() {
                     disabled={deletingProductId === product.id}
                     onPress={(event) => {
                       event.stopPropagation();
-                      handleDeleteProduct(product);
+                      void handleDeleteProduct(product);
                     }}
                     style={styles.deleteProductButton}
                   >
@@ -272,9 +264,10 @@ export function SeasonScreen() {
                     )}
                   </Pressable>
                   {product.image ? (
-                    <Image source={{ uri: buildApiUrl(product.image) }} style={styles.productImage} />
+                    <Image resizeMode="cover" source={{ uri: buildApiUrl(product.image) }} style={styles.productImage} />
                   ) : (
                     <Image
+                      resizeMode="cover"
                       source={seasonImages[(product.season || safeSeason).toLowerCase() as keyof typeof seasonImages] || brandAssets.spring}
                       style={styles.productImage}
                     />
@@ -289,8 +282,8 @@ export function SeasonScreen() {
                 <PrimaryButton label={copy.addToCart} onPress={() => void handleAddToCart(product)} />
                 <PrimaryButton
                   disabled={deletingProductId === product.id}
-                  label={deletingProductId === product.id ? "Removing..." : "Remove Listing"}
-                  onPress={() => handleDeleteProduct(product)}
+                  label={deletingProductId === product.id ? "Deleting..." : "Delete"}
+                  onPress={() => void handleDeleteProduct(product)}
                   variant="secondary"
                 />
               </View>
@@ -495,8 +488,8 @@ const styles = StyleSheet.create({
   },
   productVisual: {
     alignItems: "flex-start",
-    borderRadius: 18,
-    height: 156,
+    borderRadius: 20,
+    height: 220,
     justifyContent: "flex-end",
     marginBottom: spacing.sm,
     overflow: "hidden",
@@ -539,17 +532,19 @@ const styles = StyleSheet.create({
   },
   productName: {
     color: colors.text,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "900",
+    lineHeight: 25,
   },
   productMeta: {
     color: colors.textMuted,
     fontSize: 14,
+    fontWeight: "700",
     marginBottom: spacing.xs,
   },
   productPrice: {
     color: colors.primary,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "900",
     marginBottom: spacing.sm,
   },

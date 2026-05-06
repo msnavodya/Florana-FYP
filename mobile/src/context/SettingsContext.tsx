@@ -51,6 +51,7 @@ interface SettingsContextValue {
   reminders: ReminderState;
   feedbacks: FeedbackEntry[];
   ready: boolean;
+  fontScale: number;
   refreshFeedbacks: () => Promise<void>;
   refreshReminders: () => Promise<void>;
   saveSettings: (partial: Partial<AppSettings>) => Promise<void>;
@@ -170,12 +171,15 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.removeItem(storageKeys.feedbacks);
   };
 
+  const fontScale = settings.fontSize === "Large" ? 1.14 : settings.fontSize === "Small" ? 0.92 : 1;
+
   const value = useMemo(
     () => ({
       settings,
       reminders,
       feedbacks,
       ready,
+      fontScale,
       refreshFeedbacks,
       refreshReminders,
       saveSettings,
@@ -184,7 +188,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       addFeedback,
       clearFeedbacks,
     }),
-    [settings, reminders, feedbacks, ready, refreshFeedbacks, refreshReminders]
+    [settings, reminders, feedbacks, ready, fontScale, refreshFeedbacks, refreshReminders]
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

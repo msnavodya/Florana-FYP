@@ -370,9 +370,7 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   imageRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 14,
+    gap: spacing.sm,
     marginBottom: 20,
   },
   imageBox: {
@@ -382,10 +380,10 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderStyle: "dashed",
     borderWidth: 2,
-    height: 76,
+    height: 210,
     justifyContent: "center",
     overflow: "hidden",
-    width: 96,
+    width: "100%",
   },
   imagePreview: {
     borderRadius: 14,
@@ -398,7 +396,7 @@ const styles = StyleSheet.create({
   },
   imageTitle: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "900",
   },
   imageText: {

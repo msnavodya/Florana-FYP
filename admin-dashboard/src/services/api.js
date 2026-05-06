@@ -13,6 +13,14 @@ const client = axios.create({
   timeout: 10000,
 });
 
+const normalizeErrorMessage = (error) => {
+  const detail = error.response?.data?.detail || error.response?.data?.message;
+  if (Array.isArray(detail)) {
+    return detail.map((item) => item?.msg || item?.message || String(item)).join(', ');
+  }
+  return detail || error.message || 'Something went wrong';
+};
+
 client.interceptors.request.use((config) => {
   const token = localStorage.getItem(TOKEN_KEY);
   if (token) {
@@ -32,7 +40,13 @@ const requestWithFallback = async (config) => {
     } catch (error) {
       lastError = error;
       if (error.response) {
-        throw error;
+        if (error.response.status === 401) {
+          auth.logout();
+          throw new Error('Your admin session expired. Please log in again.');
+        }
+        if (![404, 405].includes(error.response.status) || baseURL === candidateApiBaseUrls[candidateApiBaseUrls.length - 1]) {
+          throw new Error(normalizeErrorMessage(error));
+        }
       }
     }
   }
@@ -64,9 +78,13 @@ export const auth = {
 };
 
 export const api = {
+  getSummary: () => requestWithFallback({ method: 'get', url: '/admin/summary' }),
   getUsers: () => requestWithFallback({ method: 'get', url: '/admin/users' }),
   getPlants: () => requestWithFallback({ method: 'get', url: '/admin/plants' }),
   getProducts: () => requestWithFallback({ method: 'get', url: '/admin/products' }),
+  getFeedback: () => requestWithFallback({ method: 'get', url: '/admin/feedback' }),
+  getPayments: () => requestWithFallback({ method: 'get', url: '/admin/payments' }),
   deletePlant: (id) => requestWithFallback({ method: 'delete', url: `/admin/plants/${id}` }),
   deleteProduct: (id) => requestWithFallback({ method: 'delete', url: `/admin/products/${id}` }),
+  deletePayment: (id) => requestWithFallback({ method: 'delete', url: `/admin/payments/${id}` }),
 };

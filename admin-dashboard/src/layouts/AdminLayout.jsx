@@ -1,11 +1,12 @@
-import { LayoutDashboard, Leaf, LogOut, Package, Users } from 'lucide-react';
+import { CreditCard, LayoutDashboard, Leaf, LogOut, MessageSquare, Users } from 'lucide-react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { auth } from '../services/api';
 
 const links = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/plants', label: 'Plants', icon: Leaf },
-  { to: '/products', label: 'Products', icon: Package },
+  { to: '/feedback', label: 'Feedback', icon: MessageSquare },
+  { to: '/payments', label: 'Payments', icon: CreditCard },
   { to: '/users', label: 'Users', icon: Users },
 ];
 

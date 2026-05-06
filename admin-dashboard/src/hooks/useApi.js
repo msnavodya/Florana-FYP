@@ -15,7 +15,12 @@ export function useApi(loader, deps = []) {
         if (active) setData(result);
       })
       .catch((err) => {
-        if (active) setError(err.response?.data?.detail || err.message || 'Something went wrong');
+        const message = err.response?.data?.detail || err.message || 'Something went wrong';
+        if (message.includes('session expired')) {
+          window.location.assign('/login');
+          return;
+        }
+        if (active) setError(message);
       })
       .finally(() => {
         if (active) setLoading(false);
