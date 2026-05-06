@@ -3,8 +3,8 @@ import * as Device from "expo-device";
 import { Platform } from "react-native";
 
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
-const DEFAULT_BACKEND_PORT = 8001;
-const FALLBACK_BACKEND_PORTS = [8001];
+const DEFAULT_BACKEND_PORT = 8000;
+const FALLBACK_BACKEND_PORTS = [8000, 8001];
 const ANDROID_EMULATOR_HOST = "10.0.2.2";
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", ANDROID_EMULATOR_HOST]);
 const IS_PHYSICAL_ANDROID_DEVICE = Platform.OS === "android" && Boolean(Device.isDevice);

@@ -30,7 +30,7 @@ def verify_password(password: str, hashed_password: str) -> bool:
         return result
     except UnknownHashError:
         # If hash is unrecognized, return False (invalid credentials)
-        print(f"⚠️ Warning: Invalid hash format detected for password verification")
+        print("Warning: Invalid hash format detected for password verification")
         return False
     except Exception as e:
         print(f"Error verifying password: {str(e)}")

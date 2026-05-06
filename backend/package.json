@@ -1,8 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "backend:start": "..\\.venv\\Scripts\\python.exe run_backend.py --host 0.0.0.0 --port 8001",
-    "backend:start:reload": "..\\.venv\\Scripts\\python.exe run_backend.py --host 0.0.0.0 --port 8001 --reload",
+    "backend:start": "..\\.venv\\Scripts\\python.exe run_backend.py --host 0.0.0.0 --port 8000",
+    "backend:start:reload": "..\\.venv\\Scripts\\python.exe run_backend.py --host 0.0.0.0 --port 8000 --reload",
     "start": "npm run backend:start"
   }
 }

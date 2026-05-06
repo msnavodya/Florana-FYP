@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 DEFAULT_HOST = "0.0.0.0"
-DEFAULT_PORT = 8001
+DEFAULT_PORT = 8000
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -60,7 +60,7 @@ def main() -> int:
         print(f"Florana backend is already running on http://127.0.0.1:{args.port}")
         print(f"Database: {(health.get('database') or {}).get('message', 'unknown')}")
         print(f"AI model: {ai_model.get('status', 'unknown')} (loaded={ai_model.get('loaded', False)})")
-        print("Keep this process running; do not start another backend on 8001.")
+        print(f"Keep this process running; do not start another backend on {args.port}.")
         return 0
 
     if not can_open_port(args.host, args.port):

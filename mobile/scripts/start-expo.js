@@ -8,7 +8,7 @@ const { spawn } = require("child_process");
 
 const argv = process.argv.slice(2);
 const preferredPorts = [8081, 8082, 8083, 8084, 8085, 8090, 8091];
-const preferredBackendPorts = [8001, 8002, 8003];
+const preferredBackendPorts = [8000, 8001, 8002, 8003];
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "10.0.2.2"]);
 
 function readLocalEnv() {
@@ -64,13 +64,13 @@ function getLanHost() {
 function resolveBackendPort() {
   const explicitUrl = getConfiguredApiUrl();
   if (!explicitUrl) {
-    return 8001;
+    return 8000;
   }
 
   try {
-    return Number(new URL(explicitUrl).port || 8001);
+    return Number(new URL(explicitUrl).port || 8000);
   } catch {
-    return 8001;
+    return 8000;
   }
 }
 

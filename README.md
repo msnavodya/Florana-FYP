@@ -75,7 +75,7 @@ copy mobile\.env.example mobile\.env
 For Expo Go on a real phone, set the mobile API URL to your computer LAN IP:
 
 ```text
-EXPO_PUBLIC_API_BASE_URL=http://YOUR_LAN_IP:8001
+EXPO_PUBLIC_API_BASE_URL=http://YOUR_LAN_IP:8000
 ```
 
 Keep the phone and computer on the same Wi-Fi network. If you run the backend on a different port, update `EXPO_PUBLIC_API_BASE_URL` to match.
@@ -87,6 +87,14 @@ Start the backend from the repository root:
 ```bash
 npm run backend:start
 ```
+
+You can also run the same safe starter from the `backend/` folder:
+
+```bash
+npm run backend:start
+```
+
+Do not start a second copy with `uvicorn main:app --host 0.0.0.0 --port 8000` while the backend is already running. If port `8000` is occupied by Florana, the safe starter will report that the backend is already running instead of crashing with socket error `10048`.
 
 Start the main mobile app:
 
@@ -114,7 +122,7 @@ npm run legacy:web:build
 
 ## API Overview
 
-The backend runs on port `8001` by default when started with the root npm scripts.
+The backend runs on port `8000` by default when started with the root npm scripts.
 
 Important endpoints include:
 
@@ -173,4 +181,4 @@ Ignored local files include virtual environments, `node_modules`, environment fi
 - Main branch: `main`
 - GitHub remote: `https://github.com/msnavodya/Florana-FYP.git`
 - Active client: `mobile/`
-- Backend default port: `8001`
+- Backend default port: `8000`

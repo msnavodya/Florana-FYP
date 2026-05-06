@@ -26,6 +26,7 @@ except Exception as e:
 # ----------------- Import Routers -----------------
 try:
     from .routes.auth import router as auth_router
+    from .routes.admin import router as admin_router
     from .routes.care_reminder import router as care_reminder_router
     from .routes.feedback import router as feedback_router
     from .routes.plant import router as plant_router
@@ -37,6 +38,7 @@ try:
     from .utils.paths import UPLOAD_DIR, build_upload_api_path, build_upload_disk_path, build_upload_public_path
 except ImportError:
     from routes.auth import router as auth_router
+    from routes.admin import router as admin_router
     from routes.care_reminder import router as care_reminder_router
     from routes.feedback import router as feedback_router
     from routes.plant import router as plant_router
@@ -139,7 +141,7 @@ app.add_middleware(
 def startup_event():
     """Print startup information."""
     server_host = os.getenv("HOST", "0.0.0.0")
-    server_port = int(os.getenv("PORT", "8001"))
+    server_port = int(os.getenv("PORT", "8000"))
     lan_ips = _get_lan_ips()
 
     print("\n" + "=" * 60)
@@ -168,6 +170,7 @@ def startup_event():
 
 # Routers
 app.include_router(auth_router)
+app.include_router(admin_router)
 app.include_router(care_reminder_router)
 app.include_router(feedback_router)
 app.include_router(plant_router)
@@ -567,9 +570,9 @@ def get_quick_tips():
     return build_quick_tips()
 
 
-@app.delete("/plants/{plant_id}")
-@app.delete("/api/plants/{plant_id}")
-def delete_plant(plant_id: str):
+@app.delete("/plants/{plant_id}", include_in_schema=False)
+@app.delete("/api/plants/{plant_id}", include_in_schema=False)
+def delete_legacy_plant(plant_id: str):
     try:
         plants_collection = database.get_plants_collection()
         if plants_collection is None:
@@ -650,6 +653,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "backend.main:app",
         host=os.getenv("HOST", "0.0.0.0"),
-        port=int(os.getenv("PORT", "8001")),
+        port=int(os.getenv("PORT", "8000")),
         reload=os.getenv("RELOAD", "false").lower() == "true",
     )

@@ -1,8 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "backend:start": ".\\.venv\\Scripts\\python.exe backend\\run_backend.py --host 0.0.0.0 --port 8001",
-    "backend:start:reload": ".\\.venv\\Scripts\\python.exe backend\\run_backend.py --host 0.0.0.0 --port 8001 --reload",
+    "backend:start": ".\\.venv\\Scripts\\python.exe backend\\run_backend.py --host 0.0.0.0 --port 8000",
+    "backend:start:reload": ".\\.venv\\Scripts\\python.exe backend\\run_backend.py --host 0.0.0.0 --port 8000 --reload",
     "payment:backend": ".\\.venv\\Scripts\\python.exe backend\\flask_payment_app.py",
     "payment:frontend": "npm run payments:start",
     "payment:android": "npm run payments:android",

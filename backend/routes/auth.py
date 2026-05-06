@@ -22,13 +22,13 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 
-def _create_tokens(email):
+def _create_tokens(email, role="user"):
     access_token = create_token(
-        data={"sub": email},
+        data={"sub": email, "role": role},
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     )
     refresh_token = create_token(
-        data={"sub": email},
+        data={"sub": email, "role": role},
         expires_delta=timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
     )
     return access_token, refresh_token
@@ -42,6 +42,7 @@ def _user_response(user_data, user_id):
         "full_name": user_data.get("full_name", ""),
         "contact": user_data.get("contact"),
         "location": user_data.get("location"),
+        "role": user_data.get("role", "user"),
     }
 
 
@@ -87,18 +88,20 @@ def signup(user: UserCreate):
             user_dict.pop("password")
             user_dict["created_at"] = datetime.utcnow()
             user_dict["is_active"] = True
+            user_dict["role"] = "user"
 
             result = users_collection.insert_one(user_dict)
             user_id = str(result.inserted_id)
             response_user = _user_response(user_dict, user_id)
 
-        access_token, refresh_token = _create_tokens(normalized_email)
+        access_token, refresh_token = _create_tokens(normalized_email, "user")
 
         return {
             "message": "User created successfully",
             "access_token": access_token,
             "refresh_token": refresh_token,
             "token_type": "bearer",
+            "role": "user",
             "user": response_user,
             "storage": "local" if use_local_store else "mongodb",
         }
@@ -122,8 +125,24 @@ def login(user: UserLogin, request: Request):
         normalized_email = user.email.lower()
 
         if use_local_store:
+            auth_store.ensure_admin_user()
             db_user = auth_store.find_user_by_email(normalized_email)
         else:
+            if normalized_email == "admin@florana.com":
+                existing_admin = users_collection.find_one({"email": normalized_email})
+                if not existing_admin:
+                    users_collection.insert_one(
+                        {
+                            "full_name": "Florana Admin",
+                            "email": normalized_email,
+                            "hashed_password": hash_password("123456"),
+                            "contact": None,
+                            "location": None,
+                            "created_at": datetime.utcnow(),
+                            "is_active": True,
+                            "role": "admin",
+                        }
+                    )
             db_user = users_collection.find_one({"email": normalized_email})
 
         if not db_user:
@@ -137,7 +156,8 @@ def login(user: UserLogin, request: Request):
             raise HTTPException(status_code=401, detail="Invalid email or password")
 
         user_id = str(db_user["_id"])
-        access_token, refresh_token = _create_tokens(normalized_email)
+        role = db_user.get("role", "user")
+        access_token, refresh_token = _create_tokens(normalized_email, role)
         response_user = _user_response(db_user, user_id)
 
         try:
@@ -159,6 +179,7 @@ def login(user: UserLogin, request: Request):
             "access_token": access_token,
             "refresh_token": refresh_token,
             "token_type": "bearer",
+            "role": role,
             "user": response_user,
             "storage": "local" if use_local_store else "mongodb",
         }

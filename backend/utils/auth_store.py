@@ -4,11 +4,33 @@ from datetime import datetime
 from threading import Lock
 from uuid import uuid4
 
+try:
+    from .security import hash_password
+except ImportError:
+    from utils.security import hash_password
+
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 USERS_FILE = os.path.join(BASE_DIR, "users.local.json")
 LOGIN_HISTORY_FILE = os.path.join(BASE_DIR, "login_history.local.json")
 _LOCK = Lock()
+
+ADMIN_EMAIL = "admin@florana.com"
+ADMIN_PASSWORD = "123456"
+
+
+def _admin_user():
+    return {
+        "_id": "admin",
+        "full_name": "Florana Admin",
+        "email": ADMIN_EMAIL,
+        "hashed_password": hash_password(ADMIN_PASSWORD),
+        "contact": None,
+        "location": None,
+        "created_at": datetime.utcnow().isoformat(),
+        "is_active": True,
+        "role": "admin",
+    }
 
 
 def _read_json(path, default):
@@ -33,6 +55,26 @@ def find_user_by_email(email):
     return next((user for user in users if user.get("email") == normalized_email), None)
 
 
+def list_users():
+    return _read_json(USERS_FILE, [])
+
+
+def ensure_admin_user():
+    with _LOCK:
+        users = _read_json(USERS_FILE, [])
+        existing = next((user for user in users if user.get("email") == ADMIN_EMAIL), None)
+        if existing:
+            if existing.get("role") != "admin":
+                existing["role"] = "admin"
+                _write_json(USERS_FILE, users)
+            return existing
+
+        admin = _admin_user()
+        users.append(admin)
+        _write_json(USERS_FILE, users)
+        return admin
+
+
 def create_user(user_data):
     with _LOCK:
         users = _read_json(USERS_FILE, [])
@@ -50,6 +92,7 @@ def create_user(user_data):
             "location": user_data.get("location"),
             "created_at": datetime.utcnow().isoformat(),
             "is_active": True,
+            "role": user_data.get("role", "user"),
         }
         users.append(stored_user)
         _write_json(USERS_FILE, users)
