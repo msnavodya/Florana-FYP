@@ -294,6 +294,10 @@ npm run backend:restart
 npm run backend:stop
 ```
 
+Type only the command itself. Do not add explanation text after the command.
+For example, use `npm run backend:restart`, not
+`npm run backend:restart to start fresh`.
+
 Avoid starting the backend with raw `uvicorn main:app --port 8000` while another
 backend is already open, because Uvicorn will try to bind the same port again
 and Windows will raise `[Errno 10048]`.
@@ -351,6 +355,12 @@ Recommended daily startup:
 ```bash
 npm run backend:start
 npm start
+```
+
+If you need a fresh backend, run this exact command:
+
+```bash
+npm run backend:restart
 ```
 
 If you only run `npm start`, backend messages may appear in the same terminal

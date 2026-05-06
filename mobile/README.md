@@ -37,6 +37,18 @@ npm start
 Use `npm run backend:restart` when you need a fresh backend process, and
 `npm run backend:stop` when you want to close the backend completely.
 
+Type only the command. Do not add extra words after it. For example:
+
+```bash
+npm run backend:restart
+```
+
+Do not type:
+
+```bash
+npm run backend:restart to start fresh
+```
+
 ## Backend URL notes
 
 - Physical Android device with Expo Go: use your computer's LAN IP, for example `http://192.168.8.116:8000`
