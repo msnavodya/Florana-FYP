@@ -150,14 +150,10 @@ Recent mobile documentation points:
 - Dashboard summary
 - Users
 - Flower Plants
-- Products and shop products
 - Orders / payments
 - Feedback
-- Care reminders
-- Growth tracking
-- Disease predictions
-- Reports and analytics
-- Settings
+
+The repository still contains additional admin page components under `admin-dashboard/src/pages/`, but the current routed dashboard navigation exposes only the pages listed above.
 
 ## 4. Tech Stack
 
