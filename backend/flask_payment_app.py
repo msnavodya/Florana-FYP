@@ -5,6 +5,7 @@ import json
 import os
 import uuid
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode, quote
 
@@ -135,7 +136,7 @@ def _redirect_page(title: str, body: str, redirect_url: str) -> str:
 
 
 def create_app() -> Flask:
-    load_dotenv()
+    load_dotenv(Path(__file__).resolve().with_name(".env"))
 
     app = Flask(__name__)
 

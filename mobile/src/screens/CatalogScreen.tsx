@@ -1,5 +1,4 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
@@ -8,20 +7,15 @@ import { AppMenu } from "../components/AppMenu";
 import { BottomNav } from "../components/BottomNav";
 import { CurrencySwitcher } from "../components/CurrencySwitcher";
 import { LanguageSelector } from "../components/LanguageSelector";
-import { PrimaryButton } from "../components/PrimaryButton";
 import { ProductCard } from "../components/ProductCard";
 import { Screen } from "../components/Screen";
 import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
-import { buildApiUrl } from "../lib/api/config";
-import { createProduct, deleteProduct, getProducts } from "../lib/api/shop";
-import { appendImageAsset } from "../lib/api/upload";
+import { getProducts } from "../lib/api/shop";
 import { brandAssets } from "../theme/brand";
 import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 import type { Product } from "../types/shop";
 import { seasons } from "../utils/shop";
-
-type BuySellTab = "buy" | "sell";
 
 const seasonImages = {
   Spring: brandAssets.spring,
@@ -40,23 +34,14 @@ const seasonKeyMap: Record<(typeof seasons)[number], string> = {
 export function CatalogScreen() {
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
-  const { totalItems, removeItem } = useCart();
+  const { totalItems } = useCart();
   const { t } = useLanguage();
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<BuySellTab>("buy");
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
-  const [savingListing, setSavingListing] = useState(false);
-  const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
-  const [newPlant, setNewPlant] = useState({
-    name: "",
-    price: "",
-    season: "Spring",
-    image: null as ImagePicker.ImagePickerAsset | null,
-  });
 
   const showStatus = (message: string) => {
     setStatus(message);
@@ -91,98 +76,8 @@ export function CatalogScreen() {
 
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
-
     return products.filter((product) => !query || (product.name || "").toLowerCase().includes(query));
   }, [products, search]);
-
-  const listingPrice = Number(newPlant.price);
-  const listingReady = Boolean(newPlant.name.trim() && Number.isFinite(listingPrice) && listingPrice > 0 && newPlant.image);
-
-  const resetListingForm = () => {
-    setNewPlant({ name: "", price: "", season: "Spring", image: null });
-  };
-
-  const pickImage = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      showStatus(t("catalog_photo_permission"));
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      setNewPlant((current) => ({ ...current, image: result.assets[0] }));
-    }
-  };
-
-  const handleSell = async () => {
-    const trimmedName = newPlant.name.trim();
-    const price = Number(newPlant.price);
-
-    if (!trimmedName) {
-      showStatus(t("catalog_name_required"));
-      return;
-    }
-
-    if (!Number.isFinite(price) || price <= 0) {
-      showStatus(t("catalog_price_required"));
-      return;
-    }
-
-    if (!newPlant.image) {
-      showStatus(t("catalog_photo_required"));
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("name", trimmedName);
-    formData.append("price", String(price));
-    formData.append("season", newPlant.season);
-
-    try {
-      setSavingListing(true);
-      await appendImageAsset(formData, "file", newPlant.image, "plant");
-      const savedProduct = await createProduct(formData);
-      setProducts((current) => [savedProduct, ...current.filter((product) => product.id !== savedProduct.id)]);
-      resetListingForm();
-      setActiveTab("buy");
-      showStatus(
-        t("catalog_product_saved", {
-          name: savedProduct.name,
-          season: t(seasonKeyMap[savedProduct.season as keyof typeof seasonKeyMap] || "catalog_season"),
-        })
-      );
-      await loadProducts();
-    } catch (error) {
-      showStatus(error instanceof Error ? error.message : t("catalog_upload_failed"));
-    } finally {
-      setSavingListing(false);
-    }
-  };
-
-  const handleDelete = async (product: Product) => {
-    if (deletingProductId) {
-      return;
-    }
-
-    try {
-      setDeletingProductId(product.id);
-      await deleteProduct(product.id);
-      await removeItem(product.id);
-      setProducts((current) => current.filter((item) => item.id !== product.id));
-      showStatus(t("product_deleted", { name: product.name }));
-      await loadProducts();
-    } catch (error) {
-      showStatus(error instanceof Error ? error.message : t("product_delete_failed"));
-    } finally {
-      setDeletingProductId(null);
-    }
-  };
 
   return (
     <Screen>
@@ -219,8 +114,20 @@ export function CatalogScreen() {
           <Text style={[styles.heroSubtitle, compact ? styles.heroSubtitleCompact : null]}>{t("catalog_subtitle")}</Text>
         </View>
 
-        <View style={styles.heroMetaCard}>
-          <Text style={styles.heroMetaText}>{t("catalog_plants_listed", { count: products.length })}</Text>
+        <View style={styles.heroActionRow}>
+          <View style={styles.heroMetaCard}>
+            <Text style={styles.heroMetaText}>{t("catalog_plants_listed", { count: products.length })}</Text>
+          </View>
+
+          <Pressable onPress={() => router.push("/sell")} style={styles.sellShortcut}>
+            <View style={styles.sellShortcutIcon}>
+              <MaterialIcons name="add-business" size={18} color={colors.white} />
+            </View>
+            <View style={styles.sellShortcutCopy}>
+              <Text style={styles.sellShortcutTitle}>{t("catalog_sell_plants")}</Text>
+              <Text style={styles.sellShortcutMeta}>{t("catalog_list_for_sale")}</Text>
+            </View>
+          </Pressable>
         </View>
       </View>
 
@@ -241,214 +148,80 @@ export function CatalogScreen() {
         />
       </View>
 
-      <View style={styles.toggleBar}>
-        <Pressable
-          onPress={() => setActiveTab("buy")}
-          style={[styles.toggleButton, activeTab === "buy" ? styles.toggleButtonActive : null]}
-        >
-          <Text style={[styles.toggleText, activeTab === "buy" ? styles.toggleTextActive : null]}>{t("catalog_buy_plants")}</Text>
-        </Pressable>
+      <Pressable onPress={() => router.push("/sell")} style={[styles.sellBanner, compact ? styles.sellBannerCompact : null]}>
+        <View style={styles.sellBannerIcon}>
+          <MaterialIcons name="storefront" size={24} color={colors.white} />
+        </View>
+        <View style={styles.sellBannerCopy}>
+          <Text style={styles.sellBannerTitle}>{t("catalog_sell_plants")}</Text>
+          <Text style={styles.sellBannerText}>{t("catalog_saved_immediately")}</Text>
+        </View>
+        <View style={styles.sellBannerArrow}>
+          <MaterialIcons name="chevron-right" size={22} color={colors.primaryDark} />
+        </View>
+      </Pressable>
 
-        <Pressable
-          onPress={() => setActiveTab("sell")}
-          style={[styles.toggleButton, activeTab === "sell" ? styles.toggleButtonActive : null]}
-        >
-          <Text style={[styles.toggleText, activeTab === "sell" ? styles.toggleTextActive : null]}>{t("catalog_sell_plants")}</Text>
-        </Pressable>
-      </View>
+      <Pressable
+        onPress={() => router.push("/season/all")}
+        style={[styles.allPlantsCard, compact ? styles.allPlantsCardCompact : null]}
+      >
+        <View style={[styles.allPlantsIcon, compact ? styles.allPlantsIconCompact : null]}>
+          <MaterialIcons name="local-florist" size={26} color={colors.white} />
+        </View>
+        <View style={styles.allPlantsCopy}>
+          <Text style={[styles.allPlantsText, compact ? styles.allPlantsTextCompact : null]}>{t("catalog_all_plants")}</Text>
+          <Text style={[styles.allPlantsMeta, compact ? styles.allPlantsMetaCompact : null]}>{t("catalog_browse_all")}</Text>
+        </View>
+        <View style={styles.allPlantsArrow}>
+          <MaterialIcons name="chevron-right" size={22} color={colors.primaryDark} />
+        </View>
+      </Pressable>
 
-      {activeTab === "buy" ? (
-        <>
+      <View style={styles.seasonGrid}>
+        {seasons.map((season) => (
           <Pressable
-            onPress={() => router.push("/season/all")}
-            style={[styles.allPlantsCard, compact ? styles.allPlantsCardCompact : null]}
+            key={season}
+            onPress={() => router.push(`/season/${season.toLowerCase()}`)}
+            style={styles.seasonHeroCard}
           >
-            <View style={[styles.allPlantsIcon, compact ? styles.allPlantsIconCompact : null]}>
-              <MaterialIcons name="local-florist" size={26} color={colors.white} />
+            <Image resizeMode="cover" source={seasonImages[season]} style={styles.seasonHeroImage} />
+            <View style={styles.seasonHeroScrim} />
+            <View style={styles.seasonHeroCopy}>
+              <Text style={styles.seasonName}>{t(seasonKeyMap[season])}</Text>
+              <Text style={styles.seasonMeta}>{t("catalog_browse_season", { season: t(seasonKeyMap[season]) })}</Text>
             </View>
-            <View style={styles.allPlantsCopy}>
-              <Text style={[styles.allPlantsText, compact ? styles.allPlantsTextCompact : null]}>{t("catalog_all_plants")}</Text>
-              <Text style={[styles.allPlantsMeta, compact ? styles.allPlantsMetaCompact : null]}>{t("catalog_browse_all")}</Text>
-            </View>
-            <View style={styles.allPlantsArrow}>
-              <MaterialIcons name="chevron-right" size={22} color={colors.primaryDark} />
+            <View style={styles.seasonHeroIcon}>
+              <MaterialIcons name="chevron-right" size={22} color={colors.white} />
             </View>
           </Pressable>
+        ))}
+      </View>
 
-          <View style={styles.seasonGrid}>
-            {seasons.map((season) => (
-              <Pressable
-                key={season}
-                onPress={() => router.push(`/season/${season.toLowerCase()}`)}
-                style={styles.seasonHeroCard}
-              >
-                <Image resizeMode="cover" source={seasonImages[season]} style={styles.seasonHeroImage} />
-                <View style={styles.seasonHeroScrim} />
-                <View style={styles.seasonHeroCopy}>
-                  <Text style={styles.seasonName}>{t(seasonKeyMap[season])}</Text>
-                  <Text style={styles.seasonMeta}>{t("catalog_browse_season", { season: t(seasonKeyMap[season]) })}</Text>
-                </View>
-                <View style={styles.seasonHeroIcon}>
-                  <MaterialIcons name="chevron-right" size={22} color={colors.white} />
-                </View>
-              </Pressable>
-            ))}
-          </View>
+      <View style={styles.sectionHeader}>
+        <View style={styles.sectionTitleBlock}>
+          <Text style={styles.sectionEyebrow}>{t("catalog_live_marketplace")}</Text>
+          <Text style={styles.sectionTitle}>{t("catalog_available_plants")}</Text>
+        </View>
+        <View style={styles.sectionCountBadge}>
+          <Text style={styles.sectionCountValue}>{loading ? "..." : filteredProducts.length}</Text>
+          <Text style={styles.sectionCountLabel}>{loading ? t("loading") : t("listed")}</Text>
+        </View>
+      </View>
 
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleBlock}>
-              <Text style={styles.sectionEyebrow}>{t("catalog_live_marketplace")}</Text>
-              <Text style={styles.sectionTitle}>{t("catalog_available_plants")}</Text>
-            </View>
-            <View style={styles.sectionCountBadge}>
-              <Text style={styles.sectionCountValue}>{loading ? "..." : filteredProducts.length}</Text>
-              <Text style={styles.sectionCountLabel}>{loading ? t("loading") : t("listed")}</Text>
-            </View>
-          </View>
-
-          {filteredProducts.length > 0 ? (
-            <View style={styles.productList}>
-              {filteredProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  actionLabel={t("add_to_cart")}
-                  deleting={deletingProductId === product.id}
-                  onAdded={(savedProduct) => showStatus(t("product_saved_cart", { name: savedProduct.name }))}
-                  onDelete={(productToDelete) => void handleDelete(productToDelete)}
-                  product={product}
-                />
-              ))}
-            </View>
-          ) : (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>{t("catalog_no_plants_search")}</Text>
-            </View>
-          )}
-        </>
+      {filteredProducts.length > 0 ? (
+        <View style={styles.productList}>
+          {filteredProducts.map((product) => (
+            <ProductCard
+              key={product.id}
+              actionLabel={t("add_to_cart")}
+              onAdded={(savedProduct) => showStatus(t("product_saved_cart", { name: savedProduct.name }))}
+              product={product}
+            />
+          ))}
+        </View>
       ) : (
-        <View style={styles.sellSection}>
-          <View style={styles.sellForm}>
-            <View style={styles.sellHeader}>
-              <View>
-                <Text style={styles.sectionTitle}>{t("catalog_list_for_sale")}</Text>
-                <Text style={styles.sellSubtitle}>{t("catalog_saved_immediately")}</Text>
-              </View>
-              <View style={styles.sellCountBadge}>
-                <Text style={styles.sellCountValue}>{products.length}</Text>
-                <Text style={styles.sellCountLabel}>{t("saved")}</Text>
-              </View>
-            </View>
-
-            <TextInput
-              onChangeText={(value) => setNewPlant((current) => ({ ...current, name: value }))}
-              placeholder={t("catalog_plant_name")}
-              placeholderTextColor={colors.textMuted}
-              style={styles.fieldInput}
-              value={newPlant.name}
-            />
-
-            <TextInput
-              keyboardType="decimal-pad"
-              onChangeText={(value) => setNewPlant((current) => ({ ...current, price: value }))}
-              placeholder={t("price")}
-              placeholderTextColor={colors.textMuted}
-              style={styles.fieldInput}
-              value={newPlant.price}
-            />
-
-            <Text style={styles.fieldLabel}>{t("catalog_season")}</Text>
-            <View style={styles.seasonChipWrap}>
-              {seasons.map((season) => {
-                const active = newPlant.season === season;
-                return (
-                  <Pressable
-                    key={season}
-                    onPress={() => setNewPlant((current) => ({ ...current, season }))}
-                    style={[styles.seasonChip, active ? styles.seasonChipActive : null]}
-                  >
-                    <Text style={[styles.seasonChipText, active ? styles.seasonChipTextActive : null]}>{t(seasonKeyMap[season])}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <Pressable onPress={() => void pickImage()} style={[styles.photoPicker, newPlant.image ? styles.photoPickerSelected : null]}>
-              {newPlant.image ? (
-                <Image resizeMode="cover" source={{ uri: newPlant.image.uri }} style={styles.previewImage} />
-              ) : (
-                <View style={styles.photoPlaceholder}>
-                  <MaterialIcons name="add-a-photo" size={24} color={colors.primaryDark} />
-                  <Text style={styles.photoPlaceholderTitle}>{t("catalog_choose_photo")}</Text>
-                  <Text style={styles.photoPlaceholderText}>{t("catalog_photo_help")}</Text>
-                </View>
-              )}
-            </Pressable>
-
-            {newPlant.image ? (
-              <View style={styles.photoActions}>
-                <PrimaryButton label={t("catalog_change_photo")} onPress={() => void pickImage()} variant="secondary" />
-                <Pressable onPress={() => setNewPlant((current) => ({ ...current, image: null }))} style={styles.removePhotoButton}>
-                  <MaterialIcons name="close" size={16} color="#B33D68" />
-                  <Text style={styles.removePhotoText}>{t("catalog_remove_photo")}</Text>
-                </Pressable>
-              </View>
-            ) : null}
-
-            <View style={styles.previewCard}>
-              <Text style={styles.previewLabel}>{t("catalog_listing_preview")}</Text>
-              <Text style={styles.previewName}>{newPlant.name.trim() || t("catalog_plant_name_preview")}</Text>
-              <Text style={styles.previewMeta}>{t("catalog_preview_catalog", { season: t(seasonKeyMap[newPlant.season as keyof typeof seasonKeyMap]) })}</Text>
-              <Text style={styles.previewPrice}>Rs. {Number.isFinite(listingPrice) && listingPrice > 0 ? listingPrice.toFixed(2) : "0.00"}</Text>
-            </View>
-
-            <View style={styles.sellActions}>
-              <PrimaryButton
-                disabled={savingListing || !listingReady}
-                label={savingListing ? t("catalog_saving_listing") : t("catalog_list_plant")}
-                onPress={() => void handleSell()}
-              />
-              <PrimaryButton
-                disabled={savingListing}
-                label={t("clear_form")}
-                onPress={resetListingForm}
-                variant="secondary"
-              />
-            </View>
-          </View>
-
-          <View style={styles.manageSection}>
-            <Text style={styles.sectionTitle}>{t("catalog_your_listed_plants")}</Text>
-
-            <View style={styles.manageList}>
-              {products.map((product) => {
-                const imageUri = product.image ? buildApiUrl(product.image) : null;
-
-                return (
-                  <View key={product.id} style={styles.manageCard}>
-                    {imageUri ? (
-                      <Image resizeMode="cover" source={{ uri: imageUri }} style={styles.manageImage} />
-                    ) : (
-                      <View style={styles.manageImageFallback}>
-                        <Text style={styles.manageImageFallbackText}>{t("no_image")}</Text>
-                      </View>
-                    )}
-
-                    <View style={styles.manageContent}>
-                      <Text style={styles.manageName}>{product.name}</Text>
-                      <Text style={styles.manageMeta}>{t(seasonKeyMap[product.season as keyof typeof seasonKeyMap] || "catalog_season")}</Text>
-                    </View>
-
-                    <PrimaryButton
-                      disabled={deletingProductId === product.id}
-                      label={deletingProductId === product.id ? t("removing") : t("delete")}
-                      onPress={() => void handleDelete(product)}
-                      variant="secondary"
-                    />
-                  </View>
-                );
-              })}
-            </View>
-          </View>
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyText}>{t("catalog_no_plants_search")}</Text>
         </View>
       )}
 
@@ -560,6 +333,9 @@ const styles = StyleSheet.create({
   heroSubtitleCompact: {
     lineHeight: 20,
   },
+  heroActionRow: {
+    gap: spacing.sm,
+  },
   heroMetaCard: {
     alignSelf: "flex-start",
     backgroundColor: "rgba(255,255,255,0.16)",
@@ -571,6 +347,36 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 13,
     fontWeight: "800",
+  },
+  sellShortcut: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.16)",
+    borderRadius: 22,
+    flexDirection: "row",
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  sellShortcutIcon: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderRadius: 16,
+    height: 42,
+    justifyContent: "center",
+    width: 42,
+  },
+  sellShortcutCopy: {
+    flex: 1,
+  },
+  sellShortcutTitle: {
+    color: colors.white,
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  sellShortcutMeta: {
+    color: "rgba(255,255,255,0.78)",
+    fontSize: 12,
+    fontWeight: "700",
+    marginTop: 2,
   },
   statusCard: {
     backgroundColor: "rgba(255,255,255,0.9)",
@@ -602,32 +408,50 @@ const styles = StyleSheet.create({
     fontSize: 15,
     minHeight: 50,
   },
-  toggleBar: {
-    backgroundColor: "rgba(255,255,255,0.72)",
-    borderRadius: 20,
-    flexDirection: "row",
-    gap: spacing.xs,
-    marginBottom: spacing.md,
-    padding: 4,
-  },
-  toggleButton: {
+  sellBanner: {
     alignItems: "center",
-    borderRadius: 16,
-    flex: 1,
-    minHeight: 48,
-    justifyContent: "center",
-    paddingHorizontal: spacing.md,
+    backgroundColor: "#FFFFFF",
+    borderColor: "rgba(124,92,255,0.18)",
+    borderRadius: 24,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.md,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    ...shadows.card,
   },
-  toggleButtonActive: {
+  sellBannerCompact: {
+    borderRadius: 20,
+  },
+  sellBannerIcon: {
+    alignItems: "center",
     backgroundColor: colors.primaryDark,
+    borderRadius: 18,
+    height: 48,
+    justifyContent: "center",
+    width: 48,
   },
-  toggleText: {
+  sellBannerCopy: {
+    flex: 1,
+  },
+  sellBannerTitle: {
     color: colors.text,
-    fontSize: 14,
-    fontWeight: "800",
+    fontSize: 18,
+    fontWeight: "900",
   },
-  toggleTextActive: {
-    color: colors.white,
+  sellBannerText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 2,
+  },
+  sellBannerArrow: {
+    alignItems: "center",
+    backgroundColor: "#F4EEF9",
+    borderRadius: 18,
+    height: 38,
+    justifyContent: "center",
+    width: 38,
   },
   seasonGrid: {
     gap: 12,
@@ -814,213 +638,5 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 14,
     textAlign: "center",
-  },
-  sellSection: {
-    gap: spacing.lg,
-  },
-  sellForm: {
-    backgroundColor: "rgba(255,255,255,0.92)",
-    borderRadius: 24,
-    gap: spacing.md,
-    padding: spacing.lg,
-    ...shadows.soft,
-  },
-  sellHeader: {
-    alignItems: "flex-start",
-    flexDirection: "row",
-    gap: spacing.md,
-    justifyContent: "space-between",
-  },
-  sellSubtitle: {
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: spacing.xs,
-  },
-  sellCountBadge: {
-    alignItems: "center",
-    backgroundColor: "#F4EEF9",
-    borderRadius: 16,
-    minWidth: 68,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
-  sellCountValue: {
-    color: colors.primaryDark,
-    fontSize: 18,
-    fontWeight: "900",
-  },
-  sellCountLabel: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontWeight: "800",
-    textTransform: "uppercase",
-  },
-  fieldLabel: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: "800",
-    textTransform: "uppercase",
-  },
-  fieldInput: {
-    backgroundColor: colors.white,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    color: colors.text,
-    fontSize: 15,
-    minHeight: 50,
-    paddingHorizontal: spacing.md,
-  },
-  seasonChipWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  seasonChip: {
-    backgroundColor: "#F4EEF9",
-    borderColor: colors.border,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-  },
-  seasonChipActive: {
-    backgroundColor: colors.primaryDark,
-  },
-  seasonChipText: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  seasonChipTextActive: {
-    color: colors.white,
-  },
-  photoPicker: {
-    alignItems: "center",
-    backgroundColor: colors.white,
-    borderColor: colors.border,
-    borderRadius: 20,
-    borderStyle: "dashed",
-    borderWidth: 1,
-    justifyContent: "center",
-    minHeight: 250,
-    overflow: "hidden",
-  },
-  photoPickerSelected: {
-    borderStyle: "solid",
-    borderColor: "rgba(124,92,255,0.28)",
-  },
-  photoPlaceholder: {
-    alignItems: "center",
-    gap: spacing.xs,
-    padding: spacing.lg,
-  },
-  photoPlaceholderTitle: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "900",
-  },
-  photoPlaceholderText: {
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: "center",
-  },
-  previewImage: {
-    height: 250,
-    width: "100%",
-  },
-  photoActions: {
-    gap: spacing.sm,
-  },
-  removePhotoButton: {
-    alignItems: "center",
-    alignSelf: "center",
-    flexDirection: "row",
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  removePhotoText: {
-    color: "#B33D68",
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  previewCard: {
-    backgroundColor: "#F7F8F2",
-    borderColor: colors.border,
-    borderRadius: 20,
-    borderWidth: 1,
-    gap: 4,
-    padding: spacing.md,
-  },
-  previewLabel: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontWeight: "800",
-    textTransform: "uppercase",
-  },
-  previewName: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "900",
-  },
-  previewMeta: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  previewPrice: {
-    color: colors.primary,
-    fontSize: 18,
-    fontWeight: "900",
-    marginTop: spacing.xs,
-  },
-  sellActions: {
-    gap: spacing.sm,
-  },
-  manageSection: {
-    gap: spacing.md,
-  },
-  manageList: {
-    gap: spacing.md,
-  },
-  manageCard: {
-    backgroundColor: "rgba(255,255,255,0.95)",
-    borderRadius: 24,
-    gap: spacing.md,
-    overflow: "hidden",
-    padding: spacing.md,
-    ...shadows.soft,
-  },
-  manageImage: {
-    borderRadius: 18,
-    height: 210,
-    width: "100%",
-  },
-  manageImageFallback: {
-    alignItems: "center",
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 18,
-    height: 210,
-    justifyContent: "center",
-  },
-  manageImageFallbackText: {
-    color: colors.textMuted,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  manageContent: {
-    gap: spacing.xs,
-  },
-  manageName: {
-    color: colors.text,
-    fontSize: 17,
-    fontWeight: "800",
-  },
-  manageMeta: {
-    color: colors.textMuted,
-    fontSize: 14,
   },
 });

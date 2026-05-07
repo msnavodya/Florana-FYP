@@ -83,6 +83,8 @@ Recent mobile documentation points:
 - Care Reminder language content now uses the shared translation system instead of isolated page-only copy
 - Supported mobile language choices are English, Sinhala, Tamil, Spanish, French, Arabic, Hindi, and Chinese
 - Mobile-specific setup and troubleshooting are documented in `mobile/README.md`
+- Catalog browsing and plant selling now use separate mobile screens for a cleaner user flow
+- The mobile cart now includes a more polished payment UI with structured delivery fields, payment method cards, and improved Stripe/COD checkout states
 
 ## 3. Features
 
@@ -96,7 +98,7 @@ Recent mobile documentation points:
 - Care reminders and custom care notes
 - Quick Tip community for sharing seeds, posting care ideas, liking posts, commenting, and chatting locally
 - Flower plant shop with seasonal catalog, product details, cart, and checkout
-- Sell Flower Plants flow for adding shop listings
+- Dedicated Sell Flower Plants flow for adding shop listings with photo upload and preview
 - Feedback, profile, settings, help, and about screens
 - Local JSON fallback storage when MongoDB is not connected
 
@@ -133,6 +135,7 @@ Recent mobile documentation points:
 - Quick Tips with community posts, likes, comments, and chat
 - Care Reminder
 - Catalog
+- Sell
 - Season catalog
 - Product details
 - Cart
@@ -471,6 +474,8 @@ To train or update the model, use the workflow in `ml_pipeline/`.
 | `npm run web` | Start Expo web target |
 | `npm run admin:start` | Start admin dashboard |
 | `npm run admin:build` | Build admin dashboard |
+| `npm run payment:mobile` | Start the mobile checkout flow in the Expo app |
+| `npm run payment:backend` | Start the optional legacy Flask Stripe checkout backend |
 | `npm run legacy:web:start` | Start legacy React web client |
 | `npm run legacy:web:build` | Build legacy React web client |
 | `npm run mobile:typecheck` | Run mobile TypeScript check |
@@ -484,21 +489,26 @@ copy backend\.env.example backend\.env
 copy mobile\.env.example mobile\.env
 ```
 
+The FastAPI backend runner and the optional Flask payment backend both load
+`backend/.env` automatically.
+
 ### Backend `.env`
 
 ```env
 MONGO_URL=mongodb://localhost:27017
+JWT_SECRET_KEY=replace_with_a_long_random_secret
 STRIPE_SECRET_KEY=sk_test_your_secret_key_here
+STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
 STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
 PUBLIC_BASE_URL=http://YOUR_LAN_IP:5000
 DEFAULT_RETURN_URL=florana-payments://checkout-result
 HOST=0.0.0.0
 PORT=8000
-ALLOWED_ORIGINS=http://localhost:8081,http://127.0.0.1:8081,http://localhost:8083,http://127.0.0.1:8083
+ALLOWED_ORIGINS=http://localhost:8081,http://127.0.0.1:8081,http://localhost:8083,http://127.0.0.1:8083,http://YOUR_LAN_IP:8083
 ALLOWED_RETURN_URL_PREFIXES=exp://,exps://,florana-payments://,https://auth.expo.io/
 ```
 
-Current development JWT signing is configured in `backend/utils/security.py`. For production deployment, move the secret into an environment variable such as `JWT_SECRET_KEY`.
+`JWT_SECRET_KEY` is read by `backend/utils/security.py` and should be set in any shared or production environment. `STRIPE_PUBLISHABLE_KEY` is optional for the current API response payload but is useful if you extend the mobile checkout with Stripe client-side SDK support.
 
 ### Mobile `.env`
 

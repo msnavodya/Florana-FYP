@@ -248,6 +248,12 @@ export function CartScreen() {
 
   const total = useMemo(() => subtotal, [subtotal]);
   const isStripePayment = paymentMethod === "stripe";
+  const stepLabels = [
+    copy.paymentMethod,
+    copy.verifyMobile,
+    isStripePayment ? t("cart_stripe_card_details") : copy.cod,
+    copy.processing,
+  ];
 
   const buildPayload = (): PaymentIntentPayload => ({
     amount: total,
@@ -392,6 +398,42 @@ export function CartScreen() {
     router.back();
   };
 
+  const renderInputField = ({
+    icon,
+    placeholder,
+    value,
+    onChangeText,
+    keyboardType,
+    autoCapitalize,
+    multiline,
+    style,
+  }: {
+    icon: keyof typeof MaterialIcons.glyphMap;
+    placeholder: string;
+    value: string;
+    onChangeText: (value: string) => void;
+    keyboardType?: "default" | "email-address" | "number-pad" | "phone-pad";
+    autoCapitalize?: "none" | "sentences" | "words" | "characters";
+    multiline?: boolean;
+    style?: object;
+  }) => (
+    <View style={[styles.inputShell, multiline ? styles.inputShellMultiline : null, style]}>
+      <View style={[styles.inputIconWrap, multiline ? styles.inputIconWrapTop : null]}>
+        <MaterialIcons name={icon} size={18} color={colors.textMuted} />
+      </View>
+      <TextInput
+        autoCapitalize={autoCapitalize}
+        keyboardType={keyboardType}
+        multiline={multiline}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={colors.textMuted}
+        style={[styles.input, multiline ? styles.inputMultiline : null]}
+        value={value}
+      />
+    </View>
+  );
+
   return (
     <Screen>
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
@@ -434,6 +476,7 @@ export function CartScreen() {
           <Text style={styles.summaryLabel}>{copy.itemsInCart}</Text>
           <Text style={styles.summaryValue}>{items.length}</Text>
         </View>
+        <View style={styles.summaryDivider} />
         <View style={[styles.summaryBlock, styles.summaryTotal]}>
           <Text style={styles.summaryLabel}>{copy.total}</Text>
           <Text style={styles.summaryValue}>{formatPrice(total, currency)}</Text>
@@ -517,6 +560,7 @@ export function CartScreen() {
           <Pressable style={styles.overlayBg} onPress={resetCheckoutState} />
 
           <View style={styles.paymentDrawer}>
+            <View style={styles.drawerHandle} />
             <View style={styles.paymentOrderChip}>
               <Text style={styles.paymentOrderLabel}>{t("cart_order_label")}</Text>
               <Text style={styles.paymentOrderValue}>
@@ -527,13 +571,37 @@ export function CartScreen() {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
+              {step < 4 ? (
+                <View style={styles.stepRail}>
+                  {stepLabels.map((label, index) => {
+                    const active = step >= index;
+                    return (
+                      <View key={label} style={styles.stepItem}>
+                        <View style={[styles.stepDot, active ? styles.stepDotActive : null]}>
+                          <Text style={[styles.stepDotText, active ? styles.stepDotTextActive : null]}>{index + 1}</Text>
+                        </View>
+                        <Text numberOfLines={1} style={[styles.stepLabel, active ? styles.stepLabelActive : null]}>
+                          {label}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              ) : null}
+
               {step === 0 ? (
                 <>
                   <Text style={styles.drawerTitle}>{copy.paymentMethod}</Text>
+                  <Text style={styles.drawerCopy}>{t("cart_choose_payment_copy")}</Text>
 
                   <Pressable onPress={() => selectPaymentMethod("stripe")} style={[styles.methodItem, styles.methodItemStripe]}>
                     <View style={styles.methodHeader}>
-                      <Text style={styles.methodTitle}>{copy.creditCard}</Text>
+                      <View style={styles.methodTitleRow}>
+                        <View style={[styles.methodIcon, styles.methodIconStripe]}>
+                          <MaterialIcons name="credit-card" size={18} color={colors.white} />
+                        </View>
+                        <Text style={styles.methodTitle}>{copy.creditCard}</Text>
+                      </View>
                       <View style={styles.methodBadge}>
                         <Text style={styles.methodBadgeText}>{t("secure")}</Text>
                       </View>
@@ -542,7 +610,12 @@ export function CartScreen() {
                   </Pressable>
 
                   <Pressable onPress={() => selectPaymentMethod("cod")} style={styles.methodItem}>
-                    <Text style={styles.methodTitle}>{copy.cod}</Text>
+                    <View style={styles.methodTitleRow}>
+                      <View style={[styles.methodIcon, styles.methodIconCod]}>
+                        <MaterialIcons name="local-shipping" size={18} color={colors.white} />
+                      </View>
+                      <Text style={styles.methodTitle}>{copy.cod}</Text>
+                    </View>
                     <Text style={styles.methodBody}>{copy.codDesc}</Text>
                   </Pressable>
                 </>
@@ -553,46 +626,43 @@ export function CartScreen() {
                   <Text style={styles.drawerTitle}>{copy.verifyMobile}</Text>
                   <Text style={styles.drawerCopy}>{copy.phoneCopy}</Text>
 
-                  <TextInput
-                    keyboardType="phone-pad"
-                    onChangeText={(value) => setDelivery((current) => ({ ...current, phone: value }))}
-                    placeholder={copy.phoneNumber}
-                    placeholderTextColor={colors.textMuted}
-                    style={styles.input}
-                    value={delivery.phone}
-                  />
-                  <TextInput
-                    onChangeText={(value) => setDelivery((current) => ({ ...current, name: value }))}
-                    placeholder={t("full_name_placeholder")}
-                    placeholderTextColor={colors.textMuted}
-                    style={styles.input}
-                    value={delivery.name}
-                  />
-                  <TextInput
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    onChangeText={(value) => setDelivery((current) => ({ ...current, email: value }))}
-                    placeholder={t("email_address_placeholder")}
-                    placeholderTextColor={colors.textMuted}
-                    style={styles.input}
-                    value={delivery.email}
-                  />
-                  <TextInput
-                    multiline
-                    onChangeText={(value) => setDelivery((current) => ({ ...current, address: value }))}
-                    placeholder={t("delivery_address_placeholder")}
-                    placeholderTextColor={colors.textMuted}
-                    style={[styles.input, styles.inputMultiline]}
-                    value={delivery.address}
-                  />
-                  <TextInput
-                    multiline
-                    onChangeText={(value) => setDelivery((current) => ({ ...current, note: value }))}
-                    placeholder={t("order_note_optional")}
-                    placeholderTextColor={colors.textMuted}
-                    style={[styles.input, styles.inputMultiline]}
-                    value={delivery.note}
-                  />
+                  <View style={styles.formSection}>
+                    {renderInputField({
+                      icon: "phone-iphone",
+                      keyboardType: "phone-pad",
+                      onChangeText: (value) => setDelivery((current) => ({ ...current, phone: value })),
+                      placeholder: copy.phoneNumber,
+                      value: delivery.phone,
+                    })}
+                    {renderInputField({
+                      icon: "person-outline",
+                      onChangeText: (value) => setDelivery((current) => ({ ...current, name: value })),
+                      placeholder: t("full_name_placeholder"),
+                      value: delivery.name,
+                    })}
+                    {renderInputField({
+                      icon: "alternate-email",
+                      autoCapitalize: "none",
+                      keyboardType: "email-address",
+                      onChangeText: (value) => setDelivery((current) => ({ ...current, email: value })),
+                      placeholder: t("email_address_placeholder"),
+                      value: delivery.email,
+                    })}
+                    {renderInputField({
+                      icon: "location-on",
+                      multiline: true,
+                      onChangeText: (value) => setDelivery((current) => ({ ...current, address: value })),
+                      placeholder: t("delivery_address_placeholder"),
+                      value: delivery.address,
+                    })}
+                    {renderInputField({
+                      icon: "sticky-note-2",
+                      multiline: true,
+                      onChangeText: (value) => setDelivery((current) => ({ ...current, note: value })),
+                      placeholder: t("order_note_optional"),
+                      value: delivery.note,
+                    })}
+                  </View>
 
                   <PrimaryButton
                     disabled={busy}
@@ -608,37 +678,50 @@ export function CartScreen() {
                     <>
                       <Text style={styles.drawerTitle}>{t("cart_stripe_card_details")}</Text>
                       <Text style={styles.drawerCopy}>{t("cart_stripe_card_copy")}</Text>
-                      <TextInput
-                        keyboardType="number-pad"
-                        onChangeText={(value) => setCard((current) => ({ ...current, number: value.replace(/\D/g, "") }))}
-                        placeholder={copy.cardNumber}
-                        placeholderTextColor={colors.textMuted}
-                        style={styles.input}
-                        value={card.number}
-                      />
-                      <TextInput
-                        onChangeText={(value) => setCard((current) => ({ ...current, name: value }))}
-                        placeholder={copy.nameOnCard}
-                        placeholderTextColor={colors.textMuted}
-                        style={styles.input}
-                        value={card.name}
-                      />
+                      <View style={styles.cardPreview}>
+                        <View style={styles.cardPreviewHeader}>
+                          <Text style={styles.cardPreviewLabel}>{t("cart_stripe_secure_checkout")}</Text>
+                          <MaterialIcons name="verified-user" size={18} color={colors.white} />
+                        </View>
+                        <Text style={styles.cardPreviewNumber}>
+                          {card.number ? card.number.replace(/(.{4})/g, "$1 ").trim() : "•••• •••• •••• ••••"}
+                        </Text>
+                        <View style={styles.cardPreviewFooter}>
+                          <Text style={styles.cardPreviewMeta}>{card.name || copy.nameOnCard}</Text>
+                          <Text style={styles.cardPreviewMeta}>{card.expiry || copy.expiry}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.formSection}>
+                        {renderInputField({
+                          icon: "credit-card",
+                          keyboardType: "number-pad",
+                          onChangeText: (value) => setCard((current) => ({ ...current, number: value.replace(/\D/g, "") })),
+                          placeholder: copy.cardNumber,
+                          value: card.number,
+                        })}
+                        {renderInputField({
+                          icon: "badge",
+                          onChangeText: (value) => setCard((current) => ({ ...current, name: value })),
+                          placeholder: copy.nameOnCard,
+                          value: card.name,
+                        })}
+                      </View>
                       <View style={styles.cardGrid}>
-                        <TextInput
-                          onChangeText={(value) => setCard((current) => ({ ...current, expiry: value }))}
-                          placeholder={copy.expiry}
-                          placeholderTextColor={colors.textMuted}
-                          style={[styles.input, styles.cardGridInput]}
-                          value={card.expiry}
-                        />
-                        <TextInput
-                          keyboardType="number-pad"
-                          onChangeText={(value) => setCard((current) => ({ ...current, cvv: value.replace(/\D/g, "") }))}
-                          placeholder={t("cvv")}
-                          placeholderTextColor={colors.textMuted}
-                          style={[styles.input, styles.cardGridInput]}
-                          value={card.cvv}
-                        />
+                        {renderInputField({
+                          icon: "calendar-month",
+                          onChangeText: (value) => setCard((current) => ({ ...current, expiry: value })),
+                          placeholder: copy.expiry,
+                          style: styles.cardGridInput,
+                          value: card.expiry,
+                        })}
+                        {renderInputField({
+                          icon: "lock-outline",
+                          keyboardType: "number-pad",
+                          onChangeText: (value) => setCard((current) => ({ ...current, cvv: value.replace(/\D/g, "") })),
+                          placeholder: t("cvv"),
+                          style: styles.cardGridInput,
+                          value: card.cvv,
+                        })}
                       </View>
 
                       <PrimaryButton
@@ -653,6 +736,15 @@ export function CartScreen() {
                     <>
                       <Text style={styles.drawerTitle}>{copy.cod}</Text>
                       <Text style={styles.drawerCopy}>{copy.codCopy}</Text>
+                      <View style={styles.codBox}>
+                        <View style={styles.codIconWrap}>
+                          <MaterialIcons name="local-shipping" size={22} color="#1F4B3F" />
+                        </View>
+                        <View style={styles.codCopyWrap}>
+                          <Text style={styles.codTitle}>{t("cart_cod_delivery_title")}</Text>
+                          <Text style={styles.codBody}>{t("cart_cod_delivery_copy")}</Text>
+                        </View>
+                      </View>
                       <PrimaryButton
                         disabled={busy}
                         label={busy ? copy.submitting : `${copy.confirmCod} ${formatPrice(total, currency)}`}
@@ -797,9 +889,15 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: spacing.md,
     padding: spacing.lg,
     ...shadows.card,
+  },
+  summaryDivider: {
+    backgroundColor: colors.border,
+    height: 42,
+    width: 1,
   },
   summaryBlock: {
     gap: spacing.xs,
@@ -961,6 +1059,14 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     ...shadows.card,
   },
+  drawerHandle: {
+    alignSelf: "center",
+    backgroundColor: "rgba(106,94,134,0.24)",
+    borderRadius: radii.pill,
+    height: 5,
+    marginBottom: spacing.md,
+    width: 56,
+  },
   paymentOrderChip: {
     alignItems: "center",
     alignSelf: "flex-start",
@@ -981,6 +1087,43 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
     fontSize: 12,
     fontWeight: "800",
+  },
+  stepRail: {
+    flexDirection: "row",
+    gap: spacing.xs,
+    marginBottom: spacing.lg,
+  },
+  stepItem: {
+    alignItems: "center",
+    flex: 1,
+    gap: 6,
+  },
+  stepDot: {
+    alignItems: "center",
+    backgroundColor: "#EFE8F7",
+    borderRadius: radii.pill,
+    height: 28,
+    justifyContent: "center",
+    width: 28,
+  },
+  stepDotActive: {
+    backgroundColor: colors.primaryDark,
+  },
+  stepDotText: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  stepDotTextActive: {
+    color: colors.white,
+  },
+  stepLabel: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  stepLabelActive: {
+    color: colors.text,
   },
   drawerTitle: {
     color: colors.text,
@@ -1014,6 +1157,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
   },
+  methodTitleRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  methodIcon: {
+    alignItems: "center",
+    borderRadius: 14,
+    height: 36,
+    justifyContent: "center",
+    width: 36,
+  },
+  methodIconStripe: {
+    backgroundColor: colors.primaryDark,
+  },
+  methodIconCod: {
+    backgroundColor: "#2C7A57",
+  },
   methodBadge: {
     backgroundColor: colors.primaryDark,
     borderRadius: radii.pill,
@@ -1036,15 +1197,35 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginTop: spacing.xs,
   },
-  input: {
+  formSection: {
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  inputShell: {
     backgroundColor: "rgba(247,248,251,0.98)",
     borderColor: colors.border,
     borderRadius: 16,
     borderWidth: 1,
-    color: colors.text,
-    marginBottom: spacing.md,
+    flexDirection: "row",
     minHeight: 50,
     paddingHorizontal: spacing.md,
+  },
+  inputShellMultiline: {
+    minHeight: 92,
+  },
+  inputIconWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 28,
+  },
+  inputIconWrapTop: {
+    alignItems: "flex-start",
+    paddingTop: spacing.md,
+  },
+  input: {
+    color: colors.text,
+    flex: 1,
+    minHeight: 50,
   },
   inputMultiline: {
     minHeight: 92,
@@ -1057,6 +1238,74 @@ const styles = StyleSheet.create({
   },
   cardGridInput: {
     flex: 1,
+  },
+  cardPreview: {
+    backgroundColor: "#1F4B3F",
+    borderRadius: 24,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    ...shadows.soft,
+  },
+  cardPreviewHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: spacing.lg,
+  },
+  cardPreviewLabel: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 12,
+    fontWeight: "800",
+    textTransform: "uppercase",
+  },
+  cardPreviewNumber: {
+    color: colors.white,
+    fontSize: 22,
+    fontWeight: "900",
+    letterSpacing: 1.2,
+    marginBottom: spacing.lg,
+  },
+  cardPreviewFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  cardPreviewMeta: {
+    color: "rgba(255,255,255,0.82)",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  codBox: {
+    alignItems: "flex-start",
+    backgroundColor: "#EEF8F2",
+    borderColor: "rgba(44,122,87,0.14)",
+    borderRadius: 20,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: spacing.md,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+  },
+  codIconWrap: {
+    alignItems: "center",
+    backgroundColor: "#DDF2E4",
+    borderRadius: 16,
+    height: 42,
+    justifyContent: "center",
+    width: 42,
+  },
+  codCopyWrap: {
+    flex: 1,
+    gap: 4,
+  },
+  codTitle: {
+    color: "#1F4B3F",
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  codBody: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 20,
   },
   successBox: {
     alignItems: "center",

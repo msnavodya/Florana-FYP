@@ -24,6 +24,7 @@ const menuItems = [
   { path: "/home", labelKey: "nav_home", icon: "home" },
   { path: "/profile", labelKey: "nav_profile", icon: "person" },
   { path: "/catalog", labelKey: "nav_catalog", icon: "shopping-bag" },
+  { path: "/sell", labelKey: "catalog_sell_plants", icon: "storefront" },
   { path: "/myplants", labelKey: "nav_my_plants", icon: "eco" },
   { path: "/care", labelKey: "nav_care", icon: "alarm" },
   { path: "/quicktip", labelKey: "nav_quick_tip", icon: "lightbulb" },

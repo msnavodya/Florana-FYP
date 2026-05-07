@@ -11,10 +11,13 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 
 DEFAULT_HOST = "0.0.0.0"
 DEFAULT_PORT = 8000
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+load_dotenv(Path(__file__).resolve().with_name(".env"))
 
 
 def can_open_port(host: str, port: int) -> bool:

@@ -12,10 +12,14 @@ from pathlib import Path
 from PIL import Image
 from datetime import datetime
 from bson import ObjectId
+from dotenv import load_dotenv
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+
+
+load_dotenv(Path(__file__).resolve().with_name(".env"))
 
 
 def _get_cli_port(default_port: int = 8000) -> int:
