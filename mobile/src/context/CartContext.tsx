@@ -1,46 +1,98 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
+import { fetchLatestExchangeRates } from "../lib/api/currency";
 import { storageKeys } from "../lib/storage/keys";
 import type { CartItem, Product } from "../types/shop";
-
-type Currency = "LKR" | "USD" | "EUR";
+import { defaultExchangeRates, formatPrice, type SupportedCurrency, convertPrice } from "../utils/shop";
 
 interface CartContextValue {
   items: CartItem[];
-  currency: Currency;
+  currency: SupportedCurrency;
   ready: boolean;
   addItem: (product: Product) => Promise<void>;
   removeItem: (productId: string) => Promise<void>;
   updateQuantity: (productId: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
-  setCurrency: (value: Currency) => Promise<void>;
+  setCurrency: (value: SupportedCurrency) => Promise<void>;
+  exchangeRates: Record<SupportedCurrency, number>;
+  ratesUpdatedAt: string | null;
+  ratesLoading: boolean;
+  refreshExchangeRates: () => Promise<void>;
+  convertAmount: (amount: number | string | undefined, targetCurrency?: SupportedCurrency) => number;
+  formatMoney: (amount: number | string | undefined, targetCurrency?: SupportedCurrency) => string;
   totalItems: number;
   subtotal: number;
+  convertedSubtotal: number;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
-  const [currency, setCurrencyState] = useState<Currency>("LKR");
+  const [currency, setCurrencyState] = useState<SupportedCurrency>("LKR");
+  const [exchangeRates, setExchangeRates] = useState<Record<SupportedCurrency, number>>(defaultExchangeRates);
+  const [ratesUpdatedAt, setRatesUpdatedAt] = useState<string | null>(null);
+  const [ratesLoading, setRatesLoading] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     Promise.all([
       AsyncStorage.getItem(storageKeys.cart),
       AsyncStorage.getItem(storageKeys.currency),
+      AsyncStorage.getItem(storageKeys.currencyRates),
+      AsyncStorage.getItem(storageKeys.currencyRatesUpdatedAt),
     ])
-      .then(([cartRaw, currencyRaw]) => {
+      .then(([cartRaw, currencyRaw, ratesRaw, ratesUpdatedAtRaw]) => {
         if (cartRaw) {
           setItems(JSON.parse(cartRaw) as CartItem[]);
         }
         if (currencyRaw === "LKR" || currencyRaw === "USD" || currencyRaw === "EUR") {
           setCurrencyState(currencyRaw);
         }
+        if (ratesRaw) {
+          try {
+            setExchangeRates({ ...defaultExchangeRates, ...(JSON.parse(ratesRaw) as Partial<Record<SupportedCurrency, number>>) });
+          } catch {
+            setExchangeRates(defaultExchangeRates);
+          }
+        }
+        if (ratesUpdatedAtRaw) {
+          setRatesUpdatedAt(ratesUpdatedAtRaw);
+        }
       })
       .finally(() => setReady(true));
   }, []);
+
+  const refreshExchangeRates = useCallback(async () => {
+    setRatesLoading(true);
+    try {
+      const latest = await fetchLatestExchangeRates();
+      setExchangeRates(latest.rates);
+      setRatesUpdatedAt(latest.updatedAt);
+      await AsyncStorage.multiSet([
+        [storageKeys.currencyRates, JSON.stringify(latest.rates)],
+        [storageKeys.currencyRatesUpdatedAt, latest.updatedAt || ""],
+      ]);
+    } catch {
+      // Keep cached/default rates if the live provider is temporarily unavailable.
+    } finally {
+      setRatesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!ready) {
+      return;
+    }
+
+    void refreshExchangeRates();
+    const interval = setInterval(() => {
+      void refreshExchangeRates();
+    }, 1000 * 60 * 15);
+
+    return () => clearInterval(interval);
+  }, [ready, refreshExchangeRates]);
 
   const persistItems = async (next: CartItem[]) => {
     setItems(next);
@@ -78,10 +130,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     await persistItems([]);
   };
 
-  const setCurrency = async (value: Currency) => {
+  const setCurrency = async (value: SupportedCurrency) => {
     setCurrencyState(value);
     await AsyncStorage.setItem(storageKeys.currency, value);
   };
+
+  const subtotal = items.reduce((sum, item) => sum + Number(item.price || 0) * item.quantity, 0);
+
+  const convertAmountForCurrency = useCallback(
+    (amount: number | string | undefined, targetCurrency: SupportedCurrency = currency) =>
+      convertPrice(amount, targetCurrency, exchangeRates),
+    [currency, exchangeRates]
+  );
+
+  const formatMoney = useCallback(
+    (amount: number | string | undefined, targetCurrency: SupportedCurrency = currency) =>
+      formatPrice(amount, targetCurrency, exchangeRates),
+    [currency, exchangeRates]
+  );
 
   const value = useMemo(
     () => ({
@@ -93,10 +159,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       updateQuantity,
       clearCart,
       setCurrency,
+      exchangeRates,
+      ratesUpdatedAt,
+      ratesLoading,
+      refreshExchangeRates,
+      convertAmount: convertAmountForCurrency,
+      formatMoney,
       totalItems: items.reduce((sum, item) => sum + item.quantity, 0),
-      subtotal: items.reduce((sum, item) => sum + Number(item.price || 0) * item.quantity, 0),
+      subtotal,
+      convertedSubtotal: convertAmountForCurrency(subtotal),
     }),
-    [items, currency, ready]
+    [
+      items,
+      currency,
+      ready,
+      exchangeRates,
+      ratesUpdatedAt,
+      ratesLoading,
+      refreshExchangeRates,
+      convertAmountForCurrency,
+      formatMoney,
+      subtotal,
+    ]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

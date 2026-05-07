@@ -7,7 +7,6 @@ import { useLanguage } from "../context/LanguageContext";
 import { buildApiUrl } from "../lib/api/config";
 import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 import type { Product } from "../types/shop";
-import { formatPrice } from "../utils/shop";
 import { PrimaryButton } from "./PrimaryButton";
 
 interface ProductCardProps {
@@ -19,7 +18,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, actionLabel, deleting = false, onAdded, onDelete }: ProductCardProps) {
-  const { addItem, currency } = useCart();
+  const { addItem, formatMoney } = useCart();
   const { t } = useLanguage();
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
@@ -57,7 +56,7 @@ export function ProductCard({ product, actionLabel, deleting = false, onAdded, o
         ) : null}
       </View>
       <Text style={[styles.name, compact ? styles.nameCompact : null]}>{product.name}</Text>
-      <Text style={[styles.price, compact ? styles.priceCompact : null]}>{formatPrice(product.price, currency)}</Text>
+      <Text style={[styles.price, compact ? styles.priceCompact : null]}>{formatMoney(product.price)}</Text>
       <PrimaryButton
         label={resolvedActionLabel}
         onPress={() => {

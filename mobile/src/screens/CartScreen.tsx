@@ -29,7 +29,6 @@ import {
 } from "../lib/api/payment";
 import { buildApiUrl } from "../lib/api/config";
 import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
-import { formatPrice } from "../utils/shop";
 
 type CheckoutMethod = "stripe" | "cod";
 type CheckoutStep = 0 | 1 | 2 | 3 | 4;
@@ -191,7 +190,18 @@ const cartCopy: Record<
 export function CartScreen() {
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
-  const { items, currency, removeItem, updateQuantity, clearCart, subtotal, totalItems } = useCart();
+  const {
+    items,
+    currency,
+    removeItem,
+    updateQuantity,
+    clearCart,
+    subtotal,
+    totalItems,
+    convertedSubtotal,
+    convertAmount,
+    formatMoney,
+  } = useCart();
   const { languageCode, t } = useLanguage();
   const localizedLanguageCode: LanguageCode = languageCode === "si" || languageCode === "ta" ? languageCode : "en";
   const copy = cartCopy[localizedLanguageCode];
@@ -246,7 +256,7 @@ export function CartScreen() {
     });
   };
 
-  const total = useMemo(() => subtotal, [subtotal]);
+  const total = useMemo(() => convertedSubtotal, [convertedSubtotal]);
   const isStripePayment = paymentMethod === "stripe";
   const stepLabels = [
     copy.paymentMethod,
@@ -264,7 +274,7 @@ export function CartScreen() {
       id: item.id,
       name: item.name,
       quantity: item.quantity,
-      price: Number(item.price || 0),
+      price: convertAmount(item.price),
     })),
     delivery: {
       name: delivery.name.trim(),
@@ -479,7 +489,7 @@ export function CartScreen() {
         <View style={styles.summaryDivider} />
         <View style={[styles.summaryBlock, styles.summaryTotal]}>
           <Text style={styles.summaryLabel}>{copy.total}</Text>
-          <Text style={styles.summaryValue}>{formatPrice(total, currency)}</Text>
+          <Text style={styles.summaryValue}>{formatMoney(subtotal)}</Text>
         </View>
       </View>
 
@@ -510,9 +520,9 @@ export function CartScreen() {
                     <Text style={styles.itemName}>{item.name}</Text>
                     <Text style={styles.itemMeta}>
                       {item.quantity > 1 ? `${item.quantity} x ` : ""}
-                      {formatPrice(item.price, currency)}
+                      {formatMoney(item.price)}
                     </Text>
-                    <Text style={styles.itemTotal}>{t("item_total", { total: formatPrice(Number(item.price || 0) * item.quantity, currency) })}</Text>
+                    <Text style={styles.itemTotal}>{t("item_total", { total: formatMoney(Number(item.price || 0) * item.quantity) })}</Text>
                   </View>
                 </View>
 
@@ -726,7 +736,7 @@ export function CartScreen() {
 
                       <PrimaryButton
                         disabled={busy}
-                        label={busy ? copy.submitting : `${copy.pay} ${formatPrice(total, currency)}`}
+                        label={busy ? copy.submitting : `${copy.pay} ${formatMoney(subtotal)}`}
                         onPress={() => void handlePayment()}
                       />
                     </>
@@ -747,7 +757,7 @@ export function CartScreen() {
                       </View>
                       <PrimaryButton
                         disabled={busy}
-                        label={busy ? copy.submitting : `${copy.confirmCod} ${formatPrice(total, currency)}`}
+                        label={busy ? copy.submitting : `${copy.confirmCod} ${formatMoney(subtotal)}`}
                         onPress={() => void handlePayment()}
                       />
                     </>

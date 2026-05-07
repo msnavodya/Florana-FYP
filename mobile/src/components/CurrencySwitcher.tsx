@@ -11,13 +11,20 @@ const currencies = [
 ] as const;
 
 export function CurrencySwitcher() {
-  const { currency, setCurrency } = useCart();
+  const { currency, setCurrency, ratesLoading, ratesUpdatedAt, refreshExchangeRates } = useCart();
   const [open, setOpen] = useState(false);
   const selected = currencies.find((item) => item.code === currency) || currencies[0];
+  const updatedLabel = ratesUpdatedAt ? `Latest ${ratesUpdatedAt}` : "Using cached rates";
 
   return (
     <>
-      <Pressable onPress={() => setOpen(true)} style={styles.selector}>
+      <Pressable
+        onPress={() => {
+          setOpen(true);
+          void refreshExchangeRates();
+        }}
+        style={styles.selector}
+      >
         <Text style={styles.icon}>$</Text>
         <View style={styles.codeBadge}>
           <Text style={styles.codeText}>{selected.short}</Text>
@@ -27,6 +34,15 @@ export function CurrencySwitcher() {
       <Modal transparent animationType="fade" visible={open} onRequestClose={() => setOpen(false)}>
         <Pressable onPress={() => setOpen(false)} style={styles.overlay}>
           <Pressable onPress={(event) => event.stopPropagation()} style={styles.menu}>
+            <View style={styles.menuHeader}>
+              <View>
+                <Text style={styles.menuTitle}>Live Currency</Text>
+                <Text style={styles.menuMeta}>{ratesLoading ? "Refreshing rates..." : updatedLabel}</Text>
+              </View>
+              <Pressable onPress={() => void refreshExchangeRates()} style={styles.refreshButton}>
+                <Text style={styles.refreshText}>Refresh</Text>
+              </Pressable>
+            </View>
             {currencies.map((item) => {
               const active = item.code === currency;
 
@@ -103,6 +119,37 @@ const styles = StyleSheet.create({
     minWidth: 180,
     padding: spacing.sm,
     ...shadows.card,
+  },
+  menuHeader: {
+    alignItems: "center",
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: spacing.xs,
+    paddingBottom: spacing.sm,
+  },
+  menuTitle: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  menuMeta: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: "700",
+    marginTop: 2,
+  },
+  refreshButton: {
+    backgroundColor: "rgba(240, 234, 255, 0.92)",
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 7,
+  },
+  refreshText: {
+    color: colors.primaryDark,
+    fontSize: 11,
+    fontWeight: "800",
   },
   option: {
     alignItems: "center",

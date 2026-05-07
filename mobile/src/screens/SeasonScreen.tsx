@@ -16,7 +16,7 @@ import { deleteProduct, getProducts } from "../lib/api/shop";
 import { brandAssets } from "../theme/brand";
 import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 import type { Product } from "../types/shop";
-import { formatPrice, seasons } from "../utils/shop";
+import { seasons } from "../utils/shop";
 
 const seasonTabs = [...seasons.map((season) => season.toLowerCase()), "all"] as const;
 const seasonImages = {
@@ -39,7 +39,7 @@ export function SeasonScreen() {
   const safeSeason = seasonTabs.includes(routeSeason as (typeof seasonTabs)[number]) ? routeSeason : "all";
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
-  const { totalItems, currency, addItem, removeItem } = useCart();
+  const { totalItems, addItem, removeItem, formatMoney } = useCart();
   const { t } = useLanguage();
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -238,7 +238,7 @@ export function SeasonScreen() {
                 </View>
                 <Text style={styles.productName}>{product.name}</Text>
                 <Text style={styles.productMeta}>{product.season ? getSeasonLabel(product.season.toLowerCase()) : ""}</Text>
-                <Text style={styles.productPrice}>{formatPrice(product.price, currency)}</Text>
+                <Text style={styles.productPrice}>{formatMoney(product.price)}</Text>
               </Pressable>
               <View style={styles.productActions}>
                 <PrimaryButton label={t("add_to_cart")} onPress={() => void handleAddToCart(product)} />

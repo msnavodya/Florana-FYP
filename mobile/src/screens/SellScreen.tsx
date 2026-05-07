@@ -29,7 +29,7 @@ const seasonKeyMap: Record<(typeof seasons)[number], string> = {
 export function SellScreen() {
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
-  const { totalItems, removeItem } = useCart();
+  const { totalItems, removeItem, formatMoney } = useCart();
   const { t } = useLanguage();
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -212,7 +212,7 @@ export function SellScreen() {
               <Text style={styles.heroStatLabel}>{t("listed")}</Text>
             </View>
             <View style={styles.heroStatCard}>
-              <Text style={styles.heroStatValue}>Rs. {totalValue.toFixed(0)}</Text>
+              <Text style={styles.heroStatValue}>{formatMoney(totalValue)}</Text>
               <Text style={styles.heroStatLabel}>{t("price")}</Text>
             </View>
           </View>
@@ -315,7 +315,7 @@ export function SellScreen() {
                 <Text style={styles.previewMeta}>{t("catalog_preview_catalog", { season: t(seasonKeyMap[newPlant.season as keyof typeof seasonKeyMap]) })}</Text>
               </View>
             </View>
-            <Text style={styles.previewPrice}>Rs. {Number.isFinite(listingPrice) && listingPrice > 0 ? listingPrice.toFixed(2) : "0.00"}</Text>
+            <Text style={styles.previewPrice}>{formatMoney(Number.isFinite(listingPrice) && listingPrice > 0 ? listingPrice : 0)}</Text>
           </View>
 
           <View style={styles.sellActions}>

@@ -4,6 +4,8 @@ export const storageKeys = {
   cart: "mobile_cart",
   feedbacks: "mobile_feedbacks",
   currency: "mobile_currency",
+  currencyRates: "mobile_currency_rates",
+  currencyRatesUpdatedAt: "mobile_currency_rates_updated_at",
   appLanguage: "mobile_app_language",
   settings: "mobile_settings",
   reminders: "mobile_reminders",

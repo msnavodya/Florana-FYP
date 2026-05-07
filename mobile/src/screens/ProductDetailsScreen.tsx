@@ -13,11 +13,10 @@ import { useLanguage } from "../context/LanguageContext";
 import { buildApiUrl } from "../lib/api/config";
 import { colors, radii, spacing } from "../theme/tokens";
 import type { Product } from "../types/shop";
-import { formatPrice } from "../utils/shop";
 
 export function ProductDetailsScreen() {
   const params = useLocalSearchParams<{ id: string; name?: string; season?: string; price?: string; image?: string }>();
-  const { addItem, currency } = useCart();
+  const { addItem, formatMoney } = useCart();
   const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -59,7 +58,7 @@ export function ProductDetailsScreen() {
 
       <View style={styles.card}>
         <Text style={styles.meta}>{t("product_details_season", { season: product.season })}</Text>
-        <Text style={styles.price}>{formatPrice(product.price, currency)}</Text>
+        <Text style={styles.price}>{formatMoney(product.price)}</Text>
         <Text style={styles.description}>{t("product_details_description")}</Text>
         <PrimaryButton label={t("add_to_cart")} onPress={() => void addItem(product)} />
         <PrimaryButton label={t("back_to_catalog")} onPress={() => router.back()} variant="secondary" />
