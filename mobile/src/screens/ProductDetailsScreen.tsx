@@ -9,6 +9,7 @@ import { CurrencySwitcher } from "../components/CurrencySwitcher";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { useCart } from "../context/CartContext";
+import { useLanguage } from "../context/LanguageContext";
 import { buildApiUrl } from "../lib/api/config";
 import { colors, radii, spacing } from "../theme/tokens";
 import type { Product } from "../types/shop";
@@ -17,11 +18,12 @@ import { formatPrice } from "../utils/shop";
 export function ProductDetailsScreen() {
   const params = useLocalSearchParams<{ id: string; name?: string; season?: string; price?: string; image?: string }>();
   const { addItem, currency } = useCart();
+  const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const product: Product = {
     id: params.id,
-    name: params.name || "Plant",
+    name: params.name || t("plant_label"),
     season: params.season || "Seasonal",
     price: Number(params.price || 0),
     image: params.image || null,
@@ -32,31 +34,35 @@ export function ProductDetailsScreen() {
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
 
       <View style={styles.topRow}>
-        <Pressable accessibilityLabel="Go back" onPress={() => router.back()} style={styles.backButton}>
+        <Pressable accessibilityLabel={t("go_back")} onPress={() => router.back()} style={styles.backButton}>
           <MaterialIcons name="arrow-back" size={20} color={colors.text} />
         </Pressable>
         <View style={styles.topCopy}>
-          <Text style={styles.eyebrow}>Plant Details</Text>
+          <Text style={styles.eyebrow}>{t("product_details_title")}</Text>
           <Text style={styles.title}>{product.name}</Text>
         </View>
         <View style={styles.topActions}>
           <CurrencySwitcher />
-          <Pressable accessibilityLabel="Open menu" onPress={() => setMenuOpen(true)} style={styles.menuButton}>
+          <Pressable accessibilityLabel={t("open_menu")} onPress={() => setMenuOpen(true)} style={styles.menuButton}>
             <MaterialIcons name="menu" size={18} color={colors.text} />
           </Pressable>
         </View>
       </View>
 
-      {product.image ? <Image resizeMode="cover" source={{ uri: buildApiUrl(product.image) }} style={styles.image} /> : <View style={styles.imageFallback}><Text style={styles.imageFallbackText}>No photo available</Text></View>}
+      {product.image ? (
+        <Image resizeMode="cover" source={{ uri: buildApiUrl(product.image) }} style={styles.image} />
+      ) : (
+        <View style={styles.imageFallback}>
+          <Text style={styles.imageFallbackText}>{t("no_photo_available")}</Text>
+        </View>
+      )}
 
       <View style={styles.card}>
-        <Text style={styles.meta}>Season: {product.season}</Text>
+        <Text style={styles.meta}>{t("product_details_season", { season: product.season })}</Text>
         <Text style={styles.price}>{formatPrice(product.price, currency)}</Text>
-        <Text style={styles.description}>
-          View plant details, confirm the seasonal listing, and add it to your cart using the same shop data served to the web app.
-        </Text>
-        <PrimaryButton label="Add to Cart" onPress={() => void addItem(product)} />
-        <PrimaryButton label="Back to Catalog" onPress={() => router.back()} variant="secondary" />
+        <Text style={styles.description}>{t("product_details_description")}</Text>
+        <PrimaryButton label={t("add_to_cart")} onPress={() => void addItem(product)} />
+        <PrimaryButton label={t("back_to_catalog")} onPress={() => router.back()} variant="secondary" />
       </View>
 
       <BottomNav />

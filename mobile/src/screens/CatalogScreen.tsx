@@ -22,84 +22,6 @@ import type { Product } from "../types/shop";
 import { seasons } from "../utils/shop";
 
 type BuySellTab = "buy" | "sell";
-type LanguageCode = "en" | "si" | "ta";
-
-const catalogCopy: Record<
-  LanguageCode,
-  {
-    shop: string;
-    title: string;
-    subtitle: string;
-    listed: string;
-    buy: string;
-    sell: string;
-    allPlants: string;
-    available: string;
-    addToCart: string;
-    noPlants: string;
-    listForSale: string;
-    plantName: string;
-    price: string;
-    listPlant: string;
-    yourListed: string;
-    remove: string;
-  }
-> = {
-  en: {
-    shop: "Florana Shop",
-    title: "Season Catalog",
-    subtitle: "Browse plants, switch currency instantly, and manage what you want to buy or sell.",
-    listed: "{count} plants listed",
-    buy: "Buy Plants",
-    sell: "Sell Plants",
-    allPlants: "All Plants",
-    available: "Available Plants",
-    addToCart: "Add to Cart",
-    noPlants: "No plants found for that search.",
-    listForSale: "List a Plant for Sale",
-    plantName: "Plant Name",
-    price: "Price",
-    listPlant: "List Plant",
-    yourListed: "Your Listed Plants",
-    remove: "Delete",
-  },
-  si: {
-    shop: "ෆ්ලෝරානා වෙළඳසැල",
-    title: "සමය අනුව පැල එකතුව",
-    subtitle: "පැල බලන්න, මුදල් ඒකකය වහාම මාරු කරන්න, සහ ඔබ මිලදී ගැනීමට හෝ විකිණීමට කැමති දේ කළමනාකරණය කරන්න.",
-    listed: "පැල {count}ක් ලැයිස්තුගතයි",
-    buy: "පැල මිලදී ගන්න",
-    sell: "පැල විකුණන්න",
-    allPlants: "සියලු පැල",
-    available: "පවතින පැල",
-    addToCart: "කරත්තයට දමන්න",
-    noPlants: "එම සෙවුම සඳහා පැල හමු නොවීය.",
-    listForSale: "විකිණීමට පැලයක් ලැයිස්තුගත කරන්න",
-    plantName: "පැල නාමය",
-    price: "මිල",
-    listPlant: "පැලය ලැයිස්තුගත කරන්න",
-    yourListed: "ඔබ ලැයිස්තුගත කළ පැල",
-    remove: "මකන්න",
-  },
-  ta: {
-    shop: "ஃப்ளோரானா கடை",
-    title: "பருவ கால செடி தொகுப்பு",
-    subtitle: "செடிகளை பாருங்கள், நாணயத்தை உடனே மாற்றுங்கள், நீங்கள் வாங்கவோ விற்கவோ விரும்பும்வற்றை நிர்வகிக்குங்கள்.",
-    listed: "{count} செடிகள் பட்டியலிடப்பட்டுள்ளன",
-    buy: "செடிகள் வாங்க",
-    sell: "செடிகள் விற்க",
-    allPlants: "அனைத்து செடிகள்",
-    available: "கிடைக்கும் செடிகள்",
-    addToCart: "வண்டியில் சேர்",
-    noPlants: "அந்த தேடலுக்கு செடிகள் கிடைக்கவில்லை.",
-    listForSale: "விற்பனைக்கு ஒரு செடியை பட்டியலிடுங்கள்",
-    plantName: "செடி பெயர்",
-    price: "விலை",
-    listPlant: "செடியை பட்டியலிடு",
-    yourListed: "நீங்கள் பட்டியலிட்ட செடிகள்",
-    remove: "நீக்கு",
-  },
-};
 
 const seasonImages = {
   Spring: brandAssets.spring,
@@ -108,12 +30,18 @@ const seasonImages = {
   Winter: brandAssets.winter,
 } as const;
 
+const seasonKeyMap: Record<(typeof seasons)[number], string> = {
+  Spring: "season_spring",
+  Summer: "season_summer",
+  Autumn: "season_autumn",
+  Winter: "season_winter",
+};
+
 export function CatalogScreen() {
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
   const { totalItems, removeItem } = useCart();
-  const { t, languageCode } = useLanguage();
-  const copy = catalogCopy[languageCode] || catalogCopy.en;
+  const { t } = useLanguage();
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<BuySellTab>("buy");
@@ -144,7 +72,7 @@ export function CatalogScreen() {
       const response = await getProducts();
       setProducts(response);
     } catch (error) {
-      showStatus(error instanceof Error ? error.message : "Unable to load products.");
+      showStatus(error instanceof Error ? error.message : t("catalog_load_failed"));
       setProducts([]);
     } finally {
       setLoading(false);
@@ -177,7 +105,7 @@ export function CatalogScreen() {
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      showStatus("Photo library permission is required to upload a plant.");
+      showStatus(t("catalog_photo_permission"));
       return;
     }
 
@@ -197,17 +125,17 @@ export function CatalogScreen() {
     const price = Number(newPlant.price);
 
     if (!trimmedName) {
-      showStatus("Add the plant name first.");
+      showStatus(t("catalog_name_required"));
       return;
     }
 
     if (!Number.isFinite(price) || price <= 0) {
-      showStatus("Enter a valid price greater than 0.");
+      showStatus(t("catalog_price_required"));
       return;
     }
 
     if (!newPlant.image) {
-      showStatus("Choose a clear plant photo before saving.");
+      showStatus(t("catalog_photo_required"));
       return;
     }
 
@@ -223,10 +151,15 @@ export function CatalogScreen() {
       setProducts((current) => [savedProduct, ...current.filter((product) => product.id !== savedProduct.id)]);
       resetListingForm();
       setActiveTab("buy");
-      showStatus(`${savedProduct.name} saved to the ${savedProduct.season} catalog.`);
+      showStatus(
+        t("catalog_product_saved", {
+          name: savedProduct.name,
+          season: t(seasonKeyMap[savedProduct.season as keyof typeof seasonKeyMap] || "catalog_season"),
+        })
+      );
       await loadProducts();
     } catch (error) {
-      showStatus(error instanceof Error ? error.message : "Upload failed.");
+      showStatus(error instanceof Error ? error.message : t("catalog_upload_failed"));
     } finally {
       setSavingListing(false);
     }
@@ -242,10 +175,10 @@ export function CatalogScreen() {
       await deleteProduct(product.id);
       await removeItem(product.id);
       setProducts((current) => current.filter((item) => item.id !== product.id));
-      showStatus(`Your ${product.name} deleted.`);
+      showStatus(t("product_deleted", { name: product.name }));
       await loadProducts();
     } catch (error) {
-      showStatus(error instanceof Error ? error.message : "Delete failed.");
+      showStatus(error instanceof Error ? error.message : t("product_delete_failed"));
     } finally {
       setDeletingProductId(null);
     }
@@ -264,7 +197,7 @@ export function CatalogScreen() {
           <LanguageSelector />
           <CurrencySwitcher />
 
-          <Pressable accessibilityLabel="Open cart" onPress={() => router.push("/cart")} style={styles.cartButton}>
+          <Pressable accessibilityLabel={t("open_cart")} onPress={() => router.push("/cart")} style={styles.cartButton}>
             <MaterialIcons name="shopping-cart" size={18} color={colors.text} />
             {totalItems > 0 ? (
               <View style={styles.cartBadge}>
@@ -281,13 +214,13 @@ export function CatalogScreen() {
 
       <View style={[styles.heroCard, compact ? styles.heroCardCompact : null]}>
         <View style={styles.heroTextBlock}>
-          <Text style={styles.heroEyebrow}>{copy.shop}</Text>
-          <Text style={[styles.heroTitle, compact ? styles.heroTitleCompact : null]}>{copy.title}</Text>
-          <Text style={[styles.heroSubtitle, compact ? styles.heroSubtitleCompact : null]}>{copy.subtitle}</Text>
+          <Text style={styles.heroEyebrow}>{t("catalog_shop")}</Text>
+          <Text style={[styles.heroTitle, compact ? styles.heroTitleCompact : null]}>{t("catalog_title")}</Text>
+          <Text style={[styles.heroSubtitle, compact ? styles.heroSubtitleCompact : null]}>{t("catalog_subtitle")}</Text>
         </View>
 
         <View style={styles.heroMetaCard}>
-          <Text style={styles.heroMetaText}>{copy.listed.replace("{count}", String(products.length))}</Text>
+          <Text style={styles.heroMetaText}>{t("catalog_plants_listed", { count: products.length })}</Text>
         </View>
       </View>
 
@@ -313,14 +246,14 @@ export function CatalogScreen() {
           onPress={() => setActiveTab("buy")}
           style={[styles.toggleButton, activeTab === "buy" ? styles.toggleButtonActive : null]}
         >
-          <Text style={[styles.toggleText, activeTab === "buy" ? styles.toggleTextActive : null]}>{copy.buy}</Text>
+          <Text style={[styles.toggleText, activeTab === "buy" ? styles.toggleTextActive : null]}>{t("catalog_buy_plants")}</Text>
         </Pressable>
 
         <Pressable
           onPress={() => setActiveTab("sell")}
           style={[styles.toggleButton, activeTab === "sell" ? styles.toggleButtonActive : null]}
         >
-          <Text style={[styles.toggleText, activeTab === "sell" ? styles.toggleTextActive : null]}>{copy.sell}</Text>
+          <Text style={[styles.toggleText, activeTab === "sell" ? styles.toggleTextActive : null]}>{t("catalog_sell_plants")}</Text>
         </Pressable>
       </View>
 
@@ -334,8 +267,8 @@ export function CatalogScreen() {
               <MaterialIcons name="local-florist" size={26} color={colors.white} />
             </View>
             <View style={styles.allPlantsCopy}>
-              <Text style={[styles.allPlantsText, compact ? styles.allPlantsTextCompact : null]}>{copy.allPlants}</Text>
-              <Text style={[styles.allPlantsMeta, compact ? styles.allPlantsMetaCompact : null]}>Browse every saved listing</Text>
+              <Text style={[styles.allPlantsText, compact ? styles.allPlantsTextCompact : null]}>{t("catalog_all_plants")}</Text>
+              <Text style={[styles.allPlantsMeta, compact ? styles.allPlantsMetaCompact : null]}>{t("catalog_browse_all")}</Text>
             </View>
             <View style={styles.allPlantsArrow}>
               <MaterialIcons name="chevron-right" size={22} color={colors.primaryDark} />
@@ -352,8 +285,8 @@ export function CatalogScreen() {
                 <Image resizeMode="cover" source={seasonImages[season]} style={styles.seasonHeroImage} />
                 <View style={styles.seasonHeroScrim} />
                 <View style={styles.seasonHeroCopy}>
-                  <Text style={styles.seasonName}>{season}</Text>
-                  <Text style={styles.seasonMeta}>Browse {season.toLowerCase()} plant listings</Text>
+                  <Text style={styles.seasonName}>{t(seasonKeyMap[season])}</Text>
+                  <Text style={styles.seasonMeta}>{t("catalog_browse_season", { season: t(seasonKeyMap[season]) })}</Text>
                 </View>
                 <View style={styles.seasonHeroIcon}>
                   <MaterialIcons name="chevron-right" size={22} color={colors.white} />
@@ -364,12 +297,12 @@ export function CatalogScreen() {
 
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleBlock}>
-              <Text style={styles.sectionEyebrow}>Live marketplace</Text>
-              <Text style={styles.sectionTitle}>{copy.available}</Text>
+              <Text style={styles.sectionEyebrow}>{t("catalog_live_marketplace")}</Text>
+              <Text style={styles.sectionTitle}>{t("catalog_available_plants")}</Text>
             </View>
             <View style={styles.sectionCountBadge}>
               <Text style={styles.sectionCountValue}>{loading ? "..." : filteredProducts.length}</Text>
-              <Text style={styles.sectionCountLabel}>{loading ? "Loading" : "Listed"}</Text>
+              <Text style={styles.sectionCountLabel}>{loading ? t("loading") : t("listed")}</Text>
             </View>
           </View>
 
@@ -378,9 +311,9 @@ export function CatalogScreen() {
               {filteredProducts.map((product) => (
                 <ProductCard
                   key={product.id}
-                  actionLabel={copy.addToCart}
+                  actionLabel={t("add_to_cart")}
                   deleting={deletingProductId === product.id}
-                  onAdded={(savedProduct) => showStatus(`${savedProduct.name} saved to cart.`)}
+                  onAdded={(savedProduct) => showStatus(t("product_saved_cart", { name: savedProduct.name }))}
                   onDelete={(productToDelete) => void handleDelete(productToDelete)}
                   product={product}
                 />
@@ -388,7 +321,7 @@ export function CatalogScreen() {
             </View>
           ) : (
             <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>{copy.noPlants}</Text>
+              <Text style={styles.emptyText}>{t("catalog_no_plants_search")}</Text>
             </View>
           )}
         </>
@@ -397,18 +330,18 @@ export function CatalogScreen() {
           <View style={styles.sellForm}>
             <View style={styles.sellHeader}>
               <View>
-                <Text style={styles.sectionTitle}>{copy.listForSale}</Text>
-                <Text style={styles.sellSubtitle}>Saved listings appear in the season catalog immediately.</Text>
+                <Text style={styles.sectionTitle}>{t("catalog_list_for_sale")}</Text>
+                <Text style={styles.sellSubtitle}>{t("catalog_saved_immediately")}</Text>
               </View>
               <View style={styles.sellCountBadge}>
                 <Text style={styles.sellCountValue}>{products.length}</Text>
-                <Text style={styles.sellCountLabel}>Saved</Text>
+                <Text style={styles.sellCountLabel}>{t("saved")}</Text>
               </View>
             </View>
 
             <TextInput
               onChangeText={(value) => setNewPlant((current) => ({ ...current, name: value }))}
-              placeholder={copy.plantName}
+              placeholder={t("catalog_plant_name")}
               placeholderTextColor={colors.textMuted}
               style={styles.fieldInput}
               value={newPlant.name}
@@ -417,13 +350,13 @@ export function CatalogScreen() {
             <TextInput
               keyboardType="decimal-pad"
               onChangeText={(value) => setNewPlant((current) => ({ ...current, price: value }))}
-              placeholder={copy.price}
+              placeholder={t("price")}
               placeholderTextColor={colors.textMuted}
               style={styles.fieldInput}
               value={newPlant.price}
             />
 
-            <Text style={styles.fieldLabel}>Catalog Season</Text>
+            <Text style={styles.fieldLabel}>{t("catalog_season")}</Text>
             <View style={styles.seasonChipWrap}>
               {seasons.map((season) => {
                 const active = newPlant.season === season;
@@ -433,7 +366,7 @@ export function CatalogScreen() {
                     onPress={() => setNewPlant((current) => ({ ...current, season }))}
                     style={[styles.seasonChip, active ? styles.seasonChipActive : null]}
                   >
-                    <Text style={[styles.seasonChipText, active ? styles.seasonChipTextActive : null]}>{season}</Text>
+                    <Text style={[styles.seasonChipText, active ? styles.seasonChipTextActive : null]}>{t(seasonKeyMap[season])}</Text>
                   </Pressable>
                 );
               })}
@@ -445,38 +378,38 @@ export function CatalogScreen() {
               ) : (
                 <View style={styles.photoPlaceholder}>
                   <MaterialIcons name="add-a-photo" size={24} color={colors.primaryDark} />
-                  <Text style={styles.photoPlaceholderTitle}>Choose Plant Photo</Text>
-                  <Text style={styles.photoPlaceholderText}>Use a clear image for buyers and season pages.</Text>
+                  <Text style={styles.photoPlaceholderTitle}>{t("catalog_choose_photo")}</Text>
+                  <Text style={styles.photoPlaceholderText}>{t("catalog_photo_help")}</Text>
                 </View>
               )}
             </Pressable>
 
             {newPlant.image ? (
               <View style={styles.photoActions}>
-                <PrimaryButton label="Change Photo" onPress={() => void pickImage()} variant="secondary" />
+                <PrimaryButton label={t("catalog_change_photo")} onPress={() => void pickImage()} variant="secondary" />
                 <Pressable onPress={() => setNewPlant((current) => ({ ...current, image: null }))} style={styles.removePhotoButton}>
                   <MaterialIcons name="close" size={16} color="#B33D68" />
-                  <Text style={styles.removePhotoText}>Remove Photo</Text>
+                  <Text style={styles.removePhotoText}>{t("catalog_remove_photo")}</Text>
                 </Pressable>
               </View>
             ) : null}
 
             <View style={styles.previewCard}>
-              <Text style={styles.previewLabel}>Listing Preview</Text>
-              <Text style={styles.previewName}>{newPlant.name.trim() || "Plant name"}</Text>
-              <Text style={styles.previewMeta}>{newPlant.season} catalog</Text>
+              <Text style={styles.previewLabel}>{t("catalog_listing_preview")}</Text>
+              <Text style={styles.previewName}>{newPlant.name.trim() || t("catalog_plant_name_preview")}</Text>
+              <Text style={styles.previewMeta}>{t("catalog_preview_catalog", { season: t(seasonKeyMap[newPlant.season as keyof typeof seasonKeyMap]) })}</Text>
               <Text style={styles.previewPrice}>Rs. {Number.isFinite(listingPrice) && listingPrice > 0 ? listingPrice.toFixed(2) : "0.00"}</Text>
             </View>
 
             <View style={styles.sellActions}>
               <PrimaryButton
                 disabled={savingListing || !listingReady}
-                label={savingListing ? "Saving Listing..." : copy.listPlant}
+                label={savingListing ? t("catalog_saving_listing") : t("catalog_list_plant")}
                 onPress={() => void handleSell()}
               />
               <PrimaryButton
                 disabled={savingListing}
-                label="Clear Form"
+                label={t("clear_form")}
                 onPress={resetListingForm}
                 variant="secondary"
               />
@@ -484,7 +417,7 @@ export function CatalogScreen() {
           </View>
 
           <View style={styles.manageSection}>
-            <Text style={styles.sectionTitle}>{copy.yourListed}</Text>
+            <Text style={styles.sectionTitle}>{t("catalog_your_listed_plants")}</Text>
 
             <View style={styles.manageList}>
               {products.map((product) => {
@@ -496,18 +429,18 @@ export function CatalogScreen() {
                       <Image resizeMode="cover" source={{ uri: imageUri }} style={styles.manageImage} />
                     ) : (
                       <View style={styles.manageImageFallback}>
-                        <Text style={styles.manageImageFallbackText}>No Image</Text>
+                        <Text style={styles.manageImageFallbackText}>{t("no_image")}</Text>
                       </View>
                     )}
 
                     <View style={styles.manageContent}>
                       <Text style={styles.manageName}>{product.name}</Text>
-                      <Text style={styles.manageMeta}>{product.season}</Text>
+                      <Text style={styles.manageMeta}>{t(seasonKeyMap[product.season as keyof typeof seasonKeyMap] || "catalog_season")}</Text>
                     </View>
 
                     <PrimaryButton
                       disabled={deletingProductId === product.id}
-                      label={deletingProductId === product.id ? "Removing..." : copy.remove}
+                      label={deletingProductId === product.id ? t("removing") : t("delete")}
                       onPress={() => void handleDelete(product)}
                       variant="secondary"
                     />

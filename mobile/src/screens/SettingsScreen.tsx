@@ -11,13 +11,17 @@ import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
-import { useLanguage } from "../context/LanguageContext";
+import { availableLanguages, languageNameKeyMap, translateForLanguage, useLanguage, type LanguageLabel } from "../context/LanguageContext";
 import { useSettings } from "../context/SettingsContext";
 import { storageKeys } from "../lib/storage/keys";
 import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 
 const fontSizes = ["Small", "Medium", "Large"] as const;
-const languages = ["English", "Sinhala", "Tamil"] as const;
+const fontSizeLabelKeyMap: Record<(typeof fontSizes)[number], string> = {
+  Small: "font_small",
+  Medium: "font_medium",
+  Large: "font_large",
+};
 
 export function SettingsScreen() {
   const { height, width } = useWindowDimensions();
@@ -50,15 +54,19 @@ export function SettingsScreen() {
     const index = fontSizes.indexOf(settings.fontSize);
     const next = fontSizes[(index + 1) % fontSizes.length];
     await saveSettings({ fontSize: next });
-    showStatus(`Font size set to ${next}.`);
+    showStatus(t("status_font_size_changed", { size: t(fontSizeLabelKeyMap[next]) }));
   };
 
   const cycleLanguage = async () => {
-    const index = languages.indexOf(language);
-    const next = languages[(index + 1) % languages.length];
+    const index = availableLanguages.indexOf(language);
+    const next = availableLanguages[(index + 1) % availableLanguages.length];
     await setLanguage(next);
     await saveSettings({ language: next });
-    showStatus(`Language changed to ${next}.`);
+    showStatus(
+      translateForLanguage(next, "status_language_changed", {
+        language: translateForLanguage(next, languageNameKeyMap[next]),
+      })
+    );
   };
 
   const handleToggle = async (key: "wateringReminders" | "diseaseAlerts" | "weeklySummary") => {
@@ -66,12 +74,16 @@ export function SettingsScreen() {
     await saveSettings({ [key]: nextValue });
 
     const labels: Record<typeof key, string> = {
-      wateringReminders: "watering reminders",
-      diseaseAlerts: "disease alerts",
-      weeklySummary: "weekly summary",
+      wateringReminders: t("watering_reminders"),
+      diseaseAlerts: t("disease_alerts"),
+      weeklySummary: t("weekly_summary"),
     };
 
-    showStatus(`${nextValue ? "Enabled" : "Disabled"} ${labels[key]}.`);
+    showStatus(
+      t(nextValue ? "status_toggle_enabled" : "status_toggle_disabled", {
+        label: labels[key].toLowerCase(),
+      })
+    );
   };
 
   const handleClearKey = async (storageKey: string, successMessage: string) => {
@@ -91,30 +103,30 @@ export function SettingsScreen() {
 
     const path = `${FileSystem.cacheDirectory}florana-data-export.json`;
     await FileSystem.writeAsStringAsync(path, JSON.stringify(payload, null, 2));
-    showStatus("Exported your app data.");
+    showStatus(t("status_exported_data"));
   };
 
   const handleResetPreferences = () => {
-    Alert.alert("Reset preferences", "Reset settings back to the Florana defaults?", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("reset_preferences"), t("settings_reset_confirm"), [
+      { text: t("cancel"), style: "cancel" },
       {
-        text: "Reset",
+        text: t("reset_preferences"),
         style: "destructive",
         onPress: async () => {
           await resetSettings();
           await AsyncStorage.removeItem(storageKeys.appLanguage);
-          await setLanguage("English");
-          showStatus("Preferences reset to default.");
+          await setLanguage("English" satisfies LanguageLabel);
+          showStatus(t("status_preferences_reset"));
         },
       },
     ]);
   };
 
   const handleLogout = () => {
-    Alert.alert("Sign out", "Sign out from Florana on this device?", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("sign_out"), t("settings_sign_out_confirm"), [
+      { text: t("cancel"), style: "cancel" },
       {
-        text: "Sign out",
+        text: t("sign_out"),
         style: "destructive",
         onPress: async () => {
           await signOut();
@@ -136,7 +148,7 @@ export function SettingsScreen() {
         <View style={styles.topActions}>
           <Pressable onPress={() => router.push("/home")} style={styles.homeButton}>
             <MaterialIcons name="home" size={16} color={colors.text} />
-            <Text style={styles.homeButtonText}>Home</Text>
+            <Text style={styles.homeButtonText}>{t("nav_home")}</Text>
           </Pressable>
 
           <Pressable accessibilityLabel={t("open_menu")} onPress={() => setMenuOpen(true)} style={styles.menuButton}>
@@ -149,9 +161,9 @@ export function SettingsScreen() {
         <View style={styles.heroIcon}>
           <MaterialIcons name="settings" size={22} color={colors.white} />
         </View>
-        <Text style={styles.heroEyebrow}>Florana Workspace</Text>
+        <Text style={styles.heroEyebrow}>{t("settings_hero_eyebrow")}</Text>
         <Text style={styles.heroTitle}>{t("settings_title")}</Text>
-        <Text style={styles.heroSubtitle}>Keep your app organized and comfortable on this device.</Text>
+        <Text style={styles.heroSubtitle}>{t("settings_hero_title")}</Text>
 
         <View style={[styles.profileCard, compact ? styles.profileCardCompact : null]}>
           <View style={styles.profileCopy}>
@@ -174,20 +186,22 @@ export function SettingsScreen() {
         <View style={styles.panel}>
           <View style={styles.panelHeading}>
             <Text style={styles.panelEyebrow}>{t("display")}</Text>
-            <Text style={styles.panelTitle}>Look and language</Text>
+            <Text style={styles.panelTitle}>{t("look_and_language")}</Text>
           </View>
 
           <Pressable onPress={() => void cycleFontSize()} style={styles.settingRow}>
-            <Text style={[styles.settingLabel, { fontSize: 15 * fontScale }]}>{t("font_size")}</Text>
-            <View style={styles.settingValuePill}>
-              <Text style={[styles.settingValueText, { fontSize: 12 * fontScale }]}>{settings.fontSize}</Text>
-            </View>
+              <Text style={[styles.settingLabel, { fontSize: 15 * fontScale }]}>{t("font_size")}</Text>
+              <View style={styles.settingValuePill}>
+                <Text style={[styles.settingValueText, { fontSize: 12 * fontScale }]}>
+                  {t(fontSizeLabelKeyMap[settings.fontSize])}
+                </Text>
+              </View>
           </Pressable>
 
           <Pressable onPress={() => void cycleLanguage()} style={styles.settingRow}>
             <Text style={[styles.settingLabel, { fontSize: 15 * fontScale }]}>{t("language")}</Text>
             <View style={styles.settingValuePill}>
-              <Text style={[styles.settingValueText, { fontSize: 12 * fontScale }]}>{language}</Text>
+              <Text style={[styles.settingValueText, { fontSize: 12 * fontScale }]}>{t(languageNameKeyMap[language])}</Text>
             </View>
           </Pressable>
         </View>
@@ -195,13 +209,13 @@ export function SettingsScreen() {
         <View style={styles.panel}>
           <View style={styles.panelHeading}>
             <Text style={styles.panelEyebrow}>{t("notifications")}</Text>
-            <Text style={styles.panelTitle}>Reminder controls</Text>
+            <Text style={styles.panelTitle}>{t("reminder_controls")}</Text>
           </View>
 
           <Pressable onPress={() => void handleToggle("wateringReminders")} style={styles.toggleRow}>
             <View style={styles.toggleCopy}>
               <Text style={styles.toggleTitle}>{t("watering_reminders")}</Text>
-              <Text style={styles.toggleInfo}>Save this preference for plant care reminders.</Text>
+              <Text style={styles.toggleInfo}>{t("settings_watering_info")}</Text>
             </View>
             <View style={[styles.togglePill, settings.wateringReminders ? styles.togglePillActive : null]}>
               <Text style={[styles.togglePillText, settings.wateringReminders ? styles.togglePillTextActive : null]}>
@@ -213,7 +227,7 @@ export function SettingsScreen() {
           <Pressable onPress={() => void handleToggle("diseaseAlerts")} style={styles.toggleRow}>
             <View style={styles.toggleCopy}>
               <Text style={styles.toggleTitle}>{t("disease_alerts")}</Text>
-              <Text style={styles.toggleInfo}>Keep disease warning messages available in the app.</Text>
+              <Text style={styles.toggleInfo}>{t("settings_disease_info")}</Text>
             </View>
             <View style={[styles.togglePill, settings.diseaseAlerts ? styles.togglePillActive : null]}>
               <Text style={[styles.togglePillText, settings.diseaseAlerts ? styles.togglePillTextActive : null]}>
@@ -225,7 +239,7 @@ export function SettingsScreen() {
           <Pressable onPress={() => void handleToggle("weeklySummary")} style={styles.toggleRow}>
             <View style={styles.toggleCopy}>
               <Text style={styles.toggleTitle}>{t("weekly_summary")}</Text>
-              <Text style={styles.toggleInfo}>Store your summary preference for future activity updates.</Text>
+              <Text style={styles.toggleInfo}>{t("settings_summary_info")}</Text>
             </View>
             <View style={[styles.togglePill, settings.weeklySummary ? styles.togglePillActive : null]}>
               <Text style={[styles.togglePillText, settings.weeklySummary ? styles.togglePillTextActive : null]}>
@@ -238,16 +252,16 @@ export function SettingsScreen() {
         <View style={styles.panel}>
           <View style={styles.panelHeading}>
             <Text style={styles.panelEyebrow}>{t("shortcuts")}</Text>
-            <Text style={styles.panelTitle}>Open real app screens</Text>
+            <Text style={styles.panelTitle}>{t("open_real_app_screens")}</Text>
           </View>
 
           <View style={styles.actionList}>
-            <PrimaryButton label="Register new plant" onPress={() => router.push("/plant-register")} variant="secondary" />
-            <PrimaryButton label="Open care reminder" onPress={() => router.push("/care")} variant="secondary" />
-            <PrimaryButton label="Send feedback" onPress={() => router.push("/feedback")} variant="secondary" />
-            <PrimaryButton label="Help center" onPress={() => router.push("/help")} variant="secondary" />
+            <PrimaryButton label={t("register_new_plant")} onPress={() => router.push("/plant-register")} variant="secondary" />
+            <PrimaryButton label={t("open_care_reminder")} onPress={() => router.push("/care")} variant="secondary" />
+            <PrimaryButton label={t("send_feedback")} onPress={() => router.push("/feedback")} variant="secondary" />
+            <PrimaryButton label={t("help_center")} onPress={() => router.push("/help")} variant="secondary" />
             <PrimaryButton
-              label="Contact support"
+              label={t("contact_support")}
               onPress={() => {
                 void Linking.openURL("mailto:support@florana.com?subject=Florana%20Support");
               }}
@@ -259,24 +273,24 @@ export function SettingsScreen() {
         <View style={styles.panel}>
           <View style={styles.panelHeading}>
             <Text style={styles.panelEyebrow}>{t("privacy_security")}</Text>
-            <Text style={styles.panelTitle}>Stored data</Text>
+            <Text style={styles.panelTitle}>{t("stored_data")}</Text>
           </View>
 
           <View style={styles.actionList}>
-            <PrimaryButton label="Export my data" onPress={() => void handleExportData()} />
+            <PrimaryButton label={t("export_my_data")} onPress={() => void handleExportData()} />
             <PrimaryButton
-              label="Clear cart"
-              onPress={() => void clearCart().then(() => showStatus("Your cart deleted."))}
+              label={t("clear_cart")}
+              onPress={() => void clearCart().then(() => showStatus(t("status_cart_cleared")))}
               variant="secondary"
             />
             <PrimaryButton
-              label="Clear feedback history"
-              onPress={() => void clearFeedbacks().then(() => showStatus("Your feedback history deleted."))}
+              label={t("clear_feedback_history")}
+              onPress={() => void clearFeedbacks().then(() => showStatus(t("status_feedback_cleared")))}
               variant="secondary"
             />
             <PrimaryButton
               label={t("clear_search_history")}
-              onPress={() => void handleClearKey(storageKeys.searchHistory, "Your search history deleted.")}
+              onPress={() => void handleClearKey(storageKeys.searchHistory, t("status_search_cleared"))}
               variant="secondary"
             />
           </View>
@@ -284,12 +298,12 @@ export function SettingsScreen() {
 
         <View style={[styles.panel, styles.panelDanger]}>
           <View style={styles.panelHeading}>
-            <Text style={styles.panelEyebrow}>Account</Text>
-            <Text style={styles.panelTitle}>Reset or sign out</Text>
+            <Text style={styles.panelEyebrow}>{t("account")}</Text>
+            <Text style={styles.panelTitle}>{t("reset_or_sign_out")}</Text>
           </View>
 
           <View style={styles.actionList}>
-            <PrimaryButton label="Reset preferences" onPress={handleResetPreferences} variant="secondary" />
+            <PrimaryButton label={t("reset_preferences")} onPress={handleResetPreferences} variant="secondary" />
             <Pressable onPress={handleLogout} style={styles.dangerAction}>
               <Text style={styles.dangerActionText}>{t("sign_out")}</Text>
             </Pressable>

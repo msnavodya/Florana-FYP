@@ -9,6 +9,7 @@ import { BottomNav } from "../components/BottomNav";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { TopBar } from "../components/TopBar";
+import { useLanguage } from "../context/LanguageContext";
 import { createPlant } from "../lib/api/plants";
 import { appendImageAsset } from "../lib/api/upload";
 import { colors, radii, shadows, spacing } from "../theme/tokens";
@@ -33,6 +34,7 @@ type SearchableDropdownProps = {
 };
 
 function SearchableDropdown({ error, label, onChange, options, placeholder, required, value }: SearchableDropdownProps) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const progress = useRef(new Animated.Value(0)).current;
@@ -68,12 +70,16 @@ function SearchableDropdown({ error, label, onChange, options, placeholder, requ
     <View style={styles.dropdownBlock}>
       <View style={styles.dropdownLabelRow}>
         <Text style={styles.dropdownLabel}>{label}</Text>
-        {required ? <Text style={styles.requiredLabel}>Required</Text> : null}
+        {required ? <Text style={styles.requiredLabel}>{t("register_plant_required")}</Text> : null}
       </View>
 
       <Pressable
-        accessibilityHint={`Opens ${label} options`}
-        accessibilityLabel={value ? `${label}, selected ${value}` : `${label}, ${placeholder}`}
+        accessibilityHint={t("register_dropdown_open_hint", { label })}
+        accessibilityLabel={
+          value
+            ? t("register_dropdown_selected", { label, value })
+            : t("register_dropdown_placeholder", { label, placeholder })
+        }
         accessibilityRole="button"
         onPress={() => setOpen((current) => !current)}
         style={({ pressed }) => [
@@ -97,9 +103,9 @@ function SearchableDropdown({ error, label, onChange, options, placeholder, requ
         <View style={styles.dropdownSearchRow}>
           <MaterialIcons name="search" size={18} color={colors.textMuted} />
           <TextInput
-            accessibilityLabel={`Search ${label}`}
+            accessibilityLabel={t("register_dropdown_search_label", { label })}
             onChangeText={setQuery}
-            placeholder="Search"
+            placeholder={t("register_plant_search")}
             placeholderTextColor="#9A93AA"
             style={styles.dropdownSearchInput}
             value={query}
@@ -133,7 +139,7 @@ function SearchableDropdown({ error, label, onChange, options, placeholder, requ
               );
             })
           ) : (
-            <Text style={styles.emptyOptionText}>No matches found</Text>
+            <Text style={styles.emptyOptionText}>{t("register_plant_no_matches")}</Text>
           )}
         </ScrollView>
       </Animated.View>
@@ -142,6 +148,7 @@ function SearchableDropdown({ error, label, onChange, options, placeholder, requ
 }
 
 export function RegisterPlantScreen() {
+  const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const [nextId, setNextId] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -181,7 +188,7 @@ export function RegisterPlantScreen() {
 
   const handleSubmit = async () => {
     if (!form.name.trim()) {
-      Alert.alert("Plant Name Required", "Please enter a Plant Name.");
+      Alert.alert(t("register_plant_name_required_title"), t("register_plant_name_required_body"));
       return;
     }
 
@@ -209,14 +216,14 @@ export function RegisterPlantScreen() {
 
       const response = await createPlant(formData);
       setNextId((previous) => previous + 1);
-      Alert.alert("Plant Registered", `${response.name || form.name} is now in My Plants.`, [
+      Alert.alert(t("register_plant_saved_title"), t("register_plant_saved_body", { name: response.name || form.name }), [
         {
-          text: "View Profile",
+          text: t("register_plant_view_profile"),
           onPress: () => router.replace(`/flower/${encodeURIComponent(response.name || form.name)}`),
         },
       ]);
     } catch (error) {
-      Alert.alert("Register Failed", error instanceof Error ? error.message : "Failed to register plant");
+      Alert.alert(t("register_plant_failed_title"), error instanceof Error ? error.message : t("register_plant_failed_body"));
     } finally {
       setSaving(false);
     }
@@ -226,7 +233,7 @@ export function RegisterPlantScreen() {
 
   return (
     <Screen>
-      <TopBar title="Register Plant" onMenuPress={() => setMenuOpen(true)} />
+      <TopBar title={t("register_plant_title")} onMenuPress={() => setMenuOpen(true)} />
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -234,8 +241,8 @@ export function RegisterPlantScreen() {
           <View style={styles.heroIcon}>
             <MaterialIcons name="local-florist" size={24} color={colors.white} />
           </View>
-          <Text style={styles.heroTitle}>Register a plant</Text>
-          <Text style={styles.heroText}>Create a complete care profile so Florana can track health, watering, and growth history.</Text>
+          <Text style={styles.heroTitle}>{t("register_plant_hero_title")}</Text>
+          <Text style={styles.heroText}>{t("register_plant_hero_body")}</Text>
         </View>
 
         <View style={styles.formShell}>
@@ -248,58 +255,58 @@ export function RegisterPlantScreen() {
               )}
             </Pressable>
             <View style={styles.imageCopy}>
-              <Text style={styles.imageTitle}>{form.image ? "Plant image selected" : "Add a plant photo"}</Text>
-              <Text style={styles.imageText}>{form.image ? form.image.fileName || "Ready to upload" : "Use a clear front-facing image for the profile."}</Text>
+              <Text style={styles.imageTitle}>{form.image ? t("register_plant_image_selected") : t("register_plant_add_photo")}</Text>
+              <Text style={styles.imageText}>{form.image ? form.image.fileName || t("register_plant_ready_upload") : t("register_plant_photo_hint")}</Text>
             </View>
           </View>
 
-          <Text style={styles.sectionTitle}>Basic Info</Text>
-          <TextInput placeholder="Plant Name" placeholderTextColor="#999" style={styles.input} value={form.name} onChangeText={(value) => updateField("name", value)} />
-          <TextInput placeholder="Plant Species" placeholderTextColor="#999" style={styles.input} value={form.species} onChangeText={(value) => updateField("species", value)} />
-          <TextInput placeholder={`Flower ID (Auto: F-${nextId})`} placeholderTextColor="#999" style={styles.input} value={form.flowerId} onChangeText={(value) => updateField("flowerId", value)} />
+          <Text style={styles.sectionTitle}>{t("register_plant_basic_info")}</Text>
+          <TextInput placeholder={t("register_plant_name")} placeholderTextColor="#999" style={styles.input} value={form.name} onChangeText={(value) => updateField("name", value)} />
+          <TextInput placeholder={t("register_plant_species")} placeholderTextColor="#999" style={styles.input} value={form.species} onChangeText={(value) => updateField("species", value)} />
+          <TextInput placeholder={t("register_plant_flower_id", { id: nextId })} placeholderTextColor="#999" style={styles.input} value={form.flowerId} onChangeText={(value) => updateField("flowerId", value)} />
 
           <View style={styles.environmentPanel}>
-            <Text style={styles.environmentTitle}>Environment</Text>
+            <Text style={styles.environmentTitle}>{t("register_plant_environment")}</Text>
             <SearchableDropdown
-              error={!form.location ? "Choose a city to improve climate recommendations." : undefined}
-              label="City in Sri Lanka"
+              error={!form.location ? t("register_plant_choose_city_hint") : undefined}
+              label={t("register_plant_city_label")}
               onChange={updateDropdown("location")}
               options={locationOptions}
-              placeholder="Select city in Sri Lanka"
+              placeholder={t("register_plant_city_placeholder")}
               required
               value={form.location}
             />
             <SearchableDropdown
-              label="Specific Location"
+              label={t("register_plant_specific_location_label")}
               onChange={updateDropdown("specificLocation")}
               options={environmentOptions}
-              placeholder="Specific Location"
+              placeholder={t("register_plant_specific_location_label")}
               value={form.specificLocation}
             />
             <SearchableDropdown
-              label="Climate"
+              label={t("register_plant_climate_label")}
               onChange={updateDropdown("climate")}
               options={climateOptions}
-              placeholder="Climate"
+              placeholder={t("register_plant_climate_label")}
               value={form.climate}
             />
             <SearchableDropdown
-              label="Flower Catalog"
+              label={t("register_plant_flower_catalog_label")}
               onChange={updateDropdown("flowerCatalog")}
               options={flowerCatalogOptions}
-              placeholder="Select Flower Type"
+              placeholder={t("register_plant_flower_catalog_placeholder")}
               value={form.flowerCatalog}
             />
             <SearchableDropdown
-              label="Soil Type"
+              label={t("register_plant_soil_type_label")}
               onChange={updateDropdown("soilType")}
               options={soilTypeOptions}
-              placeholder="Select Soil Type"
+              placeholder={t("register_plant_soil_type_placeholder")}
               value={form.soilType}
             />
           </View>
 
-          <Text style={styles.sectionTitle}>Sunlight</Text>
+          <Text style={styles.sectionTitle}>{t("register_plant_sunlight")}</Text>
           <View style={styles.optionRow}>
             {sunlightOptions.map((option) => (
               <Pressable key={option} onPress={() => updateField("sunlight", option)} style={[styles.check, form.sunlight === option ? styles.activeCheck : null]}>
@@ -309,21 +316,21 @@ export function RegisterPlantScreen() {
             ))}
           </View>
 
-          <Text style={styles.sectionTitle}>Care</Text>
-          <TextInput placeholder="Watering Frequency" placeholderTextColor="#999" style={styles.input} value={form.wateringFrequency} onChangeText={(value) => updateField("wateringFrequency", value)} />
-          <TextInput placeholder="Fertilizer Schedule" placeholderTextColor="#999" style={styles.input} value={form.fertilizerSchedule} onChangeText={(value) => updateField("fertilizerSchedule", value)} />
-          <TextInput placeholder="Last Watered" placeholderTextColor="#999" style={styles.input} value={form.lastWatered} onChangeText={(value) => updateField("lastWatered", value)} />
-          <TextInput placeholder="Initial Size" placeholderTextColor="#999" style={styles.input} value={form.initialSize} onChangeText={(value) => updateField("initialSize", value)} />
+          <Text style={styles.sectionTitle}>{t("register_plant_care")}</Text>
+          <TextInput placeholder={t("register_plant_watering_frequency")} placeholderTextColor="#999" style={styles.input} value={form.wateringFrequency} onChangeText={(value) => updateField("wateringFrequency", value)} />
+          <TextInput placeholder={t("register_plant_fertilizer_schedule")} placeholderTextColor="#999" style={styles.input} value={form.fertilizerSchedule} onChangeText={(value) => updateField("fertilizerSchedule", value)} />
+          <TextInput placeholder={t("register_plant_last_watered")} placeholderTextColor="#999" style={styles.input} value={form.lastWatered} onChangeText={(value) => updateField("lastWatered", value)} />
+          <TextInput placeholder={t("register_plant_initial_size")} placeholderTextColor="#999" style={styles.input} value={form.initialSize} onChangeText={(value) => updateField("initialSize", value)} />
 
-          <Text style={styles.sectionTitle}>Tracking</Text>
+          <Text style={styles.sectionTitle}>{t("register_plant_tracking")}</Text>
           <Pressable onPress={() => updateField("tracking", !form.tracking)} style={styles.toggleRow}>
-            <Text style={styles.toggleLabel}>{form.tracking ? "Enabled" : "Disabled"}</Text>
+            <Text style={styles.toggleLabel}>{form.tracking ? t("register_plant_enabled") : t("register_plant_disabled")}</Text>
             <View style={[styles.switchTrack, form.tracking ? styles.switchTrackOn : null]}>
               <View style={[styles.switchThumb, form.tracking ? styles.switchThumbOn : null]} />
             </View>
           </Pressable>
 
-          <PrimaryButton label={saving ? "Saving Plant..." : "Register Plant"} onPress={() => void handleSubmit()} disabled={saving} />
+          <PrimaryButton label={saving ? t("register_plant_saving") : t("register_plant_title")} onPress={() => void handleSubmit()} disabled={saving} />
         </View>
       </ScrollView>
 

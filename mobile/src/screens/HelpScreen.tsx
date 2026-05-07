@@ -5,34 +5,36 @@ import { AppMenu } from "../components/AppMenu";
 import { BottomNav } from "../components/BottomNav";
 import { Screen } from "../components/Screen";
 import { TopBar } from "../components/TopBar";
+import { useLanguage } from "../context/LanguageContext";
 import { colors, radii, shadows, spacing } from "../theme/tokens";
 
 export function HelpScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { t } = useLanguage();
 
   return (
     <Screen>
-      <TopBar title="Help & Support" onMenuPress={() => setMenuOpen(true)} />
+      <TopBar title={t("help_title")} onMenuPress={() => setMenuOpen(true)} />
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
 
       <View style={styles.heroCard}>
-        <Text style={styles.heroTitle}>Need help with Florana?</Text>
-        <Text style={styles.heroBody}>Use these quick support options before reporting a problem.</Text>
+        <Text style={styles.heroTitle}>{t("help_hero_title")}</Text>
+        <Text style={styles.heroBody}>{t("help_hero_body")}</Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.title}>App Not Working?</Text>
-        <Text style={styles.body}>Try restarting the app or checking your internet connection.</Text>
+        <Text style={styles.title}>{t("help_issue_title")}</Text>
+        <Text style={styles.body}>{t("help_issue_body")}</Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.title}>Contact Support</Text>
-        <Text style={styles.body}>Email: support@florana.com</Text>
+        <Text style={styles.title}>{t("help_contact_title")}</Text>
+        <Text style={styles.body}>{`${t("email")}: support@florana.com`}</Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.title}>FAQ Center</Text>
-        <Text style={styles.body}>Share your thoughts and support requests here.</Text>
+        <Text style={styles.title}>{t("help_faq_title")}</Text>
+        <Text style={styles.body}>{t("help_faq_body")}</Text>
       </View>
 
       <BottomNav />

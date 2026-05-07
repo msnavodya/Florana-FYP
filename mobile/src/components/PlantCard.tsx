@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
+import { useLanguage } from "../context/LanguageContext";
 import { buildApiUrl } from "../lib/api/config";
 import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 import type { Plant } from "../types/plants";
@@ -12,6 +13,7 @@ interface PlantCardProps {
 }
 
 export function PlantCard({ plant, onDelete, deleting = false }: PlantCardProps) {
+  const { t } = useLanguage();
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
   const imageUri = plant.image_path ? buildApiUrl(plant.image_path) : null;
@@ -20,11 +22,17 @@ export function PlantCard({ plant, onDelete, deleting = false }: PlantCardProps)
     <Pressable onPress={() => router.push(`/flower/${encodeURIComponent(plant.id || plant._id || plant.name)}`)} style={[styles.card, compact ? styles.cardCompact : null, plant.warning ? styles.warningCard : null]}>
       {onDelete ? (
         <Pressable onPress={onDelete} style={styles.deleteButton}>
-          <Text style={styles.deleteText}>{deleting ? "..." : "Delete"}</Text>
+          <Text style={styles.deleteText}>{deleting ? "..." : t("delete")}</Text>
         </Pressable>
       ) : null}
 
-      {imageUri ? <Image resizeMode="cover" source={{ uri: imageUri }} style={[styles.image, compact ? styles.imageCompact : null]} /> : <View style={[styles.imageFallback, compact ? styles.imageCompact : null]}><Text style={styles.imageFallbackText}>Plant</Text></View>}
+      {imageUri ? (
+        <Image resizeMode="cover" source={{ uri: imageUri }} style={[styles.image, compact ? styles.imageCompact : null]} />
+      ) : (
+        <View style={[styles.imageFallback, compact ? styles.imageCompact : null]}>
+          <Text style={styles.imageFallbackText}>{t("plant_label")}</Text>
+        </View>
+      )}
       <View style={styles.info}>
         <Text style={[styles.name, compact ? styles.nameCompact : null]}>{plant.name}{plant.warning ? " !" : ""}</Text>
         {plant.info ? <Text style={[styles.meta, plant.warning ? styles.warningText : null]}>{plant.info}</Text> : null}

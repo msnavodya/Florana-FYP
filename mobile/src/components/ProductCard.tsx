@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { useCart } from "../context/CartContext";
+import { useLanguage } from "../context/LanguageContext";
 import { buildApiUrl } from "../lib/api/config";
 import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 import type { Product } from "../types/shop";
@@ -17,11 +18,13 @@ interface ProductCardProps {
   onDelete?: (product: Product) => void;
 }
 
-export function ProductCard({ product, actionLabel = "Add to Cart", deleting = false, onAdded, onDelete }: ProductCardProps) {
+export function ProductCard({ product, actionLabel, deleting = false, onAdded, onDelete }: ProductCardProps) {
   const { addItem, currency } = useCart();
+  const { t } = useLanguage();
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
   const imageUri = product.image ? buildApiUrl(product.image) : null;
+  const resolvedActionLabel = actionLabel || t("add_to_cart");
 
   return (
     <Pressable
@@ -32,14 +35,16 @@ export function ProductCard({ product, actionLabel = "Add to Cart", deleting = f
         {imageUri ? (
           <Image resizeMode="cover" source={{ uri: imageUri }} style={[styles.image, compact ? styles.imageCompact : null]} />
         ) : (
-          <View style={[styles.imageFallback, compact ? styles.imageCompact : null]}><Text style={styles.imageFallbackText}>No Image</Text></View>
+          <View style={[styles.imageFallback, compact ? styles.imageCompact : null]}>
+            <Text style={styles.imageFallbackText}>{t("no_image")}</Text>
+          </View>
         )}
         <View style={styles.seasonBadge}>
           <Text style={styles.seasonBadgeText}>{product.season}</Text>
         </View>
         {onDelete ? (
           <Pressable
-            accessibilityLabel={`Delete ${product.name}`}
+            accessibilityLabel={t("delete")}
             disabled={deleting}
             onPress={(event) => {
               event.stopPropagation();
@@ -54,7 +59,7 @@ export function ProductCard({ product, actionLabel = "Add to Cart", deleting = f
       <Text style={[styles.name, compact ? styles.nameCompact : null]}>{product.name}</Text>
       <Text style={[styles.price, compact ? styles.priceCompact : null]}>{formatPrice(product.price, currency)}</Text>
       <PrimaryButton
-        label={actionLabel}
+        label={resolvedActionLabel}
         onPress={() => {
           void addItem(product).then(() => onAdded?.(product));
         }}

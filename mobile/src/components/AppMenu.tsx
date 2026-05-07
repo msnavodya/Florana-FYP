@@ -16,20 +16,21 @@ import {
 } from "react-native";
 
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 import { brandAssets } from "../theme/brand";
 import { colors, radii, shadows, spacing } from "../theme/tokens";
 
 const menuItems = [
-  { path: "/home", label: "Home", icon: "home" },
-  { path: "/profile", label: "Profile", icon: "person" },
-  { path: "/catalog", label: "Catalog", icon: "shopping-bag" },
-  { path: "/myplants", label: "My Plants", icon: "eco" },
-  { path: "/care", label: "Care Reminder", icon: "alarm" },
-  { path: "/quicktip", label: "Quick Tip", icon: "lightbulb" },
-  { path: "/settings", label: "Settings", icon: "settings" },
-  { path: "/about", label: "About", icon: "info" },
-  { path: "/help", label: "Help", icon: "help" },
-  { path: "/feedback", label: "Feedback", icon: "chat" },
+  { path: "/home", labelKey: "nav_home", icon: "home" },
+  { path: "/profile", labelKey: "nav_profile", icon: "person" },
+  { path: "/catalog", labelKey: "nav_catalog", icon: "shopping-bag" },
+  { path: "/myplants", labelKey: "nav_my_plants", icon: "eco" },
+  { path: "/care", labelKey: "nav_care", icon: "alarm" },
+  { path: "/quicktip", labelKey: "nav_quick_tip", icon: "lightbulb" },
+  { path: "/settings", labelKey: "nav_settings", icon: "settings" },
+  { path: "/about", labelKey: "nav_about", icon: "info" },
+  { path: "/help", labelKey: "nav_help", icon: "help" },
+  { path: "/feedback", labelKey: "nav_feedback", icon: "chat" },
 ] as const;
 
 interface AppMenuProps {
@@ -39,6 +40,7 @@ interface AppMenuProps {
 
 export function AppMenu({ visible, onClose }: AppMenuProps) {
   const { signOut } = useAuth();
+  const { t } = useLanguage();
   const pathname = usePathname();
   const { width } = useWindowDimensions();
   const [mounted, setMounted] = useState(visible);
@@ -191,7 +193,7 @@ export function AppMenu({ visible, onClose }: AppMenuProps) {
             {...panResponder.panHandlers}
           >
             <View style={styles.container}>
-              <Pressable accessibilityLabel="Close menu" onPress={() => closeDrawer()} style={styles.closeButton}>
+              <Pressable accessibilityLabel={t("close_menu")} onPress={() => closeDrawer()} style={styles.closeButton}>
                 <MaterialIcons name="close" size={18} color={colors.text} />
               </Pressable>
 
@@ -204,7 +206,7 @@ export function AppMenu({ visible, onClose }: AppMenuProps) {
                   <Image source={brandAssets.logo} style={styles.logo} />
                   <View style={styles.headerText}>
                     <Text style={styles.headerBrand}>Florana</Text>
-                    <Text style={styles.headerTitle}>Navigation</Text>
+                    <Text style={styles.headerTitle}>{t("menu_title")}</Text>
                   </View>
                 </View>
 
@@ -225,7 +227,9 @@ export function AppMenu({ visible, onClose }: AppMenuProps) {
                             color={active ? colors.white : colors.text}
                           />
                         </View>
-                        <Text style={[styles.itemLabel, active ? styles.itemLabelActive : null]}>{item.label}</Text>
+                        <Text style={[styles.itemLabel, active ? styles.itemLabelActive : null]}>
+                          {t(item.labelKey)}
+                        </Text>
                       </Pressable>
                     );
                   })}
@@ -234,7 +238,7 @@ export function AppMenu({ visible, onClose }: AppMenuProps) {
                     <View style={[styles.iconShell, styles.logoutIconShell]}>
                       <MaterialIcons name="logout" size={18} color={colors.white} />
                     </View>
-                    <Text style={[styles.itemLabel, styles.logoutLabel]}>Logout</Text>
+                    <Text style={[styles.itemLabel, styles.logoutLabel]}>{t("nav_logout")}</Text>
                   </Pressable>
                 </View>
               </ScrollView>

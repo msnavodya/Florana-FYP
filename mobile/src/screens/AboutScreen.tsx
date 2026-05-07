@@ -4,42 +4,40 @@ import { AppMenu } from "../components/AppMenu";
 import { BottomNav } from "../components/BottomNav";
 import { Screen } from "../components/Screen";
 import { TopBar } from "../components/TopBar";
+import { useLanguage } from "../context/LanguageContext";
 import { brandAssets } from "../theme/brand";
 import { colors, radii, shadows, spacing } from "../theme/tokens";
 import { useState } from "react";
 
 export function AboutScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { t } = useLanguage();
 
   return (
     <Screen>
-      <TopBar title="About Us" onMenuPress={() => setMenuOpen(true)} />
+      <TopBar title={t("about_title")} onMenuPress={() => setMenuOpen(true)} />
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
 
       <View style={styles.heroCard}>
-        <Text style={styles.heroEyebrow}>Florana Story</Text>
-        <Text style={styles.heroTitle}>A plant-care companion built to feel warm, simple, and helpful.</Text>
+        <Text style={styles.heroEyebrow}>{t("about_eyebrow")}</Text>
+        <Text style={styles.heroTitle}>{t("about_hero_title")}</Text>
       </View>
 
       <View style={styles.card}>
         <Image source={brandAssets.logo} style={styles.logo} />
         <Text style={styles.title}>Florana</Text>
-        <Text style={styles.description}>
-          Florana is your personal digital plant companion designed to help you monitor, maintain, and grow your plants with ease.
-        </Text>
+        <Text style={styles.description}>{t("about_description")}</Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Our Vision</Text>
-        <Text style={styles.description}>
-          To make plant care effortless, enjoyable, and accessible to everyone by blending smart technology with nature.
-        </Text>
+        <Text style={styles.sectionTitle}>{t("about_vision_title")}</Text>
+        <Text style={styles.description}>{t("about_vision_body")}</Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Developed By</Text>
-        <Text style={styles.description}>Florana Development Team</Text>
-        <Text style={styles.version}>Version 1.0.0</Text>
+        <Text style={styles.sectionTitle}>{t("about_developed_by")}</Text>
+        <Text style={styles.description}>{t("about_team")}</Text>
+        <Text style={styles.version}>{t("about_version")}</Text>
       </View>
 
       <BottomNav />

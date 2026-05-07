@@ -12,7 +12,7 @@ import { useSettings } from "../context/SettingsContext";
 import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 import type { ReminderState } from "../types/app";
 
-type LanguageCode = "en" | "si" | "ta";
+type LanguageCode = "en" | "si" | "ta" | "es" | "fr" | "ar" | "hi" | "zh";
 type ReminderOptionKey = (typeof defaultOptions)[number]["key"];
 type NotificationType = keyof ReminderState["notifications"];
 
@@ -261,6 +261,291 @@ const careCopy: Record<
     recentLabel: "recent",
     timeFormatPlaceholder: "07:00",
   },
+  es: {
+    eyebrow: "Plan de plantas",
+    title: "Recordatorio de cuidado",
+    subtitle: "Organiza riego y tareas de cuidado con un plan limpio que se actualiza en vivo y se guarda automaticamente.",
+    activeTasks: "Tareas activas",
+    mode: "Modo",
+    options: "Opciones",
+    watering: "Riego",
+    wateringInfo: "Avisa cuando la planta necesite agua",
+    fertilizing: "Fertilizacion",
+    fertilizingInfo: "Recuerda cuando toca fertilizar",
+    pruning: "Poda",
+    pruningInfo: "Alertas para recortar y dar forma",
+    repotting: "Trasplante",
+    repottingInfo: "Recuerda cuando toca trasplantar",
+    sunlight: "Luz solar",
+    sunlightInfo: "Sugiere mover la planta para mejorar la luz",
+    on: "Activo",
+    off: "Pausado",
+    wateringTime: "Hora de riego",
+    customNotes: "Notas personalizadas",
+    addNote: "Agregar nota",
+    summary: "Resumen",
+    daily: "Diario",
+    weekly: "Semanal",
+    notifications: "Notificaciones",
+    pushAlerts: "Alertas push",
+    pushAlertsInfo: "Programa recordatorios del dispositivo para tu rutina de riego.",
+    emailAlerts: "Alertas por correo",
+    emailAlertsInfo: "Guarda tu preferencia de recordatorios por correo para integrarla mas adelante.",
+    testNotification: "Enviar recordatorio de prueba",
+    careMessages: "Actividad reciente",
+    next: "Siguiente",
+    paused: "Pausado",
+    liveStatus: "Estado en vivo",
+    currentTime: "Hora actual",
+    scheduledFor: "Programado para",
+    quickTimes: "Horarios rapidos",
+    morning: "Manana",
+    midday: "Mediodia",
+    evening: "Tarde",
+    autoSave: "Cada cambio se guarda automaticamente.",
+    timeHint: "Usa formato de 24 horas como 07:00 o 18:30 para recordatorios diarios confiables.",
+    timeInvalid: "Introduce la hora como HH:MM en formato de 24 horas.",
+    timeSaved: "Hora del recordatorio actualizada.",
+    noteRequired: "Agrega primero una nota.",
+    noteAdded: "Recordatorio personalizado agregado.",
+    noteRemoved: "Tu recordatorio personalizado fue eliminado.",
+    testAdded: "Recordatorio de prueba agregado.",
+    pushUnsupported: "Las notificaciones push requieren una compilacion de desarrollo o la app publicada.",
+    pushPermissionDenied: "Las notificaciones push estan desactivadas en este dispositivo.",
+    activeLabel: "activas",
+    savedLabel: "guardadas",
+    enabledLabel: "activas",
+    recentLabel: "recientes",
+    timeFormatPlaceholder: "07:00",
+  },
+  fr: {
+    eyebrow: "Planning vegetal",
+    title: "Rappel d'entretien",
+    subtitle: "Gardez l'arrosage et les taches de soin bien organises avec un planning clair, en direct et enregistre automatiquement.",
+    activeTasks: "Taches actives",
+    mode: "Mode",
+    options: "Options",
+    watering: "Arrosage",
+    wateringInfo: "Alerte quand la plante a besoin d'eau",
+    fertilizing: "Fertilisation",
+    fertilizingInfo: "Rappelle quand fertiliser",
+    pruning: "Taille",
+    pruningInfo: "Alertes pour tailler et mettre en forme",
+    repotting: "Rempotage",
+    repottingInfo: "Rappelle quand rempoter",
+    sunlight: "Lumiere",
+    sunlightInfo: "Suggere de deplacer les plantes pour une meilleure lumiere",
+    on: "Active",
+    off: "Pause",
+    wateringTime: "Heure d'arrosage",
+    customNotes: "Notes personnalisees",
+    addNote: "Ajouter une note",
+    summary: "Resume",
+    daily: "Quotidien",
+    weekly: "Hebdomadaire",
+    notifications: "Notifications",
+    pushAlerts: "Alertes push",
+    pushAlertsInfo: "Planifie des rappels sur l'appareil pour votre routine d'arrosage.",
+    emailAlerts: "Alertes e-mail",
+    emailAlertsInfo: "Enregistrez votre preference de rappel par e-mail pour une integration future.",
+    testNotification: "Envoyer un rappel de test",
+    careMessages: "Activite recente",
+    next: "Prochain",
+    paused: "En pause",
+    liveStatus: "Statut en direct",
+    currentTime: "Heure actuelle",
+    scheduledFor: "Prevu pour",
+    quickTimes: "Horaires rapides",
+    morning: "Matin",
+    midday: "Midi",
+    evening: "Soir",
+    autoSave: "Chaque changement est enregistre automatiquement.",
+    timeHint: "Utilisez un format 24 h comme 07:00 ou 18:30 pour des rappels fiables.",
+    timeInvalid: "Saisissez l'heure au format HH:MM sur 24 heures.",
+    timeSaved: "Heure du rappel mise a jour.",
+    noteRequired: "Ajoutez d'abord une note.",
+    noteAdded: "Rappel personnalise ajoute.",
+    noteRemoved: "Votre rappel personnalise a ete supprime.",
+    testAdded: "Rappel de test ajoute.",
+    pushUnsupported: "Les notifications push necessitent une version de developpement ou l'application publiee.",
+    pushPermissionDenied: "Les notifications push sont desactivees sur cet appareil.",
+    activeLabel: "actives",
+    savedLabel: "enregistrees",
+    enabledLabel: "actives",
+    recentLabel: "recentes",
+    timeFormatPlaceholder: "07:00",
+  },
+  ar: {
+    eyebrow: "جدول النبات",
+    title: "تذكير بالعناية",
+    subtitle: "نظّم الري ومهام العناية عبر مخطط واضح يتحدث مباشرة ويحفظ التغييرات تلقائياً.",
+    activeTasks: "المهام النشطة",
+    mode: "الوضع",
+    options: "الخيارات",
+    watering: "الري",
+    wateringInfo: "أرسل تنبيهاً عندما يحتاج النبات إلى الماء",
+    fertilizing: "التسميد",
+    fertilizingInfo: "ذكّرني بموعد التسميد",
+    pruning: "التقليم",
+    pruningInfo: "تنبيهات للقص والتشكيل",
+    repotting: "إعادة الزراعة",
+    repottingInfo: "ذكّرني بموعد إعادة الزراعة",
+    sunlight: "ضوء الشمس",
+    sunlightInfo: "اقترح نقل النباتات لتحسين الضوء",
+    on: "مفعل",
+    off: "متوقف",
+    wateringTime: "وقت الري",
+    customNotes: "ملاحظات مخصصة",
+    addNote: "إضافة ملاحظة",
+    summary: "الملخص",
+    daily: "يومي",
+    weekly: "أسبوعي",
+    notifications: "الإشعارات",
+    pushAlerts: "إشعارات فورية",
+    pushAlertsInfo: "جدولة تذكيرات الجهاز لروتين الري الخاص بك.",
+    emailAlerts: "إشعارات البريد",
+    emailAlertsInfo: "احفظ تفضيل تذكيرات البريد لدمجه لاحقاً.",
+    testNotification: "إرسال تذكير تجريبي",
+    careMessages: "النشاط الأخير",
+    next: "التالي",
+    paused: "متوقف",
+    liveStatus: "الحالة المباشرة",
+    currentTime: "الوقت الحالي",
+    scheduledFor: "مجدول عند",
+    quickTimes: "أوقات سريعة",
+    morning: "الصباح",
+    midday: "الظهيرة",
+    evening: "المساء",
+    autoSave: "يتم حفظ كل تغيير تلقائياً.",
+    timeHint: "استخدم تنسيق 24 ساعة مثل 07:00 أو 18:30 لتذكيرات يومية دقيقة.",
+    timeInvalid: "أدخل الوقت بصيغة HH:MM بنظام 24 ساعة.",
+    timeSaved: "تم تحديث وقت التذكير.",
+    noteRequired: "أضف ملاحظة أولاً.",
+    noteAdded: "تمت إضافة تذكير مخصص.",
+    noteRemoved: "تم حذف التذكير المخصص.",
+    testAdded: "تمت إضافة تذكير تجريبي.",
+    pushUnsupported: "الإشعارات الفورية تحتاج إلى نسخة تطوير أو التطبيق المنشور.",
+    pushPermissionDenied: "إذن الإشعارات الفورية معطل على هذا الجهاز.",
+    activeLabel: "نشطة",
+    savedLabel: "محفوظة",
+    enabledLabel: "مفعلة",
+    recentLabel: "حديثة",
+    timeFormatPlaceholder: "07:00",
+  },
+  hi: {
+    eyebrow: "पौधा शेड्यूल",
+    title: "देखभाल रिमाइंडर",
+    subtitle: "पानी देने और देखभाल के कामों को साफ प्लानर में व्यवस्थित रखें जो रीयल टाइम में अपडेट होता है और अपने आप सेव हो जाता है।",
+    activeTasks: "सक्रिय कार्य",
+    mode: "मोड",
+    options: "विकल्प",
+    watering: "पानी देना",
+    wateringInfo: "जब पौधे को पानी चाहिए तब सूचित करें",
+    fertilizing: "खाद देना",
+    fertilizingInfo: "कब खाद देनी है यह याद दिलाएं",
+    pruning: "छंटाई",
+    pruningInfo: "काटने और आकार देने के लिए अलर्ट",
+    repotting: "दोबारा गमला बदलना",
+    repottingInfo: "कब दोबारा गमला बदलना है यह याद दिलाएं",
+    sunlight: "धूप",
+    sunlightInfo: "बेहतर रोशनी के लिए पौधों को स्थान बदलने का सुझाव दें",
+    on: "चालू",
+    off: "बंद",
+    wateringTime: "पानी देने का समय",
+    customNotes: "कस्टम नोट्स",
+    addNote: "नोट जोड़ें",
+    summary: "सारांश",
+    daily: "दैनिक",
+    weekly: "साप्ताहिक",
+    notifications: "सूचनाएं",
+    pushAlerts: "पुश अलर्ट",
+    pushAlertsInfo: "आपकी पानी देने की दिनचर्या के लिए डिवाइस रिमाइंडर सेट करें।",
+    emailAlerts: "ईमेल अलर्ट",
+    emailAlertsInfo: "भविष्य के एकीकरण के लिए ईमेल रिमाइंडर पसंद सहेजें।",
+    testNotification: "टेस्ट रिमाइंडर भेजें",
+    careMessages: "हाल की गतिविधि",
+    next: "अगला",
+    paused: "रुका हुआ",
+    liveStatus: "लाइव स्थिति",
+    currentTime: "वर्तमान समय",
+    scheduledFor: "नियत समय",
+    quickTimes: "त्वरित समय",
+    morning: "सुबह",
+    midday: "दोपहर",
+    evening: "शाम",
+    autoSave: "हर बदलाव अपने आप सेव हो जाता है।",
+    timeHint: "विश्वसनीय दैनिक रिमाइंडर के लिए 24-घंटे का समय जैसे 07:00 या 18:30 उपयोग करें।",
+    timeInvalid: "समय HH:MM के रूप में 24-घंटे प्रारूप में दर्ज करें।",
+    timeSaved: "रिमाइंडर समय अपडेट हो गया।",
+    noteRequired: "पहले एक नोट जोड़ें।",
+    noteAdded: "कस्टम रिमाइंडर जोड़ दिया गया।",
+    noteRemoved: "आपका कस्टम रिमाइंडर हटा दिया गया।",
+    testAdded: "टेस्ट रिमाइंडर जोड़ दिया गया।",
+    pushUnsupported: "पुश नोटिफिकेशन के लिए डेवलपमेंट बिल्ड या प्रकाशित ऐप चाहिए।",
+    pushPermissionDenied: "इस डिवाइस पर पुश अनुमति बंद है।",
+    activeLabel: "सक्रिय",
+    savedLabel: "सहेजे गए",
+    enabledLabel: "सक्षम",
+    recentLabel: "हाल के",
+    timeFormatPlaceholder: "07:00",
+  },
+  zh: {
+    eyebrow: "植物日程",
+    title: "养护提醒",
+    subtitle: "用一个清晰的计划面板管理浇水与养护任务，内容会实时更新并自动保存。",
+    activeTasks: "活跃任务",
+    mode: "模式",
+    options: "选项",
+    watering: "浇水",
+    wateringInfo: "当植物需要浇水时提醒你",
+    fertilizing: "施肥",
+    fertilizingInfo: "提醒施肥时间",
+    pruning: "修剪",
+    pruningInfo: "修剪和整形提醒",
+    repotting: "换盆",
+    repottingInfo: "提醒换盆时间",
+    sunlight: "光照",
+    sunlightInfo: "建议移动植物以获得更好光照",
+    on: "开启",
+    off: "关闭",
+    wateringTime: "浇水时间",
+    customNotes: "自定义备注",
+    addNote: "添加备注",
+    summary: "摘要",
+    daily: "每日",
+    weekly: "每周",
+    notifications: "通知",
+    pushAlerts: "推送提醒",
+    pushAlertsInfo: "为你的浇水习惯安排设备提醒。",
+    emailAlerts: "邮件提醒",
+    emailAlertsInfo: "保存你的邮件提醒偏好，便于后续接入。",
+    testNotification: "发送测试提醒",
+    careMessages: "最近活动",
+    next: "下一次",
+    paused: "已暂停",
+    liveStatus: "实时状态",
+    currentTime: "当前时间",
+    scheduledFor: "计划时间",
+    quickTimes: "快捷时间",
+    morning: "早上",
+    midday: "中午",
+    evening: "傍晚",
+    autoSave: "每次更改都会自动保存。",
+    timeHint: "请使用 24 小时制，例如 07:00 或 18:30，以获得可靠的每日提醒。",
+    timeInvalid: "请输入 24 小时制 HH:MM 时间。",
+    timeSaved: "提醒时间已更新。",
+    noteRequired: "请先添加备注。",
+    noteAdded: "已添加自定义提醒。",
+    noteRemoved: "你的自定义提醒已删除。",
+    testAdded: "已添加测试提醒。",
+    pushUnsupported: "推送通知需要开发版本或正式发布的应用。",
+    pushPermissionDenied: "此设备未开启推送权限。",
+    activeLabel: "活跃",
+    savedLabel: "已保存",
+    enabledLabel: "已启用",
+    recentLabel: "最近",
+    timeFormatPlaceholder: "07:00",
+  },
 };
 
 const isExpoGo = Constants.executionEnvironment === "storeClient";
@@ -309,7 +594,11 @@ function formatTimeLabel(time: string) {
   return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
-function formatScheduleLabel(target: Date | null, fallback: string) {
+function formatScheduleLabel(
+  target: Date | null,
+  fallback: string,
+  t: (key: string, vars?: Record<string, string | number>) => string
+) {
   if (!target) {
     return fallback;
   }
@@ -321,24 +610,28 @@ function formatScheduleLabel(target: Date | null, fallback: string) {
   const timeLabel = target.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
   if (dayDiff === 0) {
-    return `Today, ${timeLabel}`;
+    return t("care_today_time", { time: timeLabel });
   }
 
   if (dayDiff === 1) {
-    return `Tomorrow, ${timeLabel}`;
+    return t("care_tomorrow_time", { time: timeLabel });
   }
 
   return `${target.toLocaleDateString([], { month: "short", day: "numeric" })}, ${timeLabel}`;
 }
 
-function formatCountdown(target: Date | null, fallback: string) {
+function formatCountdown(
+  target: Date | null,
+  fallback: string,
+  t: (key: string, vars?: Record<string, string | number>) => string
+) {
   if (!target) {
     return fallback;
   }
 
   const remainingMs = target.getTime() - Date.now();
   if (remainingMs <= 0) {
-    return "Now";
+    return t("care_now");
   }
 
   const totalMinutes = Math.max(1, Math.floor(remainingMs / 60000));
@@ -346,10 +639,10 @@ function formatCountdown(target: Date | null, fallback: string) {
   const minutes = totalMinutes % 60;
 
   if (hours > 0) {
-    return `${hours}h ${minutes}m left`;
+    return t("care_hours_minutes_left", { hours, minutes });
   }
 
-  return `${minutes}m left`;
+  return t("care_minutes_left", { minutes });
 }
 
 function formatActivityMessage(message: string) {
@@ -359,8 +652,80 @@ function formatActivityMessage(message: string) {
 export function CareReminderScreen() {
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
-  const { languageCode } = useLanguage();
-  const copy = careCopy[languageCode] || careCopy.en;
+  const { languageCode, t } = useLanguage();
+  const localizedLanguageCode: LanguageCode =
+    languageCode === "si" ||
+    languageCode === "ta" ||
+    languageCode === "es" ||
+    languageCode === "fr" ||
+    languageCode === "ar" ||
+    languageCode === "hi" ||
+    languageCode === "zh"
+      ? languageCode
+      : "en";
+  const fallbackCopy = careCopy[localizedLanguageCode];
+  const copy = useMemo(
+    () =>
+      ({
+        eyebrow: t("care_eyebrow"),
+        title: t("care_title"),
+        subtitle: t("care_subtitle"),
+        activeTasks: t("care_active_tasks"),
+        mode: t("care_mode"),
+        options: t("care_options"),
+        watering: t("watering"),
+        wateringInfo: t("wateringInfo"),
+        fertilizing: t("fertilizing"),
+        fertilizingInfo: t("fertilizingInfo"),
+        pruning: t("pruning"),
+        pruningInfo: t("pruningInfo"),
+        repotting: t("repotting"),
+        repottingInfo: t("repottingInfo"),
+        sunlight: t("sunlight"),
+        sunlightInfo: t("sunlightInfo"),
+        on: t("on"),
+        off: t("off"),
+        wateringTime: t("care_watering_time"),
+        customNotes: t("care_custom_notes"),
+        addNote: t("add_custom_note"),
+        summary: t("care_summary"),
+        daily: t("care_daily"),
+        weekly: t("care_weekly"),
+        notifications: t("notifications"),
+        pushAlerts: t("care_push_alerts"),
+        pushAlertsInfo: t("care_push_alerts_info"),
+        emailAlerts: t("care_email_alerts"),
+        emailAlertsInfo: t("care_email_alerts_info"),
+        testNotification: t("care_test_notification"),
+        careMessages: t("care_messages"),
+        next: t("care_next"),
+        paused: t("care_paused"),
+        liveStatus: t("care_live_status"),
+        currentTime: t("care_current_time"),
+        scheduledFor: t("care_scheduled_for"),
+        quickTimes: t("care_quick_times"),
+        morning: t("care_morning"),
+        midday: t("care_midday"),
+        evening: t("care_evening"),
+        autoSave: t("care_auto_save"),
+        timeHint: t("care_time_hint"),
+        timeInvalid: t("care_time_invalid"),
+        timeSaved: t("care_time_saved"),
+        noteRequired: t("care_note_required"),
+        noteAdded: t("care_note_added"),
+        noteRemoved: t("care_note_removed"),
+        testAdded: t("care_test_added"),
+        pushUnsupported: t("care_push_unsupported"),
+        pushPermissionDenied: t("care_push_permission_denied"),
+        activeLabel: t("care_active_label"),
+        savedLabel: t("saved"),
+        enabledLabel: t("care_enabled_label"),
+        recentLabel: t("care_recent_label"),
+        toggleAction: t("care_toggle_action"),
+        timeFormatPlaceholder: fallbackCopy.timeFormatPlaceholder,
+      }) as const,
+    [fallbackCopy.timeFormatPlaceholder, t]
+  );
   const [menuOpen, setMenuOpen] = useState(false);
   const [newCustomNote, setNewCustomNote] = useState("");
   const [status, setStatus] = useState("");
@@ -408,7 +773,7 @@ export function CareReminderScreen() {
   };
 
   const createReminderMessage = (current: ReminderState) =>
-    `Time to water your plant (${formatTimeLabel(current.wateringTime)})`;
+    t("care_reminder_message", { time: formatTimeLabel(current.wateringTime) });
 
   const addInAppMessage = async (message: string) => {
     await persistReminders((current) => ({
@@ -463,7 +828,7 @@ export function CareReminderScreen() {
     const [hour, minute] = current.wateringTime.split(":").map(Number);
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: "Plant Care Reminder",
+        title: t("care_notification_title"),
         body: createReminderMessage(current),
       },
       trigger: {
@@ -510,11 +875,12 @@ export function CareReminderScreen() {
   }, [reminders]);
 
   const handleToggleOption = async (key: ReminderOptionKey) => {
+    const nextState = !remindersRef.current.options[key];
     await persistReminders((current) => ({
       ...current,
       options: { ...current.options, [key]: !current.options[key] },
     }));
-    showStatus(`${copy[key]} ${copy.on.toLowerCase()} / ${copy.off.toLowerCase()} updated.`);
+    showStatus(t("care_toggle_updated", { name: copy[key], on: nextState ? copy.on : copy.off }));
   };
 
   const handleToggleNotification = async (type: NotificationType) => {
@@ -588,7 +954,7 @@ export function CareReminderScreen() {
       if (permissionGranted && Notifications) {
         await Notifications.scheduleNotificationAsync({
           content: {
-            title: "Plant Care Reminder",
+            title: t("care_notification_title"),
             body: message,
           },
           trigger: null,
@@ -612,9 +978,10 @@ export function CareReminderScreen() {
     [liveNow, reminders.options.watering, reminders.wateringTime]
   );
   const nextReminderLabel = nextReminderDate
-    ? formatScheduleLabel(nextReminderDate, copy.paused)
+    ? formatScheduleLabel(nextReminderDate, copy.paused, t)
     : copy.paused;
-  const liveCountdownLabel = formatCountdown(nextReminderDate, copy.paused);
+  const liveCountdownLabel = formatCountdown(nextReminderDate, copy.paused, t);
+  const summaryModeLabel = reminders.summaryMode === "daily" ? copy.daily : copy.weekly;
   const liveClockLabel = new Date(liveNow).toLocaleTimeString([], {
     hour: "numeric",
     minute: "2-digit",
@@ -673,7 +1040,7 @@ export function CareReminderScreen() {
 
         <View style={styles.summaryRow}>
           <Text style={styles.summaryChip}>{nextReminderLabel}</Text>
-          <Text style={styles.summaryChip}>{`${copy.mode}: ${reminders.summaryMode}`}</Text>
+          <Text style={styles.summaryChip}>{`${copy.mode}: ${summaryModeLabel}`}</Text>
           <Text style={styles.summaryChip}>{copy.autoSave}</Text>
         </View>
       </View>
@@ -700,7 +1067,7 @@ export function CareReminderScreen() {
               <Text style={styles.optionInfo}>{copy[option.infoKey]}</Text>
             </View>
             <Pressable
-              accessibilityLabel={`${copy[option.titleKey]} toggle`}
+              accessibilityLabel={t("care_toggle_action", { name: copy[option.titleKey] })}
               onPress={() => void handleToggleOption(option.key)}
               style={[
                 styles.toggleButton,
@@ -756,7 +1123,7 @@ export function CareReminderScreen() {
                 />
               </View>
               <Pressable
-                accessibilityLabel="Save watering time"
+                accessibilityLabel={t("save_watering_time")}
                 onPress={() => void commitWateringTime(wateringTimeInput)}
                 style={[styles.timeSaveButton, compact ? styles.timeSaveButtonCompact : null]}
               >
@@ -813,7 +1180,7 @@ export function CareReminderScreen() {
             value={newCustomNote}
             onChangeText={setNewCustomNote}
           />
-          <Pressable accessibilityLabel="Add custom note" onPress={() => void addCustomNote()} style={styles.addButton}>
+          <Pressable accessibilityLabel={t("add_custom_note")} onPress={() => void addCustomNote()} style={styles.addButton}>
             <MaterialIcons name="add" size={18} color={colors.white} />
           </Pressable>
         </View>
@@ -822,7 +1189,7 @@ export function CareReminderScreen() {
           <View key={`${note}-${index}`} style={styles.customNoteRow}>
             <Text style={styles.customNoteText}>{note}</Text>
             <Pressable
-              accessibilityLabel="Remove custom note"
+              accessibilityLabel={t("remove_custom_note")}
               onPress={() => void removeCustomNote(index)}
               style={styles.trashButton}
             >
@@ -835,7 +1202,7 @@ export function CareReminderScreen() {
       <View style={[styles.sectionCard, compact ? styles.sectionCardCompact : null]}>
         <View style={[styles.sectionHeader, compact ? styles.sectionHeaderCompact : null]}>
           <Text style={styles.sectionTitle}>{copy.summary}</Text>
-          <Text style={styles.sectionMeta}>{reminders.summaryMode}</Text>
+          <Text style={styles.sectionMeta}>{summaryModeLabel}</Text>
         </View>
 
         <View style={styles.summaryButtons}>

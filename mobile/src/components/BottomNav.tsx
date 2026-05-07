@@ -4,23 +4,24 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useCart } from "../context/CartContext";
+import { useLanguage } from "../context/LanguageContext";
 import { colors, radii, shadows, spacing } from "../theme/tokens";
 
 type NavItem = {
   key: string;
-  label: string;
+  labelKey: string;
   icon: keyof typeof MaterialIcons.glyphMap;
   route: string;
   matches: string[];
 };
 
 const navItems: NavItem[] = [
-  { key: "home", label: "Home", icon: "home-filled", route: "/home", matches: ["/home"] },
-  { key: "catalog", label: "Catalog", icon: "inventory-2", route: "/catalog", matches: ["/catalog", "/product", "/season"] },
-  { key: "cart", label: "Cart", icon: "shopping-cart", route: "/cart", matches: ["/cart"] },
+  { key: "home", labelKey: "nav_home", icon: "home-filled", route: "/home", matches: ["/home"] },
+  { key: "catalog", labelKey: "nav_catalog", icon: "inventory-2", route: "/catalog", matches: ["/catalog", "/product", "/season"] },
+  { key: "cart", labelKey: "nav_cart", icon: "shopping-cart", route: "/cart", matches: ["/cart"] },
   {
     key: "account",
-    label: "Account",
+    labelKey: "account",
     icon: "person",
     route: "/profile",
     matches: ["/profile", "/settings", "/myplants", "/about", "/help", "/feedback", "/flower", "/plant-register", "/care", "/quicktip"],
@@ -35,6 +36,7 @@ export function BottomNav() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { totalItems } = useCart();
+  const { t } = useLanguage();
 
   return (
     <View style={[styles.shell, { paddingBottom: Math.max(insets.bottom, 10) }]}>
@@ -66,7 +68,7 @@ export function BottomNav() {
                   </View>
                 ) : null}
               </View>
-              <Text style={[styles.label, active ? styles.labelActive : null]}>{item.label}</Text>
+              <Text style={[styles.label, active ? styles.labelActive : null]}>{t(item.labelKey)}</Text>
             </Pressable>
           );
         })}

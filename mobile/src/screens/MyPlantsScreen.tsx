@@ -13,70 +13,10 @@ import { deletePlant, getPlants } from "../lib/api/plants";
 import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 import type { Plant } from "../types/plants";
 
-type LanguageCode = "en" | "si" | "ta";
-
-const plantsCopy: Record<
-  LanguageCode,
-  {
-    loading: string;
-    hello: string;
-    title: string;
-    subtitle: string;
-    tracked: string;
-    attention: string;
-    habits: string;
-    emptyTitle: string;
-    emptyText: string;
-    needsCare: string;
-    stable: string;
-  }
-> = {
-  en: {
-    loading: "Loading plants...",
-    hello: "Hello Gardener!",
-    title: "My Plants",
-    subtitle: "Check plant health, review alerts, and jump into each flower profile in one tap.",
-    tracked: "Tracked Plants",
-    attention: "Need Attention",
-    habits: "Healthy habits grow stronger flowers. Tap any card to open full details.",
-    emptyTitle: "No plants added yet",
-    emptyText: "Start tracking your flowers to build your mobile garden dashboard here.",
-    needsCare: "Needs care",
-    stable: "Stable",
-  },
-  si: {
-    loading: "පැල පූරණය වෙමින්...",
-    hello: "හෙලෝ වගාකරු!",
-    title: "මගේ පැල",
-    subtitle: "පැල සෞඛ්‍යය බලන්න, අනතුරු ඇඟවීම් සමාලෝචනය කරන්න, සහ එක් ටැප් එකකින් මල් පැතිකඩ විවෘත කරන්න.",
-    tracked: "අනුගමනය කරන පැල",
-    attention: "අවධානය අවශ්‍යයි",
-    habits: "සෞඛ්‍ය සම්පන්න පුරුදු මල් වඩා ශක්තිමත් කරයි. සම්පූර්ණ විස්තර සඳහා ඕනෑම කාඩ්පතක් තට්ටු කරන්න.",
-    emptyTitle: "තවම පැල එකතු කර නැත",
-    emptyText: "මෙහි ඔබගේ ජංගම උද්‍යාන පුවරුව ගොඩනඟා ගැනීමට ඔබගේ මල් අනුගමනය කිරීම ආරම්භ කරන්න.",
-    needsCare: "සැලකිල්ල අවශ්‍යයි",
-    stable: "ස්ථිරයි",
-  },
-  ta: {
-    loading: "செடிகள் ஏற்றப்படுகின்றன...",
-    hello: "வணக்கம் தோட்டக்காரரே!",
-    title: "என் செடிகள்",
-    subtitle: "செடி ஆரோக்கியத்தை பாருங்கள், எச்சரிக்கைகளை சரிபாருங்கள், மற்றும் ஒரு தொடுதலில் ஒவ்வொரு மலர் சுயவிவரத்திற்கும் செல்லுங்கள்.",
-    tracked: "கண்காணிக்கும் செடிகள்",
-    attention: "கவனம் தேவை",
-    habits: "ஆரோக்கியமான பழக்கங்கள் மலர்களை வலுப்படுத்தும். முழு விவரங்களைத் திறக்க எந்த அட்டையையும் தொட்டு பார்க்கவும்.",
-    emptyTitle: "இதுவரை செடிகள் சேர்க்கப்படவில்லை",
-    emptyText: "இங்கே உங்கள் மொபைல் தோட்ட டாஷ்போர்டை உருவாக்க உங்கள் மலர்களை கண்காணிக்கத் தொடங்குங்கள்.",
-    needsCare: "பராமரிப்பு தேவை",
-    stable: "நிலையாக உள்ளது",
-  },
-};
-
 export function MyPlantsScreen() {
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
-  const { languageCode, t } = useLanguage();
-  const copy = plantsCopy[languageCode] || plantsCopy.en;
+  const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const [plants, setPlants] = useState<Plant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -131,10 +71,10 @@ export function MyPlantsScreen() {
     try {
       await deletePlant(plantId);
       setPlants((previous) => previous.filter((entry) => (entry.id || entry._id) !== plantId));
-      showStatus(`Your ${plant.name} deleted.`);
+      showStatus(t("plant_deleted", { name: plant.name }));
       await loadPlants();
     } catch (error) {
-      showStatus(error instanceof Error ? error.message : "Check backend connectivity and try again.");
+      showStatus(error instanceof Error ? error.message : t("backend_try_again"));
     } finally {
       setDeletingId(null);
     }
@@ -162,7 +102,7 @@ export function MyPlantsScreen() {
 
       {loading ? (
         <View style={styles.loadingCard}>
-          <Text style={styles.loadingText}>{copy.loading}</Text>
+          <Text style={styles.loadingText}>{t("my_plants_loading")}</Text>
         </View>
       ) : (
         <>
@@ -172,9 +112,9 @@ export function MyPlantsScreen() {
             </View>
 
             <View style={styles.headerCopy}>
-              <Text style={styles.helloText}>{copy.hello}</Text>
-              <Text style={styles.heading}>{copy.title}</Text>
-              <Text style={styles.subtitle}>{copy.subtitle}</Text>
+              <Text style={styles.helloText}>{t("my_plants_hello")}</Text>
+              <Text style={styles.heading}>{t("my_plants_title")}</Text>
+              <Text style={styles.subtitle}>{t("my_plants_subtitle")}</Text>
             </View>
           </View>
 
@@ -185,7 +125,7 @@ export function MyPlantsScreen() {
               </View>
               <View>
                 <Text style={styles.summaryStrong}>{plants.length}</Text>
-                <Text style={styles.summaryLabel}>{copy.tracked}</Text>
+                <Text style={styles.summaryLabel}>{t("my_plants_tracked")}</Text>
               </View>
             </View>
 
@@ -195,14 +135,14 @@ export function MyPlantsScreen() {
               </View>
               <View>
                 <Text style={styles.summaryStrong}>{attentionCount}</Text>
-                <Text style={styles.summaryLabel}>{copy.attention}</Text>
+                <Text style={styles.summaryLabel}>{t("my_plants_attention")}</Text>
               </View>
             </View>
           </View>
 
           <View style={styles.summaryPill}>
             <MaterialIcons name="auto-awesome" size={14} color={colors.primaryDark} />
-            <Text style={styles.summaryPillText}>{copy.habits}</Text>
+            <Text style={styles.summaryPillText}>{t("my_plants_habits")}</Text>
           </View>
 
           {status ? (
@@ -213,7 +153,7 @@ export function MyPlantsScreen() {
 
           <Pressable onPress={() => router.push("/plant-register")} style={styles.registerButton}>
             <MaterialIcons name="add" size={18} color={colors.white} />
-            <Text style={styles.registerButtonText}>Register New Plant</Text>
+            <Text style={styles.registerButtonText}>{t("register_new_plant")}</Text>
           </Pressable>
 
           {plants.length === 0 ? (
@@ -221,8 +161,8 @@ export function MyPlantsScreen() {
               <View style={styles.emptyIcon}>
                 <MaterialIcons name="spa" size={26} color="#2C7A57" />
               </View>
-              <Text style={styles.emptyTitle}>{copy.emptyTitle}</Text>
-              <Text style={styles.emptyText}>{copy.emptyText}</Text>
+              <Text style={styles.emptyTitle}>{t("my_plants_empty_title")}</Text>
+              <Text style={styles.emptyText}>{t("my_plants_empty_text")}</Text>
             </View>
           ) : (
             <View style={styles.plantsGrid}>
@@ -237,7 +177,7 @@ export function MyPlantsScreen() {
                     style={[styles.plantCard, plant.warning ? styles.plantCardWarning : null]}
                   >
                     <Pressable
-                      accessibilityLabel="Delete plant"
+                      accessibilityLabel={t("delete_plant")}
                       disabled={deletingId === (plant.id || plant._id)}
                       onPress={(event) => {
                         event.stopPropagation();
@@ -265,7 +205,7 @@ export function MyPlantsScreen() {
                         <Text style={styles.plantName}>{plant.name}</Text>
                         <View style={[styles.statusChip, plant.warning ? styles.statusChipWarning : styles.statusChipGood]}>
                           <Text style={[styles.statusChipText, plant.warning ? styles.statusChipTextWarning : styles.statusChipTextGood]}>
-                            {plant.warning ? copy.needsCare : copy.stable}
+                            {plant.warning ? t("my_plants_needs_care") : t("my_plants_stable")}
                           </Text>
                         </View>
                       </View>
@@ -274,7 +214,7 @@ export function MyPlantsScreen() {
                         <Text style={[styles.plantInfoText, plant.warning ? styles.plantInfoTextDanger : null]}>{plant.info}</Text>
                       ) : null}
                       <Text style={styles.plantMetaText}>
-                        {[plant.species, plant.location, plant.wateringFrequency].filter(Boolean).join(" • ") || "Open full profile for care details"}
+                        {[plant.species, plant.location, plant.wateringFrequency].filter(Boolean).join(" - ") || t("open_profile_care_details")}
                       </Text>
 
                       {plant.badges?.length ? (

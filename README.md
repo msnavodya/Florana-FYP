@@ -27,7 +27,7 @@ Main capabilities:
 - AI-powered flower plant disease detection from image uploads
 - Flower plant health monitoring and flower profile management
 - Growth tracking with charts
-- Care reminders and quick tips
+- Care reminders, quick tips, and a local Quick Tip community space
 - Seasonal flower plant shop with cart and checkout flow
 - Admin dashboard for managing users, flower plants, products, feedback, and orders
 
@@ -44,6 +44,46 @@ Completed project areas:
 - ML dataset download and training workflow is documented and scripted in `ml_pipeline/`.
 - Root npm scripts are available for running the backend, mobile app, admin dashboard, and legacy web client.
 
+## Documentation Map
+
+Use these files depending on what you need:
+
+- `README.md`
+  Full repository overview, architecture, setup, backend routes, and module summary
+- `mobile/README.md`
+  Detailed guide for the Expo mobile app, screens, translations, reminders, and Expo startup flow
+- `PAYMENT_SYSTEM_GUIDE.md`
+  Payment-specific implementation notes
+
+## Repository Modules
+
+Top-level modules in this repository:
+
+| Folder | Purpose |
+| --- | --- |
+| `mobile/` | Main Expo React Native application |
+| `backend/` | FastAPI backend, auth, AI model runtime, storage, payments, and reminder APIs |
+| `admin-dashboard/` | React + Vite admin management dashboard |
+| `florana/` | Older legacy React web client kept for reference |
+| `ml_pipeline/` | Dataset download and model training workflow |
+| `uploads/` | Local development upload storage |
+
+## Current Mobile Notes
+
+The mobile app currently includes:
+
+- Expo Router-based entry routes in `mobile/app/`
+- Screen implementations in `mobile/src/screens/`
+- Shared providers in `mobile/src/context/`
+- Shared translations in `mobile/src/utils/translations.ts`
+- Translation fixes and newer mobile copy in `mobile/src/utils/translationOverrides.ts`
+
+Recent mobile documentation points:
+
+- Care Reminder language content now uses the shared translation system instead of isolated page-only copy
+- Supported mobile language choices are English, Sinhala, Tamil, Spanish, French, Arabic, Hindi, and Chinese
+- Mobile-specific setup and troubleshooting are documented in `mobile/README.md`
+
 ## 3. Features
 
 ### Core Features
@@ -54,6 +94,7 @@ Completed project areas:
 - My Flower Plants dashboard with flower profile view and delete support
 - Flower plant care tracking and growth history
 - Care reminders and custom care notes
+- Quick Tip community for sharing seeds, posting care ideas, liking posts, commenting, and chatting locally
 - Flower plant shop with seasonal catalog, product details, cart, and checkout
 - Sell Flower Plants flow for adding shop listings
 - Feedback, profile, settings, help, and about screens
@@ -64,6 +105,7 @@ Completed project areas:
 - Location-aware flower plant registration using Sri Lankan city options
 - Seasonal catalog for Spring, Summer, Autumn, and Winter flower plants
 - Personalized quick tips based on time, season, and tracked flower plants
+- Device-saved Quick Tip community posts, likes, comments, and chat messages using AsyncStorage
 - Growth tracking charts for registered flower plants
 - Multi-language app text support
 - Currency switching for shop prices
@@ -73,7 +115,6 @@ Completed project areas:
 ### Planned / Future Advanced Features
 
 - Live weather API integration for flower care recommendations
-- Community flower plant sharing and discussion features
 - Push notification improvements
 - Chatbot flower care assistant
 - Flower plant doctor consultation workflow
@@ -89,7 +130,7 @@ Completed project areas:
 - Register Flower Plant
 - Flower plant profile / flower profile
 - Growth chart view
-- Quick Tips
+- Quick Tips with community posts, likes, comments, and chat
 - Care Reminder
 - Catalog
 - Season catalog

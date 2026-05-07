@@ -11,14 +11,14 @@ import { useLanguage } from "../context/LanguageContext";
 import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 
 const tipOptions = [
-  { key: "soil", title: "Soil Tips", tip: "Use well-draining soil.", detail: "Helps prevent root rot and keeps roots healthy." },
-  { key: "sunlight", title: "Sunlight Tips", tip: "Place in indirect sunlight.", detail: "Avoid harsh noon sun for most indoor tropical plants." },
-  { key: "watering", title: "Watering Tips", tip: "Water deeply once a week.", detail: "Ensure excess water drains to avoid soggy roots." },
-  { key: "fertilizer", title: "Fertilizer Tips", tip: "Use organic fertilizer every 2 weeks.", detail: "Supports growth without chemical buildup." },
-  { key: "pest", title: "Pest Control Tips", tip: "Check leaves for insects weekly.", detail: "Early detection prevents infestations." },
-  { key: "seasonal", title: "Seasonal Care Tips", tip: "Reduce watering during winter.", detail: "Plants often go into rest mode when cooler." },
-  { key: "diy", title: "DIY Hacks", tip: "Use coffee grounds for soil enrichment.", detail: "Mix into compost for extra nutrients; don't overdo it." },
-  { key: "pairing", title: "Plant Pairing Tips", tip: "Group plants with similar water needs.", detail: "This avoids over and under watering issues for pairs." },
+  { key: "soil" },
+  { key: "sunlight" },
+  { key: "watering" },
+  { key: "fertilizer" },
+  { key: "pest" },
+  { key: "seasonal" },
+  { key: "diy" },
+  { key: "pairing" },
 ] as const;
 
 type CommunityPost = {
@@ -30,6 +30,7 @@ type CommunityPost = {
   likes: number;
   liked: boolean;
   comments: string[];
+  mine?: boolean;
 };
 
 type ChatMessage = {
@@ -37,42 +38,47 @@ type ChatMessage = {
   author: string;
   message: string;
   createdAt: string;
+  mine?: boolean;
 };
 
 const COMMUNITY_POSTS_KEY = "florana.quicktip.community.posts";
 const COMMUNITY_CHAT_KEY = "florana.quicktip.community.chat";
 
-const starterPosts: CommunityPost[] = [
-  {
-    id: "seed-swap",
-    author: "Florana Team",
-    title: "Share seeds after pruning",
-    body: "Keep dry mature seeds in a paper packet with the flower name and month. It makes swapping easier.",
-    tag: "Share seeds",
-    likes: 8,
-    liked: false,
-    comments: ["I label mine by color too.", "Paper packets work better than plastic for me."],
-  },
-  {
-    id: "watering-tip",
-    author: "Garden Friend",
-    title: "Morning watering reminder",
-    body: "Water flowering plants early in the morning so leaves dry before evening and fungal problems stay lower.",
-    tag: "Discuss tips",
-    likes: 5,
-    liked: false,
-    comments: ["This helped my roses.", "Good for rainy weeks."],
-  },
-];
+function localizeStarterPosts(savedPosts: CommunityPost[], localizedStarterPosts: CommunityPost[]) {
+  return savedPosts.map((post) => {
+    const starterPost = localizedStarterPosts.find((item) => item.id === post.id);
+    if (!starterPost) {
+      return post;
+    }
 
-const starterChat: ChatMessage[] = [
-  {
-    id: "welcome",
-    author: "Florana",
-    message: "Welcome to the community chat. Share seed swaps, care ideas, and quick questions here.",
-    createdAt: new Date().toISOString(),
-  },
-];
+    const extraComments = post.comments.slice(starterPost.comments.length);
+    return {
+      ...post,
+      author: starterPost.author,
+      title: starterPost.title,
+      body: starterPost.body,
+      tag: starterPost.tag,
+      comments: [...starterPost.comments, ...extraComments],
+      mine: false,
+    };
+  });
+}
+
+function localizeStarterChat(savedMessages: ChatMessage[], localizedStarterChat: ChatMessage[]) {
+  return savedMessages.map((message) => {
+    const starterMessage = localizedStarterChat.find((item) => item.id === message.id);
+    if (!starterMessage) {
+      return message;
+    }
+
+    return {
+      ...message,
+      author: starterMessage.author,
+      message: starterMessage.message,
+      mine: false,
+    };
+  });
+}
 
 export function QuickTipScreen() {
   const { height, width } = useWindowDimensions();
@@ -80,16 +86,68 @@ export function QuickTipScreen() {
   const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTipKey, setActiveTipKey] = useState<(typeof tipOptions)[number]["key"]>("soil");
-  const [posts, setPosts] = useState<CommunityPost[]>(starterPosts);
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [ideaTitle, setIdeaTitle] = useState("");
   const [ideaBody, setIdeaBody] = useState("");
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(starterChat);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatDraft, setChatDraft] = useState("");
 
+  const translatedTips = useMemo(
+    () =>
+      tipOptions.map((item) => ({
+        key: item.key,
+        title: t(`quick_tip_topic_${item.key}_title`),
+        tip: t(`quick_tip_topic_${item.key}_tip`),
+        detail: t(`quick_tip_topic_${item.key}_detail`),
+      })),
+    [t]
+  );
+
+  const starterPosts = useMemo<CommunityPost[]>(
+    () => [
+      {
+        id: "seed-swap",
+        author: t("quick_tip_author_team"),
+        title: t("quick_tip_post_seed_title"),
+        body: t("quick_tip_post_seed_body"),
+        tag: t("quick_tip_tag_share_seeds"),
+        likes: 8,
+        liked: false,
+        comments: [t("quick_tip_post_seed_comment_1"), t("quick_tip_post_seed_comment_2")],
+        mine: false,
+      },
+      {
+        id: "watering-tip",
+        author: t("quick_tip_author_friend"),
+        title: t("quick_tip_post_watering_title"),
+        body: t("quick_tip_post_watering_body"),
+        tag: t("quick_tip_tag_discuss_tips"),
+        likes: 5,
+        liked: false,
+        comments: [t("quick_tip_post_watering_comment_1"), t("quick_tip_post_watering_comment_2")],
+        mine: false,
+      },
+    ],
+    [t]
+  );
+
+  const starterChat = useMemo<ChatMessage[]>(
+    () => [
+      {
+        id: "welcome",
+        author: "Florana",
+        message: t("quick_tip_chat_welcome"),
+        createdAt: new Date().toISOString(),
+        mine: false,
+      },
+    ],
+    [t]
+  );
+
   const activeTip = useMemo(
-    () => tipOptions.find((item) => item.key === activeTipKey) || tipOptions[0],
-    [activeTipKey]
+    () => translatedTips.find((item) => item.key === activeTipKey) || translatedTips[0],
+    [activeTipKey, translatedTips]
   );
 
   useEffect(() => {
@@ -107,14 +165,22 @@ export function QuickTipScreen() {
         }
 
         if (savedPosts) {
-          setPosts(JSON.parse(savedPosts) as CommunityPost[]);
+          setPosts(localizeStarterPosts(JSON.parse(savedPosts) as CommunityPost[], starterPosts));
+        } else {
+          setPosts(starterPosts);
         }
 
         if (savedChat) {
-          setChatMessages(JSON.parse(savedChat) as ChatMessage[]);
+          setChatMessages(localizeStarterChat(JSON.parse(savedChat) as ChatMessage[], starterChat));
+        } else {
+          setChatMessages(starterChat);
         }
       } catch {
         // Keep starter community content when local storage is unavailable.
+        if (mounted) {
+          setPosts(starterPosts);
+          setChatMessages(starterChat);
+        }
       }
     };
 
@@ -123,7 +189,7 @@ export function QuickTipScreen() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [starterChat, starterPosts]);
 
   const persistPosts = async (nextPosts: CommunityPost[]) => {
     setPosts(nextPosts);
@@ -135,24 +201,30 @@ export function QuickTipScreen() {
     await AsyncStorage.setItem(COMMUNITY_CHAT_KEY, JSON.stringify(nextMessages));
   };
 
+  useEffect(() => {
+    setPosts((current) => localizeStarterPosts(current, starterPosts));
+    setChatMessages((current) => localizeStarterChat(current, starterChat));
+  }, [starterChat, starterPosts]);
+
   const handleAddIdea = async () => {
     const title = ideaTitle.trim();
     const body = ideaBody.trim();
 
     if (!title || !body) {
-      Alert.alert("Add your idea", "Write a short title and idea before posting.");
+      Alert.alert(t("quick_tip_add_idea_title"), t("quick_tip_add_idea_alert"));
       return;
     }
 
     const nextPost: CommunityPost = {
       id: `${Date.now()}`,
-      author: "You",
+      author: t("quick_tip_author_you"),
       title,
       body,
-      tag: title.toLowerCase().includes("seed") ? "Share seeds" : "Care idea",
+      tag: title.toLowerCase().includes("seed") ? t("quick_tip_tag_share_seeds") : t("quick_tip_tag_care_idea"),
       likes: 0,
       liked: false,
       comments: [],
+      mine: true,
     };
 
     await persistPosts([nextPost, ...posts]);
@@ -199,9 +271,10 @@ export function QuickTipScreen() {
 
     const nextMessage: ChatMessage = {
       id: `${Date.now()}`,
-      author: "You",
+      author: t("quick_tip_author_you"),
       message,
       createdAt: new Date().toISOString(),
+      mine: true,
     };
 
     await persistChat([...chatMessages, nextMessage]);
@@ -224,8 +297,8 @@ export function QuickTipScreen() {
 
       <View style={[styles.heroCard, compact ? styles.heroCardCompact : null]}>
         <Text style={styles.heroEyebrow}>{t("quick_tip_card")}</Text>
-        <Text style={styles.heroTitle}>Quick Tip Community</Text>
-        <Text style={styles.heroSubtitle}>Tap a topic, share seeds, discuss tips, and add your own care ideas.</Text>
+        <Text style={styles.heroTitle}>{t("quick_tip_community_title")}</Text>
+        <Text style={styles.heroSubtitle}>{t("quick_tip_community_subtitle")}</Text>
       </View>
 
       <View style={styles.tipsList}>
@@ -236,7 +309,7 @@ export function QuickTipScreen() {
             style={[styles.tipChip, activeTipKey === option.key ? styles.tipChipActive : null]}
           >
             <Text style={[styles.tipChipText, activeTipKey === option.key ? styles.tipChipTextActive : null]}>
-              {option.title}
+              {t(`quick_tip_topic_${option.key}_title`)}
             </Text>
           </Pressable>
         ))}
@@ -258,17 +331,17 @@ export function QuickTipScreen() {
       <View style={styles.communityHeader}>
         <View style={styles.communityTitleRow}>
           <MaterialIcons name="forum" size={20} color={colors.primaryDark} />
-          <Text style={styles.sectionTitle}>Community</Text>
+          <Text style={styles.sectionTitle}>{t("quick_tip_community_section")}</Text>
         </View>
-        <Text style={styles.sectionSubtitle}>Share seeds, discuss care tips, and comment on ideas from other plant lovers.</Text>
+        <Text style={styles.sectionSubtitle}>{t("quick_tip_community_section_subtitle")}</Text>
       </View>
 
       <View style={styles.ideaComposer}>
-        <Text style={styles.composerTitle}>Add your idea</Text>
+        <Text style={styles.composerTitle}>{t("quick_tip_add_idea_title")}</Text>
         <TextInput
           value={ideaTitle}
           onChangeText={setIdeaTitle}
-          placeholder="Title, for example Seed swap idea"
+          placeholder={t("quick_tip_add_idea_placeholder_title")}
           placeholderTextColor={colors.textMuted}
           style={styles.input}
         />
@@ -276,13 +349,13 @@ export function QuickTipScreen() {
           value={ideaBody}
           onChangeText={setIdeaBody}
           multiline
-          placeholder="Write your flower care idea, seed note, or quick tip"
+          placeholder={t("quick_tip_add_idea_placeholder_body")}
           placeholderTextColor={colors.textMuted}
           style={[styles.input, styles.ideaInput]}
         />
         <Pressable onPress={() => void handleAddIdea()} style={styles.postButton}>
           <MaterialIcons name="add-circle-outline" size={18} color={colors.white} />
-          <Text style={styles.postButtonText}>Post idea</Text>
+          <Text style={styles.postButtonText}>{t("quick_tip_post_idea")}</Text>
         </Pressable>
       </View>
 
@@ -295,7 +368,7 @@ export function QuickTipScreen() {
               </View>
               <View style={styles.postTitleBlock}>
                 <Text style={styles.postTitle}>{post.title}</Text>
-                <Text style={styles.postMeta}>{post.author} - {post.tag}</Text>
+                <Text style={styles.postMeta}>{post.mine ? t("quick_tip_author_you") : post.author} - {post.tag}</Text>
               </View>
             </View>
 
@@ -320,7 +393,7 @@ export function QuickTipScreen() {
             {post.comments.length > 0 ? (
               <View style={styles.commentList}>
                 {post.comments.map((comment, index) => (
-                  <Text key={`${post.id}-${index}`} style={styles.commentText}>You: {comment}</Text>
+                  <Text key={`${post.id}-${index}`} style={styles.commentText}>{comment}</Text>
                 ))}
               </View>
             ) : null}
@@ -329,7 +402,7 @@ export function QuickTipScreen() {
               <TextInput
                 value={commentDrafts[post.id] || ""}
                 onChangeText={(value) => setCommentDrafts((current) => ({ ...current, [post.id]: value }))}
-                placeholder="Add a comment"
+                placeholder={t("quick_tip_add_comment")}
                 placeholderTextColor={colors.textMuted}
                 style={styles.commentInput}
               />
@@ -344,13 +417,13 @@ export function QuickTipScreen() {
       <View style={styles.chatBox}>
         <View style={styles.communityTitleRow}>
           <MaterialIcons name="chat" size={20} color={colors.primaryDark} />
-          <Text style={styles.sectionTitle}>Chat Section</Text>
+          <Text style={styles.sectionTitle}>{t("quick_tip_chat_section")}</Text>
         </View>
 
         <View style={styles.chatMessages}>
           {chatMessages.slice(-5).map((item) => (
-            <View key={item.id} style={[styles.chatBubble, item.author === "You" ? styles.chatBubbleMine : null]}>
-              <Text style={styles.chatAuthor}>{item.author}</Text>
+            <View key={item.id} style={[styles.chatBubble, item.mine ? styles.chatBubbleMine : null]}>
+              <Text style={styles.chatAuthor}>{item.mine ? t("quick_tip_author_you") : item.author}</Text>
               <Text style={styles.chatText}>{item.message}</Text>
             </View>
           ))}
@@ -360,7 +433,7 @@ export function QuickTipScreen() {
           <TextInput
             value={chatDraft}
             onChangeText={setChatDraft}
-            placeholder="Ask or share a quick care note"
+            placeholder={t("quick_tip_chat_placeholder")}
             placeholderTextColor={colors.textMuted}
             style={styles.chatInput}
           />

@@ -77,8 +77,8 @@ export function RegisterScreen() {
         contact: contact.trim() || null,
         location: location || null,
       });
-      Alert.alert("Account saved", "Your Florana account was created successfully.", [
-        { text: "Continue", onPress: () => router.replace("/home") },
+      Alert.alert(t("account_saved"), t("account_saved_body"), [
+        { text: t("continue_label"), onPress: () => router.replace("/home") },
       ]);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : t("register_failed"));

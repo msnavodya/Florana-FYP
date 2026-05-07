@@ -7,7 +7,7 @@ export interface FeedbackEntry {
 
 export interface AppSettings {
   fontSize: "Small" | "Medium" | "Large";
-  language: "English" | "Sinhala" | "Tamil";
+  language: "English" | "Sinhala" | "Tamil" | "Spanish" | "French" | "Arabic" | "Hindi" | "Chinese";
   wateringReminders: boolean;
   diseaseAlerts: boolean;
   weeklySummary: boolean;

@@ -1,47 +1,54 @@
 import { useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { useLanguage } from "../context/LanguageContext";
+import { availableLanguages, languageNameKeyMap, useLanguage } from "../context/LanguageContext";
 import { colors, radii, shadows, spacing } from "../theme/tokens";
 
-const options = [
-  { code: "EN", label: "English", key: "language_english" },
-  { code: "SI", label: "Sinhala", key: "language_sinhala" },
-  { code: "TA", label: "Tamil", key: "language_tamil" },
-] as const;
+const codeMap = {
+  English: "EN",
+  Sinhala: "SI",
+  Tamil: "TA",
+  Spanish: "ES",
+  French: "FR",
+  Arabic: "AR",
+  Hindi: "HI",
+  Chinese: "ZH",
+} as const;
 
 export function LanguageSelector() {
   const { language, setLanguage, t } = useLanguage();
   const [open, setOpen] = useState(false);
 
-  const selected = options.find((item) => item.label === language) || options[0];
+  const selectedCode = codeMap[language];
 
   return (
     <>
       <Pressable accessibilityLabel={t("language")} onPress={() => setOpen(true)} style={styles.selector}>
         <Text style={styles.icon}>A</Text>
         <View style={styles.codeBadge}>
-          <Text style={styles.codeText}>{selected.code}</Text>
+          <Text style={styles.codeText}>{selectedCode}</Text>
         </View>
       </Pressable>
 
       <Modal transparent animationType="fade" visible={open} onRequestClose={() => setOpen(false)}>
         <Pressable onPress={() => setOpen(false)} style={styles.overlay}>
           <Pressable onPress={(event) => event.stopPropagation()} style={styles.menu}>
-            {options.map((item) => {
-              const active = item.label === language;
+            {availableLanguages.map((item) => {
+              const active = item === language;
 
               return (
                 <Pressable
-                  key={item.label}
+                  key={item}
                   onPress={() => {
-                    void setLanguage(item.label);
+                    void setLanguage(item);
                     setOpen(false);
                   }}
                   style={[styles.option, active ? styles.activeOption : null]}
                 >
-                  <Text style={styles.optionCode}>{item.code}</Text>
-                  <Text style={[styles.optionText, active ? styles.activeOptionText : null]}>{t(item.key)}</Text>
+                  <Text style={styles.optionCode}>{codeMap[item]}</Text>
+                  <Text style={[styles.optionText, active ? styles.activeOptionText : null]}>
+                    {t(languageNameKeyMap[item])}
+                  </Text>
                 </Pressable>
               );
             })}

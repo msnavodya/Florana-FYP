@@ -29,7 +29,7 @@ export function FeedbackScreen() {
   const [status, setStatus] = useState("");
   const { t } = useLanguage();
   const { addFeedback, refreshFeedbacks } = useSettings();
-  const selectedLabel = rating > 0 ? `${rating}/5 selected` : "No rating selected";
+  const selectedLabel = rating > 0 ? t("feedback_rating_selected", { rating }) : t("feedback_no_rating_selected");
 
   useEffect(() => {
     void refreshFeedbacks();
@@ -42,7 +42,7 @@ export function FeedbackScreen() {
 
   const handleSubmit = async () => {
     if (!feedback.trim()) {
-      showStatus("Write your feedback first.");
+      showStatus(t("feedback_write_first"));
       return;
     }
 
@@ -68,19 +68,19 @@ export function FeedbackScreen() {
           <Image source={brandAssets.logo} style={styles.logo} />
         </View>
         <Text style={styles.heroEyebrow}>{t("feedback_card")}</Text>
-        <Text style={[styles.heroTitle, compact ? styles.heroTitleCompact : null]}>Professional feedback hub</Text>
+        <Text style={[styles.heroTitle, compact ? styles.heroTitleCompact : null]}>{t("feedback_hero_title")}</Text>
         <Text style={[styles.heroSubtitle, compact ? styles.heroSubtitleCompact : null]}>
-          Send a rating, write a clear message, and reach support from one polished screen.
+          {t("feedback_hero_body")}
         </Text>
 
         <View style={[styles.metricRow, compact ? styles.metricRowCompact : null]}>
           <View style={[styles.metricCard, compact ? styles.metricCardCompact : null]}>
             <Text style={styles.metricValue}>24h</Text>
-            <Text style={styles.metricLabel}>Response goal</Text>
+            <Text style={styles.metricLabel}>{t("feedback_goal_label")}</Text>
           </View>
           <View style={[styles.metricCard, compact ? styles.metricCardCompact : null]}>
             <Text style={styles.metricValue}>3</Text>
-            <Text style={styles.metricLabel}>Support paths</Text>
+            <Text style={styles.metricLabel}>{t("feedback_paths_label")}</Text>
           </View>
         </View>
       </View>
@@ -102,7 +102,7 @@ export function FeedbackScreen() {
           {[1, 2, 3, 4, 5].map((star) => (
             <Pressable
               key={star}
-              accessibilityLabel={`Rate ${star} stars`}
+              accessibilityLabel={t("feedback_rate_stars", { star })}
               onPress={() => setRating(star)}
               style={[styles.starButton, compact ? styles.starButtonCompact : null]}
             >
@@ -126,8 +126,8 @@ export function FeedbackScreen() {
         />
 
         <View style={styles.composerFooter}>
-          <Text style={styles.composerHint}>Clear, short feedback helps us improve faster.</Text>
-          <Text style={styles.composerCount}>{feedback.trim().length} chars</Text>
+          <Text style={styles.composerHint}>{t("feedback_hint_clear_short")}</Text>
+          <Text style={styles.composerCount}>{t("feedback_chars", { count: feedback.trim().length })}</Text>
         </View>
 
         <PrimaryButton label={t("submit_feedback")} onPress={() => void handleSubmit()} />

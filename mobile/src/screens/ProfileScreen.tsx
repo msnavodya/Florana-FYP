@@ -8,6 +8,7 @@ import { AppMenu } from "../components/AppMenu";
 import { BottomNav } from "../components/BottomNav";
 import { Screen } from "../components/Screen";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 import { useSettings } from "../context/SettingsContext";
 import { storageKeys } from "../lib/storage/keys";
 import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
@@ -43,6 +44,7 @@ export function ProfileScreen() {
   });
   const { user } = useAuth();
   const { reminders } = useSettings();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -74,7 +76,7 @@ export function ProfileScreen() {
     void loadProfile();
   }, [reminders]);
 
-  const displayName = user?.full_name || storedUser?.full_name || storedUser?.name || "Guest Gardener";
+  const displayName = user?.full_name || storedUser?.full_name || storedUser?.name || t("guest_gardener");
   const displayEmail = user?.email || storedUser?.email || "guest@florana.app";
   const displayId = user?.id || user?._id || storedUser?.id || storedUser?._id || "demo-001";
 
@@ -94,18 +96,16 @@ export function ProfileScreen() {
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
 
       <View style={styles.headerRow}>
-        <Pressable accessibilityLabel="Go back" onPress={() => router.back()} style={styles.iconButton}>
+        <Pressable accessibilityLabel={t("go_back")} onPress={() => router.back()} style={styles.iconButton}>
           <MaterialIcons name="arrow-back" size={20} color={colors.text} />
         </Pressable>
 
         <View style={[styles.headerCard, compact ? styles.headerCardCompact : null]}>
-          <Text style={styles.headerTitle}>Your Profile</Text>
-          <Text style={styles.headerSubtitle}>
-            A cleaner mobile view of your account, plant activity, and quick actions.
-          </Text>
+          <Text style={styles.headerTitle}>{t("profile_title")}</Text>
+          <Text style={styles.headerSubtitle}>{t("profile_subtitle")}</Text>
         </View>
 
-        <Pressable accessibilityLabel="Open menu" onPress={() => setMenuOpen(true)} style={styles.iconButton}>
+        <Pressable accessibilityLabel={t("open_menu")} onPress={() => setMenuOpen(true)} style={styles.iconButton}>
           <MaterialIcons name="menu" size={18} color={colors.text} />
         </Pressable>
       </View>
@@ -115,7 +115,7 @@ export function ProfileScreen() {
           <Text style={styles.avatarText}>{initials}</Text>
         </View>
         <View style={styles.heroCopy}>
-          <Text style={styles.eyebrow}>Florana Account</Text>
+          <Text style={styles.eyebrow}>{t("profile_account_eyebrow")}</Text>
           <Text style={styles.heroName}>{displayName}</Text>
           <Text style={styles.heroEmail}>{displayEmail}</Text>
         </View>
@@ -127,7 +127,7 @@ export function ProfileScreen() {
             <MaterialIcons name="eco" size={18} color="#285D48" />
           </View>
           <Text style={styles.statValue}>{profileStats.plantCount}</Text>
-          <Text style={styles.statLabel}>Tracked plants</Text>
+          <Text style={styles.statLabel}>{t("profile_tracked_plants")}</Text>
         </View>
 
         <View style={styles.statCard}>
@@ -135,26 +135,26 @@ export function ProfileScreen() {
             <MaterialIcons name="notifications-active" size={18} color="#604B8A" />
           </View>
           <Text style={styles.statValue}>{profileStats.reminderCount}</Text>
-          <Text style={styles.statLabel}>Active reminders</Text>
+          <Text style={styles.statLabel}>{t("profile_active_reminders")}</Text>
         </View>
       </View>
 
       <View style={styles.infoCard}>
         <View style={styles.cardHeading}>
           <MaterialIcons name="person" size={18} color={colors.text} />
-          <Text style={styles.cardHeadingText}>Account details</Text>
+          <Text style={styles.cardHeadingText}>{t("profile_account_details")}</Text>
         </View>
 
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>User ID</Text>
+          <Text style={styles.detailLabel}>{t("profile_user_id")}</Text>
           <Text style={styles.detailValue}>{displayId}</Text>
         </View>
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Full name</Text>
+          <Text style={styles.detailLabel}>{t("full_name")}</Text>
           <Text style={styles.detailValue}>{displayName}</Text>
         </View>
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Email</Text>
+          <Text style={styles.detailLabel}>{t("email")}</Text>
           <Text style={styles.detailValue}>{displayEmail}</Text>
         </View>
       </View>
@@ -162,16 +162,13 @@ export function ProfileScreen() {
       <View style={styles.infoCard}>
         <View style={styles.cardHeading}>
           <MaterialIcons name="schedule" size={18} color={colors.text} />
-          <Text style={styles.cardHeadingText}>Live app status</Text>
+          <Text style={styles.cardHeadingText}>{t("profile_live_status")}</Text>
         </View>
 
-        <Text style={styles.liveText}>
-          Your local Florana session is active. Reminder settings and profile details are loading from saved app data in
-          real time.
-        </Text>
+        <Text style={styles.liveText}>{t("profile_live_body")}</Text>
 
         <View style={styles.liveFooter}>
-          <Text style={styles.detailLabel}>Last synced</Text>
+          <Text style={styles.detailLabel}>{t("profile_last_synced")}</Text>
           <Text style={styles.detailValue}>{profileStats.lastSync || "--:--"}</Text>
         </View>
       </View>
@@ -179,11 +176,11 @@ export function ProfileScreen() {
       <View style={styles.actionStack}>
         <Pressable onPress={() => router.push("/plant-register")} style={styles.primaryAction}>
           <MaterialIcons name="add" size={16} color={colors.white} />
-          <Text style={styles.primaryActionText}>Register New Plant</Text>
+          <Text style={styles.primaryActionText}>{t("register_new_plant")}</Text>
         </Pressable>
 
         <Pressable onPress={() => router.push("/care")} style={styles.secondaryAction}>
-          <Text style={styles.secondaryActionText}>Open Care Reminder</Text>
+          <Text style={styles.secondaryActionText}>{t("open_care_reminder")}</Text>
         </Pressable>
       </View>
 

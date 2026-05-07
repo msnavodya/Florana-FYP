@@ -18,49 +18,6 @@ import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 import type { Product } from "../types/shop";
 import { formatPrice, seasons } from "../utils/shop";
 
-type LanguageCode = "en" | "si" | "ta";
-
-const seasonCopy: Record<
-  LanguageCode,
-  {
-    finder: string;
-    allPlants: string;
-    plantsSuffix: string;
-    subtitle: string;
-    results: string;
-    noPlants: string;
-    addToCart: string;
-  }
-> = {
-  en: {
-    finder: "Plant Finder",
-    allPlants: "All Plants",
-    plantsSuffix: "Plants",
-    subtitle: "Shop by season, switch the currency instantly, and keep your cart synced while you browse.",
-    results: "{count} results",
-    noPlants: "No plants available for this season.",
-    addToCart: "Add to Cart",
-  },
-  si: {
-    finder: "පැල සොයන්නා",
-    allPlants: "සියලු පැල",
-    plantsSuffix: "පැල",
-    subtitle: "සමය අනුව සාප්පු යන්න, මුදල් ඒකකය වහාම මාරු කරන්න, සහ බ්‍රවුස් කරන අතරතුර ඔබගේ කරත්තය සම්බන්ධ කර තබන්න.",
-    results: "ප්‍රතිඵල {count}",
-    noPlants: "මෙම සමයට පැල නොමැත.",
-    addToCart: "කරත්තයට දමන්න",
-  },
-  ta: {
-    finder: "செடி கண்டுபிடிப்பான்",
-    allPlants: "அனைத்து செடிகள்",
-    plantsSuffix: "செடிகள்",
-    subtitle: "பருவத்தின்படி வாங்குங்கள், நாணயத்தை உடனே மாற்றுங்கள், உலாவும் போது உங்கள் வண்டியை இணைத்துப் பேணுங்கள்.",
-    results: "{count} முடிவுகள்",
-    noPlants: "இந்த பருவத்திற்கு செடிகள் இல்லை.",
-    addToCart: "வண்டியில் சேர்",
-  },
-};
-
 const seasonTabs = [...seasons.map((season) => season.toLowerCase()), "all"] as const;
 const seasonImages = {
   spring: brandAssets.spring,
@@ -69,7 +26,12 @@ const seasonImages = {
   winter: brandAssets.winter,
 } as const;
 
-const toSeasonLabel = (value: string) => value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+const seasonKeyMap = {
+  spring: "season_spring",
+  summer: "season_summer",
+  autumn: "season_autumn",
+  winter: "season_winter",
+} as const;
 
 export function SeasonScreen() {
   const params = useLocalSearchParams<{ season?: string }>();
@@ -78,8 +40,7 @@ export function SeasonScreen() {
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
   const { totalItems, currency, addItem, removeItem } = useCart();
-  const { t, languageCode } = useLanguage();
-  const copy = seasonCopy[languageCode] || seasonCopy.en;
+  const { t } = useLanguage();
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -131,7 +92,7 @@ export function SeasonScreen() {
 
   const handleAddToCart = async (product: Product) => {
     await addItem(product);
-    showStatus(`${product.name} added to cart.`);
+    showStatus(t("product_added_cart", { name: product.name }));
   };
 
   const handleDeleteProduct = async (product: Product) => {
@@ -144,16 +105,17 @@ export function SeasonScreen() {
       await deleteProduct(product.id);
       await removeItem(product.id);
       setProducts((current) => current.filter((item) => item.id !== product.id));
-      showStatus(`Your ${product.name} deleted.`);
+      showStatus(t("product_deleted", { name: product.name }));
       await loadProducts();
     } catch (error) {
-      showStatus(error instanceof Error ? error.message : "Unable to remove listing.");
+      showStatus(error instanceof Error ? error.message : t("product_remove_failed"));
     } finally {
       setDeletingProductId(null);
     }
   };
 
-  const title = safeSeason === "all" ? copy.allPlants : `${safeSeason.toUpperCase()} ${copy.plantsSuffix}`;
+  const getSeasonLabel = (value: string) => t(seasonKeyMap[value as keyof typeof seasonKeyMap] || "catalog_all_plants");
+  const title = safeSeason === "all" ? t("catalog_all_plants") : t("season_plants_title", { season: getSeasonLabel(safeSeason) });
 
   return (
     <Screen>
@@ -168,7 +130,7 @@ export function SeasonScreen() {
           <LanguageSelector />
           <CurrencySwitcher />
 
-          <Pressable accessibilityLabel="Open cart" onPress={() => router.push("/cart")} style={styles.cartButton}>
+          <Pressable accessibilityLabel={t("open_cart")} onPress={() => router.push("/cart")} style={styles.cartButton}>
             <MaterialIcons name="shopping-cart" size={18} color={colors.text} />
             {totalItems > 0 ? (
               <View style={styles.cartBadge}>
@@ -185,13 +147,13 @@ export function SeasonScreen() {
 
       <View style={[styles.heroCard, compact ? styles.heroCardCompact : null]}>
         <View style={styles.heroTextBlock}>
-          <Text style={styles.heroEyebrow}>{copy.finder}</Text>
+          <Text style={styles.heroEyebrow}>{t("season_finder")}</Text>
           <Text style={[styles.heroTitle, compact ? styles.heroTitleCompact : null]}>{title}</Text>
-          <Text style={[styles.heroSubtitle, compact ? styles.heroSubtitleCompact : null]}>{copy.subtitle}</Text>
+          <Text style={[styles.heroSubtitle, compact ? styles.heroSubtitleCompact : null]}>{t("season_subtitle")}</Text>
         </View>
 
         <View style={styles.heroMetaCard}>
-          <Text style={styles.heroMetaText}>{copy.results.replace("{count}", String(filteredProducts.length))}</Text>
+          <Text style={styles.heroMetaText}>{t("season_results", { count: filteredProducts.length })}</Text>
         </View>
       </View>
 
@@ -211,7 +173,7 @@ export function SeasonScreen() {
               style={[styles.seasonButton, active ? styles.seasonButtonActive : null]}
             >
               <Text style={[styles.seasonButtonText, active ? styles.seasonButtonTextActive : null]}>
-                {item.toUpperCase()}
+                {item === "all" ? t("season_all") : getSeasonLabel(item)}
               </Text>
             </Pressable>
           );
@@ -249,7 +211,7 @@ export function SeasonScreen() {
               >
                 <View style={styles.productVisual}>
                   <Pressable
-                    accessibilityLabel={`Remove ${product.name}`}
+                    accessibilityLabel={t("remove_product", { name: product.name })}
                     disabled={deletingProductId === product.id}
                     onPress={(event) => {
                       event.stopPropagation();
@@ -272,17 +234,17 @@ export function SeasonScreen() {
                       style={styles.productImage}
                     />
                   )}
-                  <Text style={styles.productSeasonChip}>{product.season ? toSeasonLabel(product.season) : toSeasonLabel(safeSeason)}</Text>
+                <Text style={styles.productSeasonChip}>{product.season ? getSeasonLabel(product.season.toLowerCase()) : getSeasonLabel(safeSeason)}</Text>
                 </View>
                 <Text style={styles.productName}>{product.name}</Text>
-                <Text style={styles.productMeta}>{product.season}</Text>
+                <Text style={styles.productMeta}>{product.season ? getSeasonLabel(product.season.toLowerCase()) : ""}</Text>
                 <Text style={styles.productPrice}>{formatPrice(product.price, currency)}</Text>
               </Pressable>
               <View style={styles.productActions}>
-                <PrimaryButton label={copy.addToCart} onPress={() => void handleAddToCart(product)} />
+                <PrimaryButton label={t("add_to_cart")} onPress={() => void handleAddToCart(product)} />
                 <PrimaryButton
                   disabled={deletingProductId === product.id}
-                  label={deletingProductId === product.id ? "Deleting..." : "Delete"}
+                  label={deletingProductId === product.id ? t("deleting") : t("delete")}
                   onPress={() => void handleDeleteProduct(product)}
                   variant="secondary"
                 />
@@ -292,7 +254,7 @@ export function SeasonScreen() {
         </View>
       ) : (
         <View style={styles.emptyCard}>
-          <Text style={styles.emptyText}>{copy.noPlants}</Text>
+          <Text style={styles.emptyText}>{t("season_no_plants")}</Text>
         </View>
       )}
 

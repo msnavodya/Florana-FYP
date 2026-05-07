@@ -193,7 +193,8 @@ export function CartScreen() {
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
   const { items, currency, removeItem, updateQuantity, clearCart, subtotal, totalItems } = useCart();
   const { languageCode, t } = useLanguage();
-  const copy = cartCopy[languageCode] || cartCopy.en;
+  const localizedLanguageCode: LanguageCode = languageCode === "si" || languageCode === "ta" ? languageCode : "en";
+  const copy = cartCopy[localizedLanguageCode];
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
@@ -276,12 +277,12 @@ export function CartScreen() {
 
     setShowPayment(true);
     setStep(0);
-    showStatus("Choose a payment method to start secure checkout.");
+    showStatus(t("cart_start_checkout"));
   };
 
   const handleRemoveItem = async (itemId: string, itemName: string) => {
     await removeItem(itemId);
-    showStatus(`Your ${itemName} deleted.`);
+    showStatus(t("cart_item_deleted", { name: itemName }));
   };
 
   const decreaseItem = async (itemId: string, itemName: string, quantity: number) => {
@@ -291,7 +292,7 @@ export function CartScreen() {
     }
 
     await updateQuantity(itemId, quantity - 1);
-    showStatus(`Removed one ${itemName}.`);
+    showStatus(t("cart_item_removed_one", { name: itemName }));
   };
 
   const increaseItem = async (itemId: string, quantity: number) => {
@@ -302,12 +303,12 @@ export function CartScreen() {
     setPaymentMethod(method);
 
     setStep(1);
-    showStatus("Add delivery details to continue.");
+    showStatus(t("cart_delivery_continue"));
   };
 
   const continueFromDelivery = async () => {
     if (delivery.phone.trim().length < 7 || delivery.name.trim().length < 2 || delivery.address.trim().length < 6) {
-      showStatus("Enter your name, phone number, and delivery address first.");
+      showStatus(t("cart_delivery_required"));
       return;
     }
 
@@ -318,11 +319,11 @@ export function CartScreen() {
       setStep(2);
       showStatus(
         paymentMethod === "cod"
-          ? "Delivery details verified. Confirm your COD order."
-          : "Delivery details saved. Continue with Stripe to prepare your payment."
+          ? t("cart_delivery_verified_cod")
+          : t("cart_delivery_saved_stripe")
       );
     } catch (error) {
-      showStatus(error instanceof Error ? error.message : "Unable to prepare checkout.");
+      showStatus(error instanceof Error ? error.message : t("cart_prepare_failed"));
     } finally {
       setBusy(false);
     }
@@ -330,13 +331,13 @@ export function CartScreen() {
 
   const handlePayment = async () => {
     if (!intentResponse) {
-      showStatus("Start checkout again to continue.");
+      showStatus(t("cart_restart_checkout"));
       return;
     }
 
     if (isStripePayment) {
       if (card.number.trim().length < 16 || card.name.trim().length < 2 || card.expiry.trim().length < 4 || card.cvv.trim().length < 3) {
-        showStatus("Complete your card details first.");
+        showStatus(t("cart_card_required"));
         return;
       }
     }
@@ -356,22 +357,22 @@ export function CartScreen() {
       if (paymentMethod === "cod") {
         await clearCart();
         setStep(4);
-        showStatus("Order confirmed. Pay on delivery is active for this order.");
+        showStatus(t("cart_order_confirmed_cod"));
         return;
       }
 
       if (intentResponse.provider === "stripe" && intentResponse.payment_intent_id) {
         await clearCart();
         setStep(4);
-        showStatus("Payment done. Your cart is cleared.");
+        showStatus(t("cart_payment_done"));
       } else {
         await clearCart();
         setStep(4);
-        showStatus(response.status === "ok" ? "Payment done. Your cart is cleared." : "Order saved. Your cart is cleared.");
+        showStatus(response.status === "ok" ? t("cart_payment_done") : t("cart_order_saved_cleared"));
       }
     } catch (error) {
       setStep(2);
-      showStatus(error instanceof Error ? error.message : "Checkout failed.");
+      showStatus(error instanceof Error ? error.message : t("cart_checkout_failed"));
     } finally {
       setBusy(false);
     }
@@ -404,7 +405,7 @@ export function CartScreen() {
           <View style={styles.cartToolbar}>
             <LanguageSelector />
 
-            <Pressable accessibilityLabel="Cart overview" style={styles.cartIconButton}>
+            <Pressable accessibilityLabel={t("cart_overview")} style={styles.cartIconButton}>
               <MaterialIcons name="shopping-bag" size={16} color={colors.text} />
               {items.length > 0 ? (
                 <View style={styles.catalogBadge}>
@@ -424,7 +425,7 @@ export function CartScreen() {
         <View style={styles.cartTitleWrap}>
           <Text style={styles.cartEyebrow}>{copy.checkout}</Text>
           <Text style={styles.cartHeading}>{copy.myCart}</Text>
-          <Text style={styles.cartSubtitle}>Review your flowers, confirm totals, and finish checkout with confidence.</Text>
+          <Text style={styles.cartSubtitle}>{t("cart_subtitle")}</Text>
         </View>
       </View>
 
@@ -462,20 +463,20 @@ export function CartScreen() {
                   )}
 
                   <View style={styles.itemCopy}>
-                    <Text style={styles.itemTag}>Plant item</Text>
+                    <Text style={styles.itemTag}>{t("cart_item_tag")}</Text>
                     <Text style={styles.itemName}>{item.name}</Text>
                     <Text style={styles.itemMeta}>
                       {item.quantity > 1 ? `${item.quantity} x ` : ""}
                       {formatPrice(item.price, currency)}
                     </Text>
-                    <Text style={styles.itemTotal}>Total: {formatPrice(Number(item.price || 0) * item.quantity, currency)}</Text>
+                    <Text style={styles.itemTotal}>{t("item_total", { total: formatPrice(Number(item.price || 0) * item.quantity, currency) })}</Text>
                   </View>
                 </View>
 
                 <View style={styles.itemActions}>
                   <View style={styles.quantityStepper}>
                     <Pressable
-                      accessibilityLabel={`Remove one ${item.name}`}
+                      accessibilityLabel={t("remove_one_item", { name: item.name })}
                       onPress={() => void decreaseItem(item.id, item.name, item.quantity)}
                       style={styles.quantityButton}
                     >
@@ -483,7 +484,7 @@ export function CartScreen() {
                     </Pressable>
                     <Text style={styles.quantityValue}>{item.quantity}</Text>
                     <Pressable
-                      accessibilityLabel={`Add one ${item.name}`}
+                      accessibilityLabel={t("add_one_item", { name: item.name })}
                       onPress={() => void increaseItem(item.id, item.quantity)}
                       style={styles.quantityButton}
                     >
@@ -491,7 +492,7 @@ export function CartScreen() {
                     </Pressable>
                   </View>
 
-                  <Pressable accessibilityLabel="Remove item" onPress={() => void handleRemoveItem(item.id, item.name)} style={styles.deleteButton}>
+                  <Pressable accessibilityLabel={t("remove_item")} onPress={() => void handleRemoveItem(item.id, item.name)} style={styles.deleteButton}>
                     <MaterialIcons name="delete-outline" size={17} color="#B33D68" />
                   </Pressable>
                 </View>
@@ -517,11 +518,11 @@ export function CartScreen() {
 
           <View style={styles.paymentDrawer}>
             <View style={styles.paymentOrderChip}>
-              <Text style={styles.paymentOrderLabel}>Order</Text>
+              <Text style={styles.paymentOrderLabel}>{t("cart_order_label")}</Text>
               <Text style={styles.paymentOrderValue}>
                 {isStripePayment
-                  ? intentResponse?.payment_intent_id || "Stripe Secure Checkout"
-                  : intentResponse?.provider || "Creating..."}
+                  ? intentResponse?.payment_intent_id || t("cart_stripe_secure_checkout")
+                  : intentResponse?.provider || t("creating")}
               </Text>
             </View>
 
@@ -534,7 +535,7 @@ export function CartScreen() {
                     <View style={styles.methodHeader}>
                       <Text style={styles.methodTitle}>{copy.creditCard}</Text>
                       <View style={styles.methodBadge}>
-                        <Text style={styles.methodBadgeText}>Secure</Text>
+                        <Text style={styles.methodBadgeText}>{t("secure")}</Text>
                       </View>
                     </View>
                     <Text style={styles.methodBody}>{copy.creditCardDesc}</Text>
@@ -562,7 +563,7 @@ export function CartScreen() {
                   />
                   <TextInput
                     onChangeText={(value) => setDelivery((current) => ({ ...current, name: value }))}
-                    placeholder="Full name"
+                    placeholder={t("full_name_placeholder")}
                     placeholderTextColor={colors.textMuted}
                     style={styles.input}
                     value={delivery.name}
@@ -571,7 +572,7 @@ export function CartScreen() {
                     autoCapitalize="none"
                     keyboardType="email-address"
                     onChangeText={(value) => setDelivery((current) => ({ ...current, email: value }))}
-                    placeholder="Email address"
+                    placeholder={t("email_address_placeholder")}
                     placeholderTextColor={colors.textMuted}
                     style={styles.input}
                     value={delivery.email}
@@ -579,7 +580,7 @@ export function CartScreen() {
                   <TextInput
                     multiline
                     onChangeText={(value) => setDelivery((current) => ({ ...current, address: value }))}
-                    placeholder="Delivery address"
+                    placeholder={t("delivery_address_placeholder")}
                     placeholderTextColor={colors.textMuted}
                     style={[styles.input, styles.inputMultiline]}
                     value={delivery.address}
@@ -587,7 +588,7 @@ export function CartScreen() {
                   <TextInput
                     multiline
                     onChangeText={(value) => setDelivery((current) => ({ ...current, note: value }))}
-                    placeholder="Order note (optional)"
+                    placeholder={t("order_note_optional")}
                     placeholderTextColor={colors.textMuted}
                     style={[styles.input, styles.inputMultiline]}
                     value={delivery.note}
@@ -605,10 +606,8 @@ export function CartScreen() {
                 <>
                   {isStripePayment ? (
                     <>
-                      <Text style={styles.drawerTitle}>Stripe Card Details</Text>
-                      <Text style={styles.drawerCopy}>
-                        {copy.cardCopy} Florana will create a Stripe payment request for this order.
-                      </Text>
+                      <Text style={styles.drawerTitle}>{t("cart_stripe_card_details")}</Text>
+                      <Text style={styles.drawerCopy}>{t("cart_stripe_card_copy")}</Text>
                       <TextInput
                         keyboardType="number-pad"
                         onChangeText={(value) => setCard((current) => ({ ...current, number: value.replace(/\D/g, "") }))}
@@ -635,7 +634,7 @@ export function CartScreen() {
                         <TextInput
                           keyboardType="number-pad"
                           onChangeText={(value) => setCard((current) => ({ ...current, cvv: value.replace(/\D/g, "") }))}
-                          placeholder="CVV"
+                          placeholder={t("cvv")}
                           placeholderTextColor={colors.textMuted}
                           style={[styles.input, styles.cardGridInput]}
                           value={card.cvv}
@@ -678,11 +677,11 @@ export function CartScreen() {
                   <Text style={styles.drawerTitle}>{copy.confirmed}</Text>
                   <Text style={styles.successText}>
                     {isStripePayment && intentResponse?.provider === "stripe"
-                      ? "Your order was saved and a Stripe payment intent was created successfully."
+                      ? t("cart_stripe_success")
                       : copy.completed}
                   </Text>
                   <PrimaryButton
-                    label="Close"
+                    label={t("close")}
                     onPress={() => {
                       if (paymentMethod === "cod") {
                         resetCheckoutState();

@@ -1,93 +1,286 @@
-# Florana Mobile
+# Florana Mobile App
 
-This Expo app is the main Florana client in this repo.
+The `mobile/` folder contains the main Florana Expo React Native application. This is the primary client for plant diagnosis, plant registration, care reminders, growth tracking, multilingual UI, seasonal shopping, and feedback.
 
-- `../mobile`: active Expo app for diagnosis, plants, shop, and reminders
-- `../frontend`: separate Expo payment demo used by the Stripe checkout flow
-- `../florana`: older React web client kept for legacy reference
+## Overview
+
+This app is built with:
+
+- Expo
+- React Native
+- TypeScript
+- Expo Router
+- AsyncStorage
+- Expo Image Picker
+- Expo Notifications
+
+The mobile app talks to the FastAPI backend for:
+
+- authentication
+- plant registration and profile data
+- disease prediction
+- growth records
+- shop products
+- feedback
+- care reminder persistence
+- payment/order flows
+
+## Main Features
+
+- User signup and login
+- Home dashboard with shortcuts and live status
+- Plant disease prediction from uploaded images
+- Plant registration with care-related details
+- My Plants dashboard and detailed flower profile screen
+- Growth history and chart view
+- Care Reminder screen with saved settings, custom notes, and multilingual reminder UI
+- Quick Tip community-style local sharing space
+- Shop catalog, season browsing, product details, cart, and checkout flow
+- Sell plant flow for adding marketplace listings
+- Profile, settings, feedback, help, and about screens
+- Multi-language interface support
+- Currency switcher for product pricing
+
+## Current Screens
+
+Implemented screens in `mobile/src/screens/`:
+
+- `WelcomeScreen.tsx`
+- `LoginScreen.tsx`
+- `RegisterScreen.tsx`
+- `HomeScreen.tsx`
+- `MyPlantsScreen.tsx`
+- `RegisterPlantScreen.tsx`
+- `FlowerProfileScreen.tsx`
+- `CareReminderScreen.tsx`
+- `QuickTipScreen.tsx`
+- `CatalogScreen.tsx`
+- `SeasonScreen.tsx`
+- `ProductDetailsScreen.tsx`
+- `CartScreen.tsx`
+- `ProfileScreen.tsx`
+- `FeedbackScreen.tsx`
+- `SettingsScreen.tsx`
+- `HelpScreen.tsx`
+- `AboutScreen.tsx`
+
+## Project Structure
+
+Important folders and files inside `mobile/`:
+
+```text
+mobile/
+|-- app/                    Expo Router route entry files
+|-- assets/                 Images, icons, and static assets
+|-- scripts/                Startup helpers such as start-expo.js
+|-- src/
+|   |-- components/         Shared UI components
+|   |-- context/            App-wide state providers
+|   |-- lib/                API clients, config, storage helpers
+|   |-- screens/            Main screen implementations
+|   |-- theme/              Tokens and brand styling
+|   |-- types/              Shared TypeScript models
+|   `-- utils/              Translation tables and utility helpers
+|-- .env.example
+|-- package.json
+`-- tsconfig.json
+```
+
+## Shared UI Components
+
+Main reusable components in `mobile/src/components/`:
+
+- `AppMenu.tsx`
+- `BottomNav.tsx`
+- `CurrencySwitcher.tsx`
+- `GrowthChart.tsx`
+- `LanguageSelector.tsx`
+- `PlantCard.tsx`
+- `PrimaryButton.tsx`
+- `ProductCard.tsx`
+- `Screen.tsx`
+- `TextField.tsx`
+- `TopBar.tsx`
+
+## App State / Context
+
+Main providers in `mobile/src/context/`:
+
+- `AuthContext.tsx`
+  Handles login state and current user session.
+- `CartContext.tsx`
+  Stores cart items and cart actions.
+- `LanguageContext.tsx`
+  Controls language selection and the shared translator function.
+- `SettingsContext.tsx`
+  Stores device-level app settings, reminders, and feedback cache behavior.
+
+## Translation System
+
+Language handling is driven by:
+
+- `mobile/src/context/LanguageContext.tsx`
+- `mobile/src/utils/translations.ts`
+- `mobile/src/utils/translationOverrides.ts`
+
+Supported language labels:
+
+- English
+- Sinhala
+- Tamil
+- Spanish
+- French
+- Arabic
+- Hindi
+- Chinese
+
+Notes:
+
+- The app uses `t("key")` from `LanguageContext` for screen text.
+- `translations.ts` contains the main translation dataset.
+- `translationOverrides.ts` is used for targeted fixes and newer screen text.
+- The Care Reminder screen now uses the shared translator path instead of isolated page-only copy, so reminder text is consistent across supported languages.
+
+## Care Reminder Notes
+
+The Care Reminder flow combines local device state and backend persistence.
+
+Main files:
+
+- `mobile/src/screens/CareReminderScreen.tsx`
+- `mobile/src/context/SettingsContext.tsx`
+- `mobile/src/lib/api/reminders.ts`
+
+Current behavior:
+
+- Reminder options are stored through `/care-reminders/`
+- Watering time is validated using 24-hour `HH:MM` format
+- Reminder settings are auto-saved
+- Custom notes are stored in the reminder state
+- In-app reminder activity is stored locally in reminder state
+- Expo push notification support is used when available outside Expo Go limitations
+- Reminder UI labels now follow the shared translation system
+
+## API Configuration
+
+The mobile app reads its backend base URL from:
+
+```env
+EXPO_PUBLIC_API_BASE_URL=http://YOUR_COMPUTER_LAN_IP:8000
+```
+
+Setup steps:
+
+1. Copy `.env.example` to `.env`
+2. Set `EXPO_PUBLIC_API_BASE_URL`
+3. Install dependencies
+4. Start the backend
+5. Start Expo
+
+## Install
+
+From the repository root:
+
+```bash
+npm --prefix mobile install
+```
+
+Or from inside `mobile/`:
+
+```bash
+npm install
+```
 
 ## Run
 
-1. Copy `.env.example` to `.env`.
-2. Set `EXPO_PUBLIC_API_BASE_URL` to your computer's LAN IP, for example `http://192.168.8.116:8000`.
-3. Install dependencies with `npm install`.
-4. Start Expo with `npm start`.
-5. The Expo helper script checks the backend on the same port configured in `EXPO_PUBLIC_API_BASE_URL`, or `8000` by default.
-6. If the backend is already running, Expo will reuse it. If the backend is not running, the helper will try to start it.
-7. Press `a` for Android, `i` for iOS, or scan the QR code with Expo Go.
-
-## Why Expo Shows Backend Messages
-
-`npm start`, `npm run android`, and `npm run ios` run `mobile/scripts/start-expo.js`.
-That script manages both the mobile session and the local backend connection:
-
-- It checks `http://127.0.0.1:8000/health`.
-- If Florana backend is healthy, it reuses the existing backend.
-- If the backend is missing, it starts `backend/run_backend.py`.
-- It passes the correct API URL to Expo for the current session.
-
-So seeing backend text in the Expo terminal is normal for this project. For the
-cleanest daily workflow, start the backend first from the repo root:
+From the repository root:
 
 ```bash
 npm run backend:start
 npm start
 ```
 
-Use `npm run backend:restart` when you need a fresh backend process, and
-`npm run backend:stop` when you want to close the backend completely.
-
-Type only the command. Do not add extra words after it. For example:
+Or from inside `mobile/`:
 
 ```bash
-npm run backend:restart
+npm start
 ```
 
-Do not type:
-
-```bash
-npm run backend:restart to start fresh
-```
-
-## Backend URL notes
-
-- Physical Android device with Expo Go: use your computer's LAN IP, for example `http://192.168.8.116:8000`
-- Android emulator fallback: `http://10.0.2.2:8000`
-- iOS simulator fallback: `http://127.0.0.1:8000`
-- If you change the backend port, update `EXPO_PUBLIC_API_BASE_URL` so the mobile app and startup script stay aligned.
-- `npm start` now defaults Expo to `--lan`, which is the right mode for a phone talking to a local backend on the same Wi-Fi.
-
-## Backend checklist for Expo Go
-
-1. Start the backend with `npm run backend:start` from the repo root. This safely reuses an already-running Florana backend on port `8000`.
-2. Use `npm run backend:restart` when you want to stop the old backend and start a fresh one.
-3. Use `npm run backend:stop` if you need to close the backend completely.
-4. Use `npm run backend:start:reload` only if you specifically need auto-reload. The non-reload server is the stable default for the TensorFlow disease model on this setup.
-5. Keep the phone and laptop on the same Wi-Fi network.
-6. Allow inbound TCP traffic to Python or port `8000` in Windows Defender Firewall.
-7. Open `http://YOUR_LAN_IP:8000/health` from the phone browser. If this fails in the browser, Expo Go will fail too.
-8. Avoid `localhost`, `127.0.0.1`, and `10.0.2.2` on a real phone. Those only work on the same machine or inside the Android emulator.
-
-## Command Summary
+Useful commands:
 
 | Command | Purpose |
 | --- | --- |
-| `npm start` | Start Expo and reuse/start backend if needed |
-| `npm run android` | Start Expo Android and reuse/start backend if needed |
-| `npm run ios` | Start Expo iOS and reuse/start backend if needed |
-| `npm run web` | Start Expo web only |
-| `npm run typecheck` | Run TypeScript check |
-| `npm run backend:start` | Start or reuse backend when run from repo root or `backend/` |
-| `npm run backend:status` | Check backend health |
+| `npm start` | Start Expo |
+| `npm run android` | Start Expo for Android |
+| `npm run ios` | Start Expo for iOS |
+| `npm run web` | Start Expo web |
+| `npm run typecheck` | Run TypeScript validation |
+
+From the repository root:
+
+| Command | Purpose |
+| --- | --- |
+| `npm run backend:start` | Start or reuse the FastAPI backend |
 | `npm run backend:restart` | Restart backend |
 | `npm run backend:stop` | Stop backend |
+| `npm run backend:status` | Check backend health |
+| `npm run mobile:typecheck` | Run mobile TypeScript check |
 
-## Mobile coverage
+## Expo Startup Behavior
 
-- Auth flow backed by `/auth/login` and `/auth/signup`
-- Shop catalog and sell flow backed by `/shop/products`
-- Cart with device persistence and backend payment notification
-- Plant registration, listing, flower profile, and growth tracking backed by `/plants` and `/growth`
-- Disease prediction using Expo Image Picker and `/predict`
-- Care reminders using Expo Notifications and AsyncStorage
-- Settings, profile, help, about, quick tips, and feedback screens rebuilt natively
+`mobile/scripts/start-expo.js` is used for Expo startup.
+
+What it does:
+
+- checks backend availability
+- reuses the backend if already running
+- attempts to start the backend if needed
+- passes the correct API URL into the Expo session
+
+This is why backend text may appear in the same terminal when starting Expo. That is expected in this project.
+
+## Device / Emulator API URL Notes
+
+- Real phone on same Wi-Fi: use your computer LAN IP
+- Android emulator: `http://10.0.2.2:8000`
+- iOS simulator: `http://127.0.0.1:8000`
+- Web: usually `http://127.0.0.1:8000` or your chosen local backend URL
+
+Do not use `localhost` on a real phone.
+
+## Troubleshooting
+
+Common checks:
+
+- Confirm backend health at `http://YOUR_IP:8000/health`
+- Keep phone and computer on the same Wi-Fi
+- Make sure Windows Firewall allows backend access
+- Verify `EXPO_PUBLIC_API_BASE_URL` points to the correct machine and port
+- If Expo Go cannot reach backend, test the backend URL directly in the phone browser first
+- Use `npm run backend:restart` if backend state looks stale
+
+Care Reminder-specific checks:
+
+- Use valid watering time like `07:00` or `18:30`
+- Push notifications may not fully work in Expo Go depending on environment
+- Reminder language text depends on the selected language in app settings
+
+## Verification
+
+Recommended validation:
+
+```bash
+npm run typecheck
+```
+
+From the repository root:
+
+```bash
+npm run mobile:typecheck
+```
+
+## Related Documentation
+
+- Root repository guide: [`../README.md`](../README.md)
+- Payment setup notes: [`../PAYMENT_SYSTEM_GUIDE.md`](../PAYMENT_SYSTEM_GUIDE.md)
+

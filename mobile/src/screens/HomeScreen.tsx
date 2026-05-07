@@ -55,34 +55,37 @@ function resolveModelState(aiModel?: { loaded?: boolean; status?: string | null 
   };
 }
 
-function formatRelativeTime(dateString?: string | null) {
+function formatRelativeTime(
+  dateString: string | null | undefined,
+  t: (key: string, vars?: Record<string, string | number>) => string
+) {
   if (!dateString) {
-    return "Just now";
+    return t("just_now");
   }
 
   const created = new Date(dateString).getTime();
   if (Number.isNaN(created)) {
-    return "Just now";
+    return t("just_now");
   }
 
   const diffMs = Date.now() - created;
   const diffMin = Math.max(0, Math.floor(diffMs / 60000));
 
   if (diffMin < 1) {
-    return "Just now";
+    return t("just_now");
   }
 
   if (diffMin < 60) {
-    return `${diffMin} min ago`;
+    return t("min_ago", { count: diffMin });
   }
 
   const diffHours = Math.floor(diffMin / 60);
   if (diffHours < 24) {
-    return `${diffHours} hr ago`;
+    return t("hr_ago", { count: diffHours });
   }
 
   const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
+  return t("day_ago", { count: diffDays });
 }
 
 function isHealthyPrediction(prediction: string) {
@@ -186,6 +189,8 @@ function getDiagnosisToneColors(tone: DiagnosisState["tone"]) {
 }
 
 function FeedbackCard({ feedback }: { feedback: FeedbackEntry }) {
+  const { t } = useLanguage();
+
   return (
     <View style={styles.feedbackCard}>
       <View style={styles.feedbackContent}>
@@ -196,7 +201,7 @@ function FeedbackCard({ feedback }: { feedback: FeedbackEntry }) {
           </View>
         ) : null}
       </View>
-      <Text style={styles.feedbackDate}>{formatRelativeTime(feedback.createdAt)}</Text>
+      <Text style={styles.feedbackDate}>{formatRelativeTime(feedback.createdAt, t)}</Text>
     </View>
   );
 }
@@ -441,13 +446,13 @@ export function HomeScreen() {
                 <Text style={[styles.diagnosisBody, { color: diagnosisColors.body }]}>{diagnosis.message}</Text>
                 {diagnosis.protection ? (
                   <Text style={styles.diagnosisProtectionText}>
-                    <Text style={styles.diagnosisProtectionLabel}>Protection: </Text>
+                    <Text style={styles.diagnosisProtectionLabel}>{t("home_protection_label")} </Text>
                     {diagnosis.protection}
                   </Text>
                 ) : null}
                 {diagnosis.workingTime ? (
                   <Text style={styles.diagnosisWorkingText}>
-                    <Text style={styles.diagnosisWorkingLabel}>Working time: </Text>
+                    <Text style={styles.diagnosisWorkingLabel}>{t("home_working_time_label")} </Text>
                     {diagnosis.workingTime}
                   </Text>
                 ) : null}
@@ -481,15 +486,15 @@ export function HomeScreen() {
             <Text style={styles.cardText}>{t("reviews", { count: feedbacks.length })}</Text>
           </Pressable>
 
-          <Pressable onPress={() => router.push("/care")} style={[styles.insightCard, styles.greenCard]}>
-            <Text style={styles.cardTitle}>{t("care_reminder_card")}</Text>
-            <Text style={styles.cardText}>Water Monstera.</Text>
-          </Pressable>
+            <Pressable onPress={() => router.push("/care")} style={[styles.insightCard, styles.greenCard]}>
+              <Text style={styles.cardTitle}>{t("care_reminder_card")}</Text>
+              <Text style={styles.cardText}>{t("home_care_hint")}</Text>
+            </Pressable>
 
-          <Pressable onPress={() => router.push("/quicktip")} style={[styles.insightCard, styles.blueCard]}>
-            <Text style={styles.cardTitle}>{t("quick_tip_card")}</Text>
-            <Text style={styles.cardText}>Use well-draining soil.</Text>
-          </Pressable>
+            <Pressable onPress={() => router.push("/quicktip")} style={[styles.insightCard, styles.blueCard]}>
+              <Text style={styles.cardTitle}>{t("quick_tip_card")}</Text>
+              <Text style={styles.cardText}>{t("home_quick_tip_hint")}</Text>
+            </Pressable>
         </View>
 
         <View style={styles.feedbackSection}>

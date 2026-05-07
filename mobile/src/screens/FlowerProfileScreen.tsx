@@ -9,6 +9,7 @@ import { GrowthChart } from "../components/GrowthChart";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { TopBar } from "../components/TopBar";
+import { useLanguage } from "../context/LanguageContext";
 import { buildApiUrl } from "../lib/api/config";
 import { addGrowth, getGrowth, getPlantByName } from "../lib/api/plants";
 import { colors, radii, shadows, spacing } from "../theme/tokens";
@@ -17,6 +18,7 @@ import { getHealthColor } from "../utils/format";
 
 export function FlowerProfileScreen() {
   const { plantName } = useLocalSearchParams<{ plantName: string }>();
+  const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const [plant, setPlant] = useState<Plant | null>(null);
   const [growthData, setGrowthData] = useState<GrowthRecord[]>([]);
@@ -39,9 +41,9 @@ export function FlowerProfileScreen() {
       } catch {
         setPlant({
           name: decodedName,
-          species: "Unknown",
-          sunlight: "N/A",
-          wateringFrequency: "N/A",
+          species: t("unknown"),
+          sunlight: t("not_available_short"),
+          wateringFrequency: t("not_available_short"),
         });
       } finally {
         setLoading(false);
@@ -49,7 +51,7 @@ export function FlowerProfileScreen() {
     };
 
     void load();
-  }, [decodedName]);
+  }, [decodedName, t]);
 
   const sortedGrowth = useMemo(
     () => [...growthData].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
@@ -58,18 +60,18 @@ export function FlowerProfileScreen() {
   const imageUri = plant?.image_path ? buildApiUrl(plant.image_path) : null;
   const detailRows = plant
     ? [
-        ["Species", plant.species],
-        ["Flower ID", plant.flowerId],
-        ["Catalog", plant.flowerCatalog],
-        ["Location", plant.location],
-        ["Specific location", plant.specificLocation],
-        ["Climate", plant.climate],
-        ["Sunlight", plant.sunlight],
-        ["Soil", plant.soilType],
-        ["Watering", plant.wateringFrequency],
-        ["Fertilizer", plant.fertilizerSchedule],
-        ["Last watered", plant.lastWatered],
-        ["Initial size", plant.initialSize],
+        [t("flower_profile_species"), plant.species],
+        [t("flower_profile_flower_id"), plant.flowerId],
+        [t("flower_profile_catalog"), plant.flowerCatalog],
+        [t("location"), plant.location],
+        [t("flower_profile_specific_location"), plant.specificLocation],
+        [t("flower_profile_climate"), plant.climate],
+        [t("sunlight"), plant.sunlight],
+        [t("flower_profile_soil"), plant.soilType],
+        [t("flower_profile_watering"), plant.wateringFrequency],
+        [t("flower_profile_fertilizer"), plant.fertilizerSchedule],
+        [t("flower_profile_last_watered"), plant.lastWatered],
+        [t("flower_profile_initial_size"), plant.initialSize],
       ].filter(([, value]) => Boolean(value && String(value).trim()))
     : [];
 
@@ -77,12 +79,12 @@ export function FlowerProfileScreen() {
     const heightValue = Number(newHeight);
 
     if (!plant?._id) {
-      Alert.alert("Profile unavailable", "Open a saved plant profile before adding growth records.");
+      Alert.alert(t("flower_profile_unavailable_title"), t("flower_profile_unavailable_body"));
       return;
     }
 
     if (!Number.isFinite(heightValue) || heightValue <= 0) {
-      Alert.alert("Invalid height", "Enter a height greater than 0 cm.");
+      Alert.alert(t("flower_profile_invalid_height_title"), t("flower_profile_invalid_height_body"));
       return;
     }
 
@@ -100,9 +102,9 @@ export function FlowerProfileScreen() {
       setNewHeight("");
       setNewHealth("");
       setNewNotes("");
-      Alert.alert("Growth saved", "The plant profile has been updated.");
+      Alert.alert(t("flower_profile_saved_title"), t("flower_profile_saved_body"));
     } catch (error) {
-      Alert.alert("Save failed", error instanceof Error ? error.message : "Unable to add growth record.");
+      Alert.alert(t("flower_profile_save_failed_title"), error instanceof Error ? error.message : t("flower_profile_save_failed_body"));
     } finally {
       setSavingGrowth(false);
     }
@@ -110,10 +112,10 @@ export function FlowerProfileScreen() {
 
   return (
     <Screen>
-      <TopBar title={decodedName || "Plant"} onMenuPress={() => setMenuOpen(true)} />
+      <TopBar title={decodedName || t("plant_label")} onMenuPress={() => setMenuOpen(true)} />
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
 
-      {loading ? <Text style={styles.loading}>Loading...</Text> : null}
+      {loading ? <Text style={styles.loading}>{t("loading")}...</Text> : null}
 
       {plant ? (
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -127,11 +129,11 @@ export function FlowerProfileScreen() {
             )}
             <View style={styles.heroOverlay}>
               <Text style={styles.heroTitle}>{plant.name}</Text>
-              <Text style={styles.heroBody}>{plant.species || "Plant profile and growth history"}</Text>
+              <Text style={styles.heroBody}>{plant.species || t("flower_profile_fallback_body")}</Text>
               <View style={styles.heroMetaRow}>
                 <View style={styles.heroChip}>
                   <MaterialIcons name="spa" size={14} color={colors.white} />
-                  <Text style={styles.heroChipText}>{plant.tracking === false ? "Not tracked" : "Tracking"}</Text>
+                  <Text style={styles.heroChipText}>{plant.tracking === false ? t("flower_profile_not_tracked") : t("flower_profile_tracking")}</Text>
                 </View>
                 {plant.sunlight ? (
                   <View style={styles.heroChip}>
@@ -144,8 +146,8 @@ export function FlowerProfileScreen() {
           </View>
 
           <View style={styles.infoCard}>
-            <Text style={styles.sectionTitle}>Plant Details</Text>
-            {detailRows.length === 0 ? <Text style={styles.muted}>No profile details saved yet.</Text> : null}
+            <Text style={styles.sectionTitle}>{t("flower_profile_details")}</Text>
+            {detailRows.length === 0 ? <Text style={styles.muted}>{t("flower_profile_no_details")}</Text> : null}
             <View style={styles.detailsGrid}>
               {detailRows.map(([label, value]) => (
                 <View key={label} style={styles.detailTile}>
@@ -157,22 +159,22 @@ export function FlowerProfileScreen() {
           </View>
 
           <View style={styles.infoCard}>
-            <Text style={styles.sectionTitle}>Growth Tracker</Text>
+            <Text style={styles.sectionTitle}>{t("flower_profile_growth_tracker")}</Text>
             <GrowthChart data={sortedGrowth} />
           </View>
 
           <View style={styles.infoCard}>
-            <Text style={styles.sectionTitle}>Growth History</Text>
-            {sortedGrowth.length === 0 ? <Text style={styles.muted}>No records available</Text> : null}
+            <Text style={styles.sectionTitle}>{t("flower_profile_growth_history")}</Text>
+            {sortedGrowth.length === 0 ? <Text style={styles.muted}>{t("flower_profile_no_records")}</Text> : null}
             <FlatList
               data={sortedGrowth}
               keyExtractor={(item, index) => `${item.date}-${index}`}
               renderItem={({ item }) => (
                 <View style={styles.historyItem}>
-                  <Text style={styles.row}>Date: {new Date(item.date).toLocaleDateString()}</Text>
-                  <Text style={styles.row}>Height: {item.height} cm</Text>
-                  <Text style={[styles.row, { color: getHealthColor(item.health) }]}>Health: {item.health}</Text>
-                  {item.notes ? <Text style={styles.row}>Notes: {item.notes}</Text> : null}
+                  <Text style={styles.row}>{t("flower_profile_date", { value: new Date(item.date).toLocaleDateString() })}</Text>
+                  <Text style={styles.row}>{t("flower_profile_height", { value: item.height })}</Text>
+                  <Text style={[styles.row, { color: getHealthColor(item.health) }]}>{t("flower_profile_health", { value: item.health })}</Text>
+                  {item.notes ? <Text style={styles.row}>{t("flower_profile_notes", { value: item.notes })}</Text> : null}
                 </View>
               )}
               scrollEnabled={false}
@@ -181,11 +183,11 @@ export function FlowerProfileScreen() {
           </View>
 
           <View style={styles.infoCard}>
-            <Text style={styles.sectionTitle}>Add Growth Record</Text>
-            <TextInput placeholder="Height (cm)" placeholderTextColor={colors.textMuted} style={styles.input} value={newHeight} onChangeText={setNewHeight} keyboardType="decimal-pad" />
-            <TextInput placeholder="Health (e.g. Good, Bad)" placeholderTextColor={colors.textMuted} style={styles.input} value={newHealth} onChangeText={setNewHealth} />
-            <TextInput placeholder="Notes (optional)" placeholderTextColor={colors.textMuted} style={[styles.input, styles.notesInput]} value={newNotes} onChangeText={setNewNotes} multiline />
-            <PrimaryButton label={savingGrowth ? "Saving..." : "Add Record"} onPress={() => void handleAddGrowth()} disabled={!plant?._id || savingGrowth} />
+            <Text style={styles.sectionTitle}>{t("flower_profile_add_record")}</Text>
+            <TextInput placeholder={t("flower_profile_height_placeholder")} placeholderTextColor={colors.textMuted} style={styles.input} value={newHeight} onChangeText={setNewHeight} keyboardType="decimal-pad" />
+            <TextInput placeholder={t("flower_profile_health_placeholder")} placeholderTextColor={colors.textMuted} style={styles.input} value={newHealth} onChangeText={setNewHealth} />
+            <TextInput placeholder={t("flower_profile_notes_placeholder")} placeholderTextColor={colors.textMuted} style={[styles.input, styles.notesInput]} value={newNotes} onChangeText={setNewNotes} multiline />
+            <PrimaryButton label={savingGrowth ? t("flower_profile_saving_button") : t("flower_profile_add_button")} onPress={() => void handleAddGrowth()} disabled={!plant?._id || savingGrowth} />
           </View>
         </ScrollView>
       ) : null}
