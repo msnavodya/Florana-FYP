@@ -85,6 +85,7 @@ Recent mobile documentation points:
 - Mobile-specific setup and troubleshooting are documented in `mobile/README.md`
 - Catalog browsing and plant selling now use separate mobile screens for a cleaner user flow
 - The mobile cart now includes a more polished payment UI with structured delivery fields, payment method cards, and improved Stripe/COD checkout states
+- Mobile shop prices now use a live currency conversion flow with cached fallback rates and shared formatting across catalog, product, sell, season, cart, and checkout screens
 
 ## 3. Features
 
@@ -99,6 +100,7 @@ Recent mobile documentation points:
 - Quick Tip community for sharing seeds, posting care ideas, liking posts, commenting, and chatting locally
 - Flower plant shop with seasonal catalog, product details, cart, and checkout
 - Dedicated Sell Flower Plants flow for adding shop listings with photo upload and preview
+- Live currency conversion for LKR, USD, and EUR with app-wide synchronized pricing
 - Feedback, profile, settings, help, and about screens
 - Local JSON fallback storage when MongoDB is not connected
 
@@ -110,7 +112,7 @@ Recent mobile documentation points:
 - Device-saved Quick Tip community posts, likes, comments, and chat messages using AsyncStorage
 - Growth tracking charts for registered flower plants
 - Multi-language app text support
-- Currency switching for shop prices
+- Real-time currency switching for shop prices with cached rate fallback and shared checkout totals
 - Admin analytics summary for users, flower plants, products, feedback, payments, and revenue
 - Optional Cloudinary dataset download workflow for ML training
 
