@@ -594,40 +594,26 @@ Uploaded images are served from:
 
 ## 11. Screenshots
 
-The completed runtime screenshots used for GitHub presentation are stored in `docs/screenshots/`.
+The preview images below are embedded directly in the README using commit-pinned image URLs, so the current branch does not need to keep the screenshot files tracked.
 
 ### Mobile App Preview
 
 | Screen | Preview |
 | --- | --- |
-| Welcome screen | <img src="docs/screenshots/welcome-screen.png" alt="Welcome screen" width="220" /> |
-| Home dashboard | <img src="docs/screenshots/home-dashboard.png" alt="Home dashboard" width="220" /> |
-| Disease diagnosis result | <img src="docs/screenshots/diagnosis-result.png" alt="Disease diagnosis result" width="220" /> |
-| Plant profile | <img src="docs/screenshots/plant-profile.png" alt="Plant profile" width="220" /> |
-| Growth tracker and history | <img src="docs/screenshots/growth-tracker.png" alt="Growth tracker and history" width="220" /> |
-| Community screen | <img src="docs/screenshots/community.png" alt="Community screen" width="220" /> |
-| Seasonal catalog | <img src="docs/screenshots/catalog.png" alt="Seasonal catalog" width="220" /> |
-| Checkout and payment method | <img src="docs/screenshots/checkout.png" alt="Checkout and payment method" width="220" /> |
+| Welcome screen | <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/welcome-screen.png" alt="Welcome screen" width="220" /> |
+| Home dashboard | <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/home-dashboard.png" alt="Home dashboard" width="220" /> |
+| Disease diagnosis result | <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/diagnosis-result.png" alt="Disease diagnosis result" width="220" /> |
+| Plant profile | <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/plant-profile.png" alt="Plant profile" width="220" /> |
+| Growth tracker and history | <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/growth-tracker.png" alt="Growth tracker and history" width="220" /> |
+| Community screen | <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/community.png" alt="Community screen" width="220" /> |
+| Seasonal catalog | <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/catalog.png" alt="Seasonal catalog" width="220" /> |
+| Checkout and payment method | <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/checkout.png" alt="Checkout and payment method" width="220" /> |
 
 ### Admin Dashboard Preview
 
 | Screen | Preview |
 | --- | --- |
-| Admin dashboard | <img src="docs/screenshots/admin-dashboard.png" alt="Admin dashboard" width="520" /> |
-
-### Screenshot Files
-
-| Screen | File |
-| --- | --- |
-| Welcome screen | `docs/screenshots/welcome-screen.png` |
-| Home dashboard | `docs/screenshots/home-dashboard.png` |
-| Disease diagnosis result | `docs/screenshots/diagnosis-result.png` |
-| Plant profile | `docs/screenshots/plant-profile.png` |
-| Growth tracker and history | `docs/screenshots/growth-tracker.png` |
-| Community screen | `docs/screenshots/community.png` |
-| Seasonal catalog | `docs/screenshots/catalog.png` |
-| Checkout and payment method | `docs/screenshots/checkout.png` |
-| Admin dashboard | `docs/screenshots/admin-dashboard.png` |
+| Admin dashboard | <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/admin-dashboard.png" alt="Admin dashboard" width="520" /> |
 
 ## 12. Dataset Information
 
