@@ -594,19 +594,39 @@ Uploaded images are served from:
 
 ## 11. Screenshots
 
-The project contains image assets for the mobile and legacy web clients in `mobile/assets/` and `florana/src/Components/Assets/`. For GitHub presentation or final evaluation, capture the following runtime screens from the completed application:
+The completed runtime screenshots used for GitHub presentation are stored in `docs/screenshots/`.
 
-Recommended screenshots:
+### Mobile App Preview
 
-| Screen | Suggested File |
+| Screen | Preview |
 | --- | --- |
-| Welcome screen | `docs/screenshots/welcome.png` |
-| Home screen | `docs/screenshots/home.png` |
-| Disease detection | `docs/screenshots/disease-detection.png` |
-| My Flower Plants dashboard | `docs/screenshots/my-plants.png` |
-| Flower plant profile and growth chart | `docs/screenshots/plant-profile.png` |
-| Seasonal shop catalog | `docs/screenshots/shop.png` |
-| Cart / checkout | `docs/screenshots/cart.png` |
+| Welcome screen | <img src="docs/screenshots/welcome-screen.png" alt="Welcome screen" width="220" /> |
+| Home dashboard | <img src="docs/screenshots/home-dashboard.png" alt="Home dashboard" width="220" /> |
+| Disease diagnosis result | <img src="docs/screenshots/diagnosis-result.png" alt="Disease diagnosis result" width="220" /> |
+| Plant profile | <img src="docs/screenshots/plant-profile.png" alt="Plant profile" width="220" /> |
+| Growth tracker and history | <img src="docs/screenshots/growth-tracker.png" alt="Growth tracker and history" width="220" /> |
+| Community screen | <img src="docs/screenshots/community.png" alt="Community screen" width="220" /> |
+| Seasonal catalog | <img src="docs/screenshots/catalog.png" alt="Seasonal catalog" width="220" /> |
+| Checkout and payment method | <img src="docs/screenshots/checkout.png" alt="Checkout and payment method" width="220" /> |
+
+### Admin Dashboard Preview
+
+| Screen | Preview |
+| --- | --- |
+| Admin dashboard | <img src="docs/screenshots/admin-dashboard.png" alt="Admin dashboard" width="520" /> |
+
+### Screenshot Files
+
+| Screen | File |
+| --- | --- |
+| Welcome screen | `docs/screenshots/welcome-screen.png` |
+| Home dashboard | `docs/screenshots/home-dashboard.png` |
+| Disease diagnosis result | `docs/screenshots/diagnosis-result.png` |
+| Plant profile | `docs/screenshots/plant-profile.png` |
+| Growth tracker and history | `docs/screenshots/growth-tracker.png` |
+| Community screen | `docs/screenshots/community.png` |
+| Seasonal catalog | `docs/screenshots/catalog.png` |
+| Checkout and payment method | `docs/screenshots/checkout.png` |
 | Admin dashboard | `docs/screenshots/admin-dashboard.png` |
 
 ## 12. Dataset Information
