@@ -1,5 +1,17 @@
 # Florana - Smart Flower Plant Care & Disease Detection Mobile Application ( Plymouth ID-10953498)
 
+<div align="center">
+
+## Smart Plant Care, Disease Detection, and Seasonal Flower Shopping
+
+Florana is a final-year project that combines a mobile plant-care experience, AI-assisted disease prediction, growth tracking, reminders, shopping, and admin management in one connected platform.
+
+`Expo React Native` `FastAPI` `TensorFlow / Keras` `Admin Dashboard` `MongoDB`
+
+</div>
+
+## Project Showcase
+
 Florana is a final-year project for flower plant care, flower plant disease detection, growth tracking, and flower plant shopping. It combines an Expo React Native mobile app, a FastAPI backend, a TensorFlow/Keras disease prediction model, an admin dashboard, and a legacy React web client.
 
 ## 1. Project Title
