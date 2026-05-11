@@ -681,7 +681,6 @@ Accuracy depends on the dataset used for the latest training run. The repository
 
 ## 15. Contributors
 
-- Florana Development Team
 - GitHub: [msnavodya](https://github.com/msnavodya)
 
 ## 16. License
