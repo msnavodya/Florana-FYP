@@ -51,7 +51,9 @@ const translationOverrides: Record<string, Record<string, string>> = {
     login_success_body: "Welcome back. Your Florana account is ready.",
     catalog_listing_saved_title: "Listing saved",
     catalog_listing_saved_body: "{name} was listed successfully in the {season} catalog.",
-    diagnosis_image_unsupported: "Please ensure the uploaded image contains only a clear plant leaf. The system can detect and display whether the leaf is diseased or healthy. Unnecessary or unrelated images are not supported, so an error message is shown instead.",
+    diagnosis_card_body: "Upload one clear image of a single plant leaf to check whether it is healthy or diseased.",
+    diagnosis_image_unsupported:
+      "Please ensure the uploaded image contains only a clear plant leaf. The system will detect and display whether the leaf is diseased or healthy. Unnecessary or unrelated images are not supported, and an error message will be shown in such cases.",
     quick_tip_spotlight_title: "Community spotlight",
     quick_tip_spotlight_subtitle: "A live view of the selected tip plus the latest activity from your quick-tip circle.",
     quick_tip_pulse_posts: "Ideas",

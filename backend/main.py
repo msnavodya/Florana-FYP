@@ -254,7 +254,12 @@ def read_root():
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "ai", "plant_disease_model.keras")
 CLASS_PATH = os.path.join(BASE_DIR, "ai", "class_names.json")
-MIN_CONFIDENCE_THRESHOLD = 0.65
+MIN_CONFIDENCE_THRESHOLD = 0.72
+MIN_TOP_PREDICTION_MARGIN = 0.15
+LEAF_MIN_MASK_RATIO = 0.14
+LEAF_MIN_GREEN_RATIO = 0.08
+LEAF_MIN_LARGEST_COMPONENT_RATIO = 0.06
+LEAF_MIN_LARGEST_COMPONENT_SHARE = 0.55
 
 
 def normalize_prediction_label(raw_label: str) -> str:
@@ -271,6 +276,95 @@ def normalize_prediction_label(raw_label: str) -> str:
         return "Unknown"
 
     return " ".join(word.capitalize() for word in normalized.split())
+
+
+def _downsample_mask(mask: np.ndarray, size: int = 64) -> np.ndarray:
+    mask_image = Image.fromarray(mask.astype(np.uint8) * 255)
+    reduced = mask_image.resize((size, size), Image.Resampling.NEAREST)
+    return np.asarray(reduced, dtype=np.uint8) > 0
+
+
+def _largest_connected_component(mask: np.ndarray) -> int:
+    rows, cols = mask.shape
+    visited = np.zeros((rows, cols), dtype=bool)
+    largest = 0
+
+    for row in range(rows):
+        for col in range(cols):
+            if not mask[row, col] or visited[row, col]:
+                continue
+
+            stack = [(row, col)]
+            visited[row, col] = True
+            component_size = 0
+
+            while stack:
+                current_row, current_col = stack.pop()
+                component_size += 1
+
+                for next_row, next_col in (
+                    (current_row - 1, current_col),
+                    (current_row + 1, current_col),
+                    (current_row, current_col - 1),
+                    (current_row, current_col + 1),
+                ):
+                    if (
+                        0 <= next_row < rows
+                        and 0 <= next_col < cols
+                        and mask[next_row, next_col]
+                        and not visited[next_row, next_col]
+                    ):
+                        visited[next_row, next_col] = True
+                        stack.append((next_row, next_col))
+
+            largest = max(largest, component_size)
+
+    return largest
+
+
+def looks_like_leaf_image(img: Image.Image) -> bool:
+    hsv = np.asarray(img.convert("HSV"), dtype=np.float32)
+    hue = hsv[..., 0] * (360.0 / 255.0)
+    saturation = hsv[..., 1] / 255.0
+    value = hsv[..., 2] / 255.0
+
+    green_pixels = (
+        (hue >= 25.0)
+        & (hue <= 170.0)
+        & (saturation >= 0.18)
+        & (value >= 0.12)
+        & (value <= 0.97)
+    )
+    warm_leaf_pixels = (
+        (hue >= 10.0)
+        & (hue <= 35.0)
+        & (saturation >= 0.24)
+        & (value >= 0.15)
+        & (value <= 0.92)
+    )
+    leaf_mask = green_pixels | warm_leaf_pixels
+
+    leaf_ratio = float(np.mean(leaf_mask))
+    green_ratio = float(np.mean(green_pixels))
+    if leaf_ratio < LEAF_MIN_MASK_RATIO or green_ratio < LEAF_MIN_GREEN_RATIO:
+        return False
+
+    reduced_mask = _downsample_mask(leaf_mask)
+    dominant_component = _largest_connected_component(reduced_mask)
+    if dominant_component == 0:
+        return False
+
+    reduced_area = reduced_mask.size
+    reduced_leaf_pixels = int(np.count_nonzero(reduced_mask))
+    dominant_ratio = dominant_component / reduced_area
+    dominant_share = dominant_component / max(reduced_leaf_pixels, 1)
+    return dominant_ratio >= LEAF_MIN_LARGEST_COMPONENT_RATIO and dominant_share >= LEAF_MIN_LARGEST_COMPONENT_SHARE
+
+
+def get_prediction_margin(top_predictions: list[dict[str, float | str]]) -> float:
+    if len(top_predictions) < 2:
+        return 0.0
+    return float(top_predictions[0]["confidence"]) - float(top_predictions[1]["confidence"])
 
 try:
     if load_model is None:
@@ -348,7 +442,16 @@ def predict_image(file_bytes: bytes):
         raise HTTPException(status_code=500, detail="AI model not loaded")
     if image is None:
         raise HTTPException(status_code=500, detail="Image preprocessing is unavailable")
-    img = Image.open(io.BytesIO(file_bytes)).convert("RGB")
+
+    try:
+        with Image.open(io.BytesIO(file_bytes)) as uploaded_image:
+            img = uploaded_image.convert("RGB")
+    except (OSError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="Invalid image file") from exc
+
+    if not looks_like_leaf_image(img):
+        return "Needs closer inspection", 0.0, []
+
     img = img.resize((224, 224))
     img_array = image.img_to_array(img)
     img_array = np.expand_dims(img_array, axis=0) / 255.0
@@ -365,7 +468,7 @@ def predict_image(file_bytes: bytes):
     ]
 
     predicted_label = normalize_prediction_label(class_names.get(class_index, "Unknown"))
-    if confidence < MIN_CONFIDENCE_THRESHOLD:
+    if confidence < MIN_CONFIDENCE_THRESHOLD or get_prediction_margin(top_predictions) < MIN_TOP_PREDICTION_MARGIN:
         return "Needs closer inspection", confidence, top_predictions
 
     return predicted_label, confidence, top_predictions
@@ -544,6 +647,21 @@ async def predict(request: Request, file: UploadFile | None = File(None)):
     except Exception:
         logger.exception("Prediction failed unexpectedly for client=%s", _get_request_client(request))
         raise
+
+    if prediction == "Needs closer inspection":
+        logger.info(
+            "Prediction rejected as unsupported client=%s filename=%s confidence=%.4f",
+            _get_request_client(request),
+            file.filename,
+            confidence,
+        )
+        return {
+            "status": "unsupported",
+            "prediction": prediction,
+            "confidence": confidence,
+            "top_predictions": top_predictions,
+            "image_url": None,
+        }
 
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     filename = f"{timestamp}_{file.filename}"

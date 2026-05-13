@@ -49,8 +49,8 @@ type DiseaseCareInfo = {
   workingTime: string;
 };
 
-const MIN_SUPPORTED_PREDICTION_CONFIDENCE = 65;
-const MIN_SUPPORTED_PREDICTION_MARGIN = 12;
+const MIN_SUPPORTED_PREDICTION_CONFIDENCE = 72;
+const MIN_SUPPORTED_PREDICTION_MARGIN = 15;
 const SUPPORTED_PREDICTION_LABELS = new Set([
   "Botrytis",
   "Fresh Leaf",
@@ -478,6 +478,7 @@ export function HomeScreen() {
       const predictionMargin = getPredictionMargin(response.top_predictions);
 
       if (
+        response.status === "unsupported" ||
         isUnsupportedPredictionLabel(response.prediction) ||
         !isSupportedPredictionLabel(response.prediction) ||
         confidenceValue == null ||
