@@ -9,6 +9,7 @@ import logging
 import urllib.error
 import urllib.request
 import numpy as np
+from contextlib import asynccontextmanager
 from pathlib import Path
 from PIL import Image
 from datetime import datetime
@@ -118,6 +119,8 @@ if firebase_admin and os.path.exists(FIREBASE_KEY_PATH):
 else:
     print("Firebase disabled: firebase-key.json not found")
 
+scheduler: BackgroundScheduler | None = None
+
 
 def _env_list(name: str, default: str) -> list[str]:
     raw_value = os.getenv(name, default)
@@ -156,29 +159,8 @@ def _get_lan_ips() -> list[str]:
     return sorted(candidates)
 
 
-# ----------------- FastAPI App Setup -----------------
-app = FastAPI(title="Florana Backend")
-
-# Static files for uploaded images
-app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
-
-# CORS
-allowed_origins = _env_list("ALLOWED_ORIGINS", "*")
-allow_all_origins = "*" in allowed_origins
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"] if allow_all_origins else allowed_origins,
-    allow_credentials=not allow_all_origins,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    allow_origin_regex=None if allow_all_origins else r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+)(:\d+)?$",
-)
-
-
-# ================= STARTUP EVENT =================
-@app.on_event("startup")
-def startup_event():
-    """Print startup information."""
+def _print_startup_banner() -> None:
+    """Print startup information for local development and demos."""
     server_host = os.getenv("HOST", "0.0.0.0")
     server_port = int(os.getenv("PORT", "8000"))
     lan_ips = _get_lan_ips()
@@ -205,6 +187,41 @@ def startup_event():
         print("\nFlorana will fall back to local JSON storage for auth and plant data until MongoDB is available.")
 
     print("=" * 60 + "\n")
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    global scheduler
+
+    _print_startup_banner()
+    scheduler = BackgroundScheduler()
+    scheduler.start()
+
+    try:
+        yield
+    finally:
+        if scheduler and scheduler.running:
+            scheduler.shutdown(wait=False)
+        scheduler = None
+
+
+# ----------------- FastAPI App Setup -----------------
+app = FastAPI(title="Florana Backend", lifespan=lifespan)
+
+# Static files for uploaded images
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+
+# CORS
+allowed_origins = _env_list("ALLOWED_ORIGINS", "*")
+allow_all_origins = "*" in allowed_origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"] if allow_all_origins else allowed_origins,
+    allow_credentials=not allow_all_origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_origin_regex=None if allow_all_origins else r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+)(:\d+)?$",
+)
 
 
 # Routers
@@ -756,8 +773,6 @@ def delete_legacy_plant(plant_id: str):
 
 
 # ----------------- CARE REMINDER -----------------
-scheduler = BackgroundScheduler()
-scheduler.start()
 care_reminders = []
 
 
@@ -780,6 +795,9 @@ def send_care_notification(token: str, task: str):
 
 
 def schedule_care(reminder: dict):
+    if scheduler is None:
+        raise RuntimeError("Care reminder scheduler is unavailable")
+
     hour, minute = map(int, reminder["time"].split(":"))
     task = reminder.get("task", "water")
     scheduler.add_job(
