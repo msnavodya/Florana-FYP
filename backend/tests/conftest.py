@@ -27,6 +27,11 @@ def isolate_backend_state(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     for attr_name in ("USERS_FILE", "LOGIN_HISTORY_FILE"):
         _patch_storage_path(monkeypatch, auth_store, attr_name, tmp_path)
 
+    def _mock_connect_to_mongo():
+        monkeypatch.setattr(database, "connection_status", "connected")
+        return True
+
+    monkeypatch.setattr(database, "connect_to_mongo", _mock_connect_to_mongo)
     monkeypatch.setattr(database, "get_users_collection", lambda: None)
     monkeypatch.setattr(database, "get_plants_collection", lambda: None)
     monkeypatch.setattr(database, "get_products_collection", lambda: None)
