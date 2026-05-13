@@ -89,6 +89,22 @@ def connect_to_mongo():
         return False
 
 
+def close_mongo():
+    """Close the active MongoDB client and clear exported handles."""
+    global client, db, connection_status
+
+    if client is not None:
+        try:
+            client.close()
+        except Exception:
+            pass
+
+    client = None
+    db = None
+    _set_collections(None)
+    connection_status = "disconnected"
+
+
 def ensure_db_connection():
     """Reconnect on demand so routes can recover without restarting the API."""
     global client, connection_status
@@ -142,9 +158,6 @@ def get_feedback_collection():
 def get_care_reminders_collection():
     ensure_db_connection()
     return care_reminders_collection
-
-
-connect_to_mongo()
 
 # =============================
 # Helper / Health Check

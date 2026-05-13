@@ -193,6 +193,7 @@ def _print_startup_banner() -> None:
 async def lifespan(_: FastAPI):
     global scheduler
 
+    database.connect_to_mongo()
     _print_startup_banner()
     scheduler = BackgroundScheduler()
     scheduler.start()
@@ -203,6 +204,7 @@ async def lifespan(_: FastAPI):
         if scheduler and scheduler.running:
             scheduler.shutdown(wait=False)
         scheduler = None
+        database.close_mongo()
 
 
 # ----------------- FastAPI App Setup -----------------
