@@ -1,4 +1,4 @@
-# routes/plant.py
+# Define backend API routes for Plant features.
 from datetime import datetime
 import os
 import shutil

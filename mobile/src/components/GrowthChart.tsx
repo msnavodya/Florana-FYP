@@ -1,3 +1,4 @@
+// Render a reusable mobile UI component for Growth Chart.
 import { Dimensions, StyleSheet, Text, View } from "react-native";
 import { LineChart } from "react-native-chart-kit";
 
@@ -9,9 +10,8 @@ interface GrowthChartProps {
 }
 
 export function GrowthChart({ data }: GrowthChartProps) {
-  const sorted = [...data].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
+  // Sort measurements by date so the line always moves forward in time.
+  const sorted = [...data].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   if (!sorted.length) {
     return (
@@ -21,7 +21,7 @@ export function GrowthChart({ data }: GrowthChartProps) {
     );
   }
 
-  // ✅ FIXED WIDTH (SAFE FOR CARD)
+  // Leave some horizontal breathing room so the chart fits cleanly inside card padding.
   const chartWidth = Dimensions.get("window").width - 80;
 
   return (
@@ -69,21 +69,19 @@ export function GrowthChart({ data }: GrowthChartProps) {
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    overflow: "hidden",   // ✅ prevents cut/overflow
+    // Clip chart overflow so rounded card corners stay intact.
+    overflow: "hidden",
     borderRadius: radii.md,
   },
-
   chart: {
     borderRadius: radii.md,
   },
-
   emptyCard: {
     alignItems: "center",
     backgroundColor: colors.surfaceMuted,
     borderRadius: radii.md,
     padding: spacing.lg,
   },
-
   emptyText: {
     color: colors.textMuted,
     fontSize: 14,

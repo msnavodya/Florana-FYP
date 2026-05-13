@@ -1,4 +1,4 @@
-# database.py
+# Initialize database access and fallback persistence used by the backend.
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError, ServerSelectionTimeoutError
 import os

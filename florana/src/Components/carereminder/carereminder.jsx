@@ -1,3 +1,4 @@
+// Render the legacy web component for Carereminder.
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlarmClock, ArrowLeft, BellRing, Menu, Plus, Trash2 } from "lucide-react";
@@ -24,6 +25,7 @@ const initialOptions = {
 const initialNotifications = { push: true, email: false };
 
 export default function CareReminder() {
+  // Use client-side navigation to move between legacy web pages from this component.
   const navigate = useNavigate();
   const timerRef = useRef(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -139,6 +141,7 @@ export default function CareReminder() {
 
   const activeTasks = defaultOptions.filter((option) => options[option.key]).length + customNotes.length;
 
+  // Render the legacy web carereminder interface and its interactive controls.
   return (
     <div className="care-page mobile-screen">
       <MenuPanel isOpen={menuOpen} onClose={() => setMenuOpen(false)} />

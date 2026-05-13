@@ -1,3 +1,5 @@
+// Provide mobile utility helpers for Format logic.
+// Map loose health labels to a small set of UI colors for status badges and summaries.
 export const getHealthColor = (health?: string | null) => {
   if (!health) return "#777";
   const value = health.toLowerCase();

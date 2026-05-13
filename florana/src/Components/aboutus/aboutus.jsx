@@ -1,3 +1,4 @@
+// Render the legacy web component for Aboutus.
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Menu as MenuIcon } from "lucide-react";
@@ -7,9 +8,11 @@ import Menu from "../menu/menu";
 import "./aboutus.css";
 
 export default function AboutUs() {
+  // Use client-side navigation to move between legacy web pages from this component.
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Render the legacy web aboutus interface and its interactive controls.
   return (
     <div className="about-wrapper">
       <Menu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />

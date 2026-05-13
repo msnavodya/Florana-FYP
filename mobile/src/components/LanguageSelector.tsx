@@ -1,3 +1,4 @@
+// Render a reusable mobile UI component for Language Selector.
 import { useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -19,6 +20,7 @@ export function LanguageSelector() {
   const { language, setLanguage, t } = useLanguage();
   const [open, setOpen] = useState(false);
 
+  // Keep the trigger compact by showing a short code instead of the full language label.
   const selectedCode = codeMap[language];
 
   return (

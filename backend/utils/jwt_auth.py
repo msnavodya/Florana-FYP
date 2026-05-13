@@ -1,3 +1,4 @@
+# Provide shared backend utility helpers for Jwt Auth operations.
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt

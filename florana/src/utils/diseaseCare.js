@@ -1,3 +1,4 @@
+// Provide legacy web utility helpers for Disease Care logic.
 const diseaseCareInfo = {
   appledisease: {
     protection: "Spray a copper-based fungicide early in the season and remove infected leaves.",

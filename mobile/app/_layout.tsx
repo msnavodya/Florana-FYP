@@ -1,3 +1,4 @@
+// Define the root Expo Router layout for the mobile app.
 import { Stack } from "expo-router";
 import Constants from "expo-constants";
 import { StatusBar } from "expo-status-bar";

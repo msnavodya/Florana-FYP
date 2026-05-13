@@ -1,3 +1,4 @@
+// Manage shared mobile state for Cart features.
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
@@ -37,6 +38,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    // Hydrate the cart, currency, and cached exchange rates from local storage in one pass.
     Promise.all([
       AsyncStorage.getItem(storageKeys.cart),
       AsyncStorage.getItem(storageKeys.currency),
@@ -95,6 +97,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [ready, refreshExchangeRates]);
 
   const persistItems = async (next: CartItem[]) => {
+    // Keep state and storage in sync through one shared write path.
     setItems(next);
     await AsyncStorage.setItem(storageKeys.cart, JSON.stringify(next));
   };
@@ -131,10 +134,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const setCurrency = async (value: SupportedCurrency) => {
+    // Save the chosen display currency so totals stay consistent across app restarts.
     setCurrencyState(value);
     await AsyncStorage.setItem(storageKeys.currency, value);
   };
 
+  // Derive totals once from the stored cart items so every consumer uses the same math.
   const subtotal = items.reduce((sum, item) => sum + Number(item.price || 0) * item.quantity, 0);
 
   const convertAmountForCurrency = useCallback(

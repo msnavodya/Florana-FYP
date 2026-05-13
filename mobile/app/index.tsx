@@ -1,3 +1,4 @@
+// Register the Expo Router entry for the home route.
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { Redirect } from "expo-router";
 

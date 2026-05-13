@@ -1,3 +1,4 @@
+// Render the legacy web component for Register.
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Menu as MenuIcon } from "lucide-react";
@@ -7,6 +8,7 @@ import { createPlant, getApiErrorMessage } from "../../api";
 import "./register.css";
 
 export default function Register() {
+  // Use client-side navigation to move between legacy web pages from this component.
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -100,6 +102,7 @@ export default function Register() {
   const environmentOptions = ["Indoor", "Outdoor", "Greenhouse"];
   const climateOptions = ["Tropical", "Temperate", "Arid", "Subtropical"];
 
+  // Render the legacy web register interface and its interactive controls.
   return (
     <div className="register-wrapper">
       <Menu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />

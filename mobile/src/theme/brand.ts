@@ -1,3 +1,5 @@
+// Define mobile theme values for Brand styling.
+// Centralize bundled image assets so screens can reference one shared brand map.
 export const brandAssets = {
   logo: require("../../assets/floranalogo.jpg"),
   welcome: require("../../assets/welcome.jpg"),

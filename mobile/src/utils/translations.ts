@@ -1,4 +1,6 @@
+// Store the main multilingual UI copy used across the mobile experience.
 const translations: Record<string, Record<string, string>> = {
+  // English base copy.
   en: {
     hello_guest: "Hello, Guest!",
     hello_user: "Hello, {name}!",
@@ -497,6 +499,7 @@ const translations: Record<string, Record<string, string>> = {
     register_dropdown_placeholder: "{label}, {placeholder}",
     register_dropdown_search_label: "Search {label}",
   },
+  // Sinhala translations.
   si: {
     hello_guest: "ආයුබෝවන්, අමුත්තා!",
     hello_user: "ආයුබෝවන්, {name}!",
@@ -955,6 +958,7 @@ const translations: Record<string, Record<string, string>> = {
     register_dropdown_placeholder: "{label}, {placeholder}",
     register_dropdown_search_label: "{label} සොයන්න",
   },
+  // Tamil translations.
   ta: {
     hello_guest: "வணக்கம், விருந்தினர்!",
     hello_user: "வணக்கம், {name}!",

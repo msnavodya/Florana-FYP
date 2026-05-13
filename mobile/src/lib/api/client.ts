@@ -1,3 +1,4 @@
+// Wrap mobile API requests related to Client.
 import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 
 import {
@@ -32,6 +33,7 @@ const api = axios.create({
   timeout: 15000,
 });
 
+// Flatten backend error payloads into one readable string for screen-level status messages.
 function normalizeApiErrorDetail(detail: unknown): string | undefined {
   if (typeof detail === "string") {
     return detail;
@@ -108,6 +110,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const candidateUrls = [getApiUrl(), ...getApiUrlCandidates()].filter((value, index, items) => items.indexOf(value) === index);
   let lastError: AxiosError<{ detail?: unknown; message?: unknown }> | null = null;
 
+  // Try the active API host first, then fall back through known local-network candidates.
   for (const baseURL of candidateUrls) {
     try {
       const response = await api.request<T>({

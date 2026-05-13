@@ -1,3 +1,4 @@
+// Render a shared Expo UI component for Insight Card.
 import type { ComponentProps } from "react";
 import { useEffect, useRef } from "react";
 import {

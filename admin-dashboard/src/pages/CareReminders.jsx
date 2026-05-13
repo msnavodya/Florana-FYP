@@ -1,3 +1,4 @@
+// Render the admin dashboard page for Care Reminders.
 import { BellRing } from 'lucide-react';
 import { Card } from '../components/Card';
 import { StatusBadge } from '../components/StatusBadge';

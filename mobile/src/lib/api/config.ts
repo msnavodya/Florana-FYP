@@ -1,3 +1,4 @@
+// Wrap mobile API requests related to Config.
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 import { Platform } from "react-native";
@@ -13,6 +14,7 @@ function isPrivateIpv4Address(host: string) {
   return /^(10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)$/.test(host);
 }
 
+// Read the Expo host metadata so physical devices can discover the developer machine on the LAN.
 const getHostFromExpo = () => {
   const possibleHosts = [
     (Constants.expoConfig as { hostUri?: string } | null)?.hostUri,
@@ -68,6 +70,7 @@ const getDefaultApiUrl = (port = DEFAULT_BACKEND_PORT) => {
   return `http://127.0.0.1:${port}`;
 };
 
+// Prefer an explicit env var, but repair loopback URLs when the app runs on a real Android device.
 function resolveConfiguredApiUrl() {
   const rawConfiguredApiUrl = process.env.EXPO_PUBLIC_API_BASE_URL || process.env.EXPO_PUBLIC_API_URL;
 
@@ -143,6 +146,7 @@ export const setApiUrl = (value: string) => {
 };
 
 export const getApiUrlCandidates = () => {
+  // Build a small set of likely backend URLs so the client can recover from local host mismatches.
   const candidates: string[] = [];
 
   for (const variant of buildPortVariants(configuredApiUrl)) {
@@ -172,6 +176,7 @@ export const getApiUrlCandidates = () => {
 };
 
 export const buildApiUrl = (path = "") => {
+  // Turn relative backend paths into absolute URLs while leaving fully qualified URLs untouched.
   const apiUrl = getApiUrl();
 
   if (!path) {

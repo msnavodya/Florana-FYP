@@ -1,3 +1,4 @@
+// Render a reusable mobile UI component for Top Bar.
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
@@ -18,6 +19,7 @@ interface TopBarProps {
 export function TopBar({ title, subtitle, onMenuPress, backTo, stackBrand = true }: TopBarProps) {
   const { height, width } = useWindowDimensions();
   const { t } = useLanguage();
+  // Keep header controls readable on short screens without changing the overall layout pattern.
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
 
   return (
@@ -25,6 +27,7 @@ export function TopBar({ title, subtitle, onMenuPress, backTo, stackBrand = true
       <Pressable
         accessibilityLabel={t("back")}
         onPress={() => {
+          // Prefer an explicit destination, then the native history stack, then a safe home fallback.
           if (backTo) {
             router.replace(backTo);
           } else if (router.canGoBack()) {

@@ -1,3 +1,4 @@
+# Read and write payment records used by the backend checkout flow.
 from __future__ import annotations
 
 import json

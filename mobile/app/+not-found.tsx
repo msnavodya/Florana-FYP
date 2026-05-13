@@ -1,3 +1,4 @@
+// Render the fallback screen for unknown mobile routes.
 import { router } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 

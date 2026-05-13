@@ -1,3 +1,4 @@
+// Render the mobile Feedback screen.
 import { MaterialIcons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
@@ -22,6 +23,7 @@ import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 
 export function FeedbackScreen() {
   const { width, height } = useWindowDimensions();
+  // Keep the layout a bit tighter on smaller devices.
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
   const [menuOpen, setMenuOpen] = useState(false);
   const [rating, setRating] = useState(0);
@@ -52,12 +54,10 @@ export function FeedbackScreen() {
     setRating(0);
   };
 
+  // Render the mobile Feedback screen and its main interactive sections.
   return (
     <Screen>
-      <TopBar
-        title={t("feedback_title")}
-       onMenuPress={() => setMenuOpen(true)}
-      />
+      <TopBar title={t("feedback_title")} onMenuPress={() => setMenuOpen(true)} />
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
 
       <View style={[styles.heroCard, compact ? styles.heroCardCompact : null]}>
@@ -277,33 +277,30 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 14,
   },
-starRow: {
-  flexDirection: "row",
-  alignItems: "center",
-},
-
-starRowCompact: {
-  justifyContent: "space-between",
-},
-
-starButton: {
-  alignItems: "center",
-  justifyContent: "center",
-  backgroundColor: "#FFF8E8",
-  borderRadius: 16,
-  height: 46,
-  width: 46,
-},
-
-// ✅ FIXED VERSION
-starButtonCompact: {
-  flex: 1,              // equal width
-  marginHorizontal: 4,  // 🔥 replaces gap (more reliable in RN)
-  borderRadius: 10,
-  height: 42,
-  alignItems: "center",
-  justifyContent: "center",
-},
+  starRow: {
+    alignItems: "center",
+    flexDirection: "row",
+  },
+  starRowCompact: {
+    justifyContent: "space-between",
+  },
+  starButton: {
+    alignItems: "center",
+    backgroundColor: "#FFF8E8",
+    borderRadius: 16,
+    height: 46,
+    justifyContent: "center",
+    width: 46,
+  },
+  // Let the compact star buttons stretch evenly because React Native gap support is less reliable here.
+  starButtonCompact: {
+    alignItems: "center",
+    borderRadius: 10,
+    flex: 1,
+    height: 42,
+    justifyContent: "center",
+    marginHorizontal: 4,
+  },
   feedbackInput: {
     backgroundColor: colors.white,
     borderColor: colors.border,

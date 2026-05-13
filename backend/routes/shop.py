@@ -1,3 +1,4 @@
+# Define backend API routes for Shop features.
 import os
 from datetime import datetime
 from pathlib import Path

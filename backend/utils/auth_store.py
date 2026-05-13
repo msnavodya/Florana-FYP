@@ -1,3 +1,4 @@
+# Provide shared backend utility helpers for Auth Store operations.
 import json
 import os
 from datetime import datetime

@@ -1,3 +1,4 @@
+// Render the admin dashboard page for Reports Analytics.
 import { Area, AreaChart, Bar, BarChart, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { ChartCard } from '../components/ChartCard';
 import { mock } from '../services/api';

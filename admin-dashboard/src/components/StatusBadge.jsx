@@ -1,3 +1,4 @@
+// Render a reusable admin dashboard component for Status Badge.
 const styles = {
   Active: 'bg-emerald-50 text-emerald-700',
   Approved: 'bg-emerald-50 text-emerald-700',

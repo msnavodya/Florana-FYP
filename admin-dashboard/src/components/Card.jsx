@@ -1,3 +1,4 @@
+// Render a reusable admin dashboard component for Card.
 export function Card({ title, value, icon: Icon, children, accent = 'bg-forest-50 text-forest-700' }) {
   return (
     <section className="rounded-lg bg-white p-5 shadow-soft ring-1 ring-[#ead8f1]">

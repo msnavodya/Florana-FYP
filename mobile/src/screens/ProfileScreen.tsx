@@ -1,3 +1,4 @@
+// Render the mobile Profile screen.
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -33,8 +34,11 @@ type ProfileStats = {
 };
 
 export function ProfileScreen() {
+  // Tighten spacing slightly on smaller screens to keep each card comfortably visible.
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
+
+  // Keep local profile details, live stats, and app helpers together.
   const [menuOpen, setMenuOpen] = useState(false);
   const [storedUser, setStoredUser] = useState<StoredUser | null>(null);
   const [profileStats, setProfileStats] = useState<ProfileStats>({
@@ -47,6 +51,7 @@ export function ProfileScreen() {
   const { t } = useLanguage();
 
   useEffect(() => {
+    // Combine cached user data with reminder totals so the profile stays useful offline.
     const loadProfile = async () => {
       try {
         const userRaw = await AsyncStorage.getItem(storageKeys.user);
@@ -76,10 +81,12 @@ export function ProfileScreen() {
     void loadProfile();
   }, [reminders]);
 
+  // Prefer live auth data, then fall back to cached storage values for the profile summary.
   const displayName = user?.full_name || storedUser?.full_name || storedUser?.name || t("guest_gardener");
   const displayEmail = user?.email || storedUser?.email || "guest@florana.app";
   const displayId = user?.id || user?._id || storedUser?.id || storedUser?._id || "demo-001";
 
+  // Derive initials for the avatar badge from the best available display name.
   const initials = useMemo(() => {
     return (
       displayName
@@ -91,6 +98,7 @@ export function ProfileScreen() {
     );
   }, [displayName]);
 
+  // Render the mobile Profile screen and its main interactive sections.
   return (
     <Screen>
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
@@ -190,6 +198,7 @@ export function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Header row and icon controls.
   headerRow: {
     alignItems: "center",
     flexDirection: "row",
@@ -230,6 +239,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: 4,
   },
+
+  // Profile hero and avatar.
   profileHero: {
     alignItems: "center",
     backgroundColor: colors.white,
@@ -277,6 +288,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 4,
   },
+
+  // Stats overview cards.
   statsGrid: {
     flexDirection: "row",
     gap: spacing.sm,
@@ -313,6 +326,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 6,
   },
+
+  // Detail cards and metadata rows.
   infoCard: {
     backgroundColor: colors.white,
     borderRadius: radii.xl,
@@ -360,6 +375,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: spacing.md,
   },
+
+  // Bottom actions.
   actionStack: {
     gap: spacing.sm,
   },

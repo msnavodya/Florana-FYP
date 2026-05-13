@@ -1,3 +1,4 @@
+# Provide the legacy Flask-based payment callback and status flow.
 from __future__ import annotations
 
 import html
@@ -26,6 +27,7 @@ DEFAULT_RETURN_URL = "florana-payments://checkout-result"
 
 
 def _env_list(name: str, default: str) -> list[str]:
+    # Convert comma-separated environment values into clean Python lists.
     raw = os.getenv(name, default)
     return [item.strip() for item in raw.split(",") if item.strip()]
 
@@ -44,6 +46,7 @@ def _validate_amount(raw_amount: Any) -> Decimal:
         raise ValueError("The 'amount' field is required.")
 
     try:
+        # Normalize currency math through Decimal so Stripe totals stay precise.
         amount = Decimal(str(raw_amount)).quantize(PKR_DECIMAL_PLACES, rounding=ROUND_HALF_UP)
     except (InvalidOperation, ValueError) as exc:
         raise ValueError("Amount must be a valid number.") from exc
@@ -68,16 +71,19 @@ def _normalize_return_url(raw_return_url: Any) -> str:
     )
 
     if not any(return_url.startswith(prefix) for prefix in allowed_prefixes):
+        # Only allow trusted deep-link prefixes back into the app.
         raise ValueError("Unsupported return_url value.")
 
     return return_url
 
 
 def _amount_to_minor_units(amount: Decimal) -> int:
+    # Stripe expects minor currency units, so PKR 10.50 becomes 1050.
     return int((amount * 100).to_integral_value(rounding=ROUND_HALF_UP))
 
 
 def _build_redirect_target(return_url: str, status: str, order_id: str, session_id: str | None = None) -> str:
+    # Preserve the original return target and append checkout result details for the app to read.
     separator = "&" if "?" in return_url else "?"
     params = {"status": status, "order_id": order_id}
     if session_id:
@@ -86,6 +92,7 @@ def _build_redirect_target(return_url: str, status: str, order_id: str, session_
 
 
 def _redirect_page(title: str, body: str, redirect_url: str) -> str:
+    # This small HTML page bridges a browser-based Stripe redirect back into the mobile deep link.
     safe_title = html.escape(title)
     safe_body = html.escape(body)
     safe_href = html.escape(redirect_url, quote=True)
@@ -140,6 +147,7 @@ def create_app() -> Flask:
 
     app = Flask(__name__)
 
+    # Limit browser access to the mobile/web origins that are expected to call this payment helper.
     allowed_origins = _env_list(
         "ALLOWED_ORIGINS",
         "http://localhost:8081,http://127.0.0.1:8081,http://localhost:19006,http://127.0.0.1:19006",
@@ -202,6 +210,7 @@ def create_app() -> Flask:
         amount_minor_units = _amount_to_minor_units(amount)
         public_base_url = _public_base_url()
 
+        # Stripe returns to these helper URLs first, and they then deep-link the user back into the app.
         encoded_return_url = quote(return_url, safe="")
         success_url = (
             f"{public_base_url}/checkout/success?"
@@ -210,6 +219,7 @@ def create_app() -> Flask:
         cancel_url = f"{public_base_url}/checkout/cancel?order_id={order_id}&return_url={encoded_return_url}"
 
         try:
+            # Use one checkout line item because the final total has already been prepared upstream.
             session = stripe.checkout.Session.create(
                 payment_method_types=["card"],
                 mode="payment",
@@ -245,6 +255,7 @@ def create_app() -> Flask:
             }
         )
 
+        # Return both the hosted Stripe URL and the locally tracked order summary to the client.
         return (
             jsonify(
                 {
@@ -287,6 +298,7 @@ def create_app() -> Flask:
 
         if order_id:
             existing = get_order(order_id)
+            # Only downgrade still-pending orders so a later paid webhook is not overwritten.
             if existing and existing.get("status") == "pending":
                 update_order(order_id, {"status": "cancelled"})
 
@@ -321,6 +333,7 @@ def create_app() -> Flask:
             amount_total = Decimal(session.get("amount_total", 0)) / 100
 
             if order_id:
+                # Update the pending order when it exists, or recreate it if Stripe finishes first.
                 updated = update_order(
                     order_id,
                     {

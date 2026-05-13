@@ -1,3 +1,4 @@
+// Render the legacy web component for Help.
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Menu as MenuIcon } from "lucide-react";
@@ -8,10 +9,12 @@ import logo from "../Assets/floranalogo.jpg";
 import "./help.css";
 
 export default function Help() {
+  // Use client-side navigation to move between legacy web pages from this component.
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const { t } = useTranslation();
 
+  // Render the legacy web help interface and its interactive controls.
   return (
     <div className="help-wrapper">
       <Menu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
@@ -32,17 +35,17 @@ export default function Help() {
         <h2 className="help-title">{t("help_support")}</h2>
 
         <div className="card help-card">
-          <h3>🔧 {t("app_not_working")}</h3>
+          <h3>ðŸ”§ {t("app_not_working")}</h3>
           <p>{t("app_restart_hint")}</p>
         </div>
 
         <div className="card help-card">
-          <h3>📩 {t("contact_support_card")}</h3>
+          <h3>ðŸ“© {t("contact_support_card")}</h3>
           <p>Email: support@florana.com</p>
         </div>
 
         <div className="card help-card">
-          <h3>📘 {t("faq_center")}</h3>
+          <h3>ðŸ“˜ {t("faq_center")}</h3>
           <p>{t("share_your_thoughts")}</p>
         </div>
       </div>

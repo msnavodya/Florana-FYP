@@ -1,3 +1,4 @@
+// Wrap mobile API requests related to Currency.
 import { BASE_CURRENCY, type SupportedCurrency, normalizeExchangeRates } from "../../utils/shop";
 
 const FRANKFURTER_API = "https://api.frankfurter.dev/v2";
@@ -14,6 +15,7 @@ export interface ExchangeRatesResponse {
   updatedAt: string | null;
 }
 
+// Fetch the latest supported exchange rates and normalize missing values against the base currency.
 export async function fetchLatestExchangeRates(): Promise<ExchangeRatesResponse> {
   const response = await fetch(`${FRANKFURTER_API}/rates?base=${BASE_CURRENCY}&quotes=USD,EUR`);
 

@@ -1,3 +1,4 @@
+// Render a reusable mobile UI component for Text Field.
 import { StyleSheet, Text, TextInput, View, useWindowDimensions, type TextInputProps } from "react-native";
 
 import { useSettings } from "../context/SettingsContext";
@@ -13,6 +14,7 @@ export function TextField({ label, error, helperText, ...props }: TextFieldProps
   const { height, width } = useWindowDimensions();
   const { fontScale } = useSettings();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
+  // Reuse the same message slot for either validation feedback or normal helper copy.
   const message = error || helperText;
 
   return (

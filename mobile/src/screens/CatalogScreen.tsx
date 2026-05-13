@@ -1,3 +1,4 @@
+// Render the mobile Catalog screen.
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -33,9 +34,11 @@ const seasonKeyMap: Record<(typeof seasons)[number], string> = {
 
 export function CatalogScreen() {
   const { height, width } = useWindowDimensions();
+  // Collapse a few visual details on smaller devices to keep the catalog easier to scan.
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
   const { totalItems } = useCart();
   const { t } = useLanguage();
+  // Reuse a single timer so transient status messages do not overlap each other.
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -65,6 +68,7 @@ export function CatalogScreen() {
   };
 
   useEffect(() => {
+    // Load the marketplace once on entry; cart updates are handled by context separately.
     void loadProducts();
 
     return () => {
@@ -76,9 +80,11 @@ export function CatalogScreen() {
 
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
+    // Keep search intentionally lightweight by matching against the product name only.
     return products.filter((product) => !query || (product.name || "").toLowerCase().includes(query));
   }, [products, search]);
 
+  // Render the mobile Catalog screen and its main interactive sections.
   return (
     <Screen>
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />

@@ -1,3 +1,4 @@
+// Run the mobile development helper script for Start Expo.
 const net = require("net");
 const os = require("os");
 const path = require("path");

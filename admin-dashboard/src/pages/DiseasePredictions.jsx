@@ -1,3 +1,4 @@
+// Render the admin dashboard page for Disease Predictions.
 import { DataTable } from '../components/DataTable';
 import { StatusBadge } from '../components/StatusBadge';
 import { mock } from '../services/api';

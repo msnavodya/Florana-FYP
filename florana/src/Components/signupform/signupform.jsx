@@ -1,3 +1,4 @@
+// Render the legacy web component for Signupform.
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signupUser } from "../../api";
@@ -7,6 +8,7 @@ import "./signupform.css";
 
 
 export default function SignUpForm() {
+  // Use client-side navigation to move between legacy web pages from this component.
   const navigate = useNavigate();
 
   const [fullName, setFullName] = useState("");
@@ -65,6 +67,7 @@ export default function SignUpForm() {
     }
   };
 
+  // Render the legacy web signupform interface and its interactive controls.
   return (
     <div className="signup-container">
       <div className="phone-frame">

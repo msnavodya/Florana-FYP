@@ -1,3 +1,4 @@
+// Render the legacy web component for Signinform.
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginUser } from "../../api";
@@ -7,6 +8,7 @@ import "./signinform.css";
 
 
 export default function SignInForm() {
+  // Use client-side navigation to move between legacy web pages from this component.
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -65,6 +67,7 @@ export default function SignInForm() {
     }
   };
 
+  // Render the legacy web signinform interface and its interactive controls.
   return (
     <div className="signin-container">
       <div className="signin-card">

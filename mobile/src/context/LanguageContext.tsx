@@ -1,3 +1,4 @@
+// Manage shared mobile state for Language features.
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
@@ -50,6 +51,7 @@ const labelToCode: Record<LanguageLabel, LanguageCode> = {
   Chinese: "zh",
 };
 
+// Layer targeted translation fixes over the base dictionaries without duplicating whole language files.
 const mergedTranslations = Object.entries(translationOverrides).reduce<Record<string, Record<string, string>>>(
   (result, [languageCode, overrides]) => ({
     ...result,
@@ -101,6 +103,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    // Support both the dedicated language key and the older settings payload during startup.
     Promise.all([AsyncStorage.getItem(storageKeys.appLanguage), AsyncStorage.getItem(storageKeys.settings)])
       .then(async ([savedLanguage, savedSettings]) => {
         if (savedLanguage) {
@@ -126,6 +129,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setLanguage = useCallback(async (value: LanguageLabel) => {
+    // Keep the selected label in memory while storing the compact code on disk.
     setLanguageState(value);
     await AsyncStorage.setItem(storageKeys.appLanguage, labelToCode[value]);
   }, []);

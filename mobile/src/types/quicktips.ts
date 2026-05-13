@@ -1,3 +1,5 @@
+// Define shared mobile TypeScript types for Quicktips data.
+// One quick-tip card returned by the backend suggestion endpoint.
 export interface QuickTipItem {
   id: string;
   category: string;
@@ -6,6 +8,7 @@ export interface QuickTipItem {
   detail: string;
 }
 
+// Context snapshot the backend uses to generate relevant quick tips.
 export interface QuickTipContext {
   season: string;
   hour: number;
@@ -14,6 +17,7 @@ export interface QuickTipContext {
   featured_plant: string | null;
 }
 
+// Full quick-tips response returned to the mobile quick-tip screen.
 export interface QuickTipsResponse {
   generated_at: string;
   context: QuickTipContext;

@@ -1,3 +1,4 @@
+// Render the admin dashboard page for Orders.
 import { CreditCard, RefreshCcw, Trash2 } from 'lucide-react';
 import { DataTable } from '../components/DataTable';
 import { StatusBadge } from '../components/StatusBadge';

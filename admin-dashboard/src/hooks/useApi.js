@@ -1,3 +1,4 @@
+// Provide the admin dashboard hook for Use Api behavior.
 import { useEffect, useState } from 'react';
 
 export function useApi(loader, deps = []) {

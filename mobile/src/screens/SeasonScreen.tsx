@@ -1,3 +1,4 @@
+// Render the mobile Season screen.
 import { MaterialIcons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -34,11 +35,16 @@ const seasonKeyMap = {
 } as const;
 
 export function SeasonScreen() {
+  // Normalize the route parameter so the screen always works with a safe season key.
   const params = useLocalSearchParams<{ season?: string }>();
   const routeSeason = typeof params.season === "string" ? params.season.toLowerCase() : "all";
   const safeSeason = seasonTabs.includes(routeSeason as (typeof seasonTabs)[number]) ? routeSeason : "all";
+
+  // Use a compact layout on shorter or narrower devices.
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
+
+  // Screen state for cart access, translations, menu visibility, and product actions.
   const { totalItems, addItem, removeItem, formatMoney } = useCart();
   const { t } = useLanguage();
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -48,6 +54,7 @@ export function SeasonScreen() {
   const [status, setStatus] = useState("");
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
 
+  // Show short-lived feedback after cart and delete actions.
   const showStatus = (message: string) => {
     setStatus(message);
     if (statusTimer.current) {
@@ -56,6 +63,7 @@ export function SeasonScreen() {
     statusTimer.current = setTimeout(() => setStatus(""), 2400);
   };
 
+  // Load the latest catalog items from the backend.
   const loadProducts = useCallback(async () => {
     try {
       const response = await getProducts();
@@ -65,12 +73,14 @@ export function SeasonScreen() {
     }
   }, []);
 
+  // Refresh products whenever the user comes back to this screen.
   useFocusEffect(
     useCallback(() => {
       void loadProducts();
     }, [loadProducts])
   );
 
+  // Clear the feedback timer when the screen unmounts.
   useEffect(() => {
     return () => {
       if (statusTimer.current) {
@@ -79,6 +89,7 @@ export function SeasonScreen() {
     };
   }, []);
 
+  // Apply both the season filter and the free-text search to the product list.
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
 
@@ -90,11 +101,13 @@ export function SeasonScreen() {
     });
   }, [products, safeSeason, search]);
 
+  // Add a product to the shared cart and confirm it to the user.
   const handleAddToCart = async (product: Product) => {
     await addItem(product);
     showStatus(t("product_added_cart", { name: product.name }));
   };
 
+  // Remove a listed product from both the catalog and the local cart state.
   const handleDeleteProduct = async (product: Product) => {
     if (deletingProductId) {
       return;
@@ -114,9 +127,11 @@ export function SeasonScreen() {
     }
   };
 
+  // Translate season keys into localized labels for tabs, cards, and the hero title.
   const getSeasonLabel = (value: string) => t(seasonKeyMap[value as keyof typeof seasonKeyMap] || "catalog_all_plants");
   const title = safeSeason === "all" ? t("catalog_all_plants") : t("season_plants_title", { season: getSeasonLabel(safeSeason) });
 
+  // Render the mobile Season screen and its main interactive sections.
   return (
     <Screen>
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
@@ -264,6 +279,7 @@ export function SeasonScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Top bar controls.
   topBar: {
     alignItems: "center",
     flexDirection: "row",
@@ -328,6 +344,8 @@ const styles = StyleSheet.create({
     width: 42,
     ...shadows.soft,
   },
+
+  // Hero summary card.
   heroCard: {
     backgroundColor: "#6A52CB",
     borderRadius: 30,
@@ -390,6 +408,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
   },
+
+  // Season filters and search tools.
   seasonNav: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -436,6 +456,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     minHeight: 50,
   },
+
+  // Product card list.
   productGrid: {
     gap: spacing.md,
   },
@@ -513,6 +535,8 @@ const styles = StyleSheet.create({
   productActions: {
     gap: spacing.sm,
   },
+
+  // Empty-state feedback.
   emptyCard: {
     alignItems: "center",
     backgroundColor: "rgba(255,255,255,0.9)",

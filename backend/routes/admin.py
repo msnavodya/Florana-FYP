@@ -1,3 +1,4 @@
+# Define backend API routes for Admin features.
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -21,6 +22,7 @@ router = APIRouter(prefix="/admin", tags=["Admin"], dependencies=[Depends(admin_
 
 
 def serialize_user(user: dict) -> dict:
+    # Normalize MongoDB and local fallback user records into one admin-facing response shape.
     return {
         "id": str(user.get("_id") or user.get("id") or ""),
         "email": user.get("email", ""),
@@ -29,6 +31,7 @@ def serialize_user(user: dict) -> dict:
 
 
 def serialize_plant(plant: dict) -> dict:
+    # Fold older plant field names into a stable structure for the dashboard tables.
     return {
         "id": str(plant.get("_id") or plant.get("id") or ""),
         "name": plant.get("name") or plant.get("plant_name") or "Unknown",
@@ -40,6 +43,7 @@ def serialize_plant(plant: dict) -> dict:
 
 
 def serialize_payment(order: dict) -> dict:
+    # Flatten nested order details so the admin UI can render payments without extra parsing.
     delivery = order.get("delivery") or {}
     items = order.get("items") or []
     order_id = str(order.get("_id") or order.get("id") or "")
@@ -69,6 +73,7 @@ def serialize_payment(order: dict) -> dict:
 def list_orders() -> list[dict]:
     database.ensure_db_connection()
     if getattr(database, "db", None) is None:
+        # Use the local JSON order store when MongoDB is unavailable during development.
         records = local_store.list_items(ORDERS_FILE)
     else:
         records = list(database.db["orders"].find())
@@ -129,6 +134,7 @@ def delete_admin_payment(payment_id: str):
 
 @router.get("/summary")
 def get_admin_summary():
+    # Build the summary from the same admin route helpers used by the detailed pages.
     users = get_admin_users()
     plants = get_admin_plants()
     products = get_admin_products()

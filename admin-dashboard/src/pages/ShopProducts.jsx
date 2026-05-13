@@ -1,3 +1,4 @@
+// Render the admin dashboard page for Shop Products.
 import { Check, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { DataTable } from '../components/DataTable';

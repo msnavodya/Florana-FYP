@@ -1,3 +1,4 @@
+// Configure the admin dashboard build settings for Vite.Config.
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 

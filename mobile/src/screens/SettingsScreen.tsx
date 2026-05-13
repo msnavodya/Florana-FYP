@@ -1,3 +1,4 @@
+// Render the mobile Settings screen.
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system/legacy";
@@ -25,6 +26,7 @@ const fontSizeLabelKeyMap: Record<(typeof fontSizes)[number], string> = {
 
 export function SettingsScreen() {
   const { height, width } = useWindowDimensions();
+  // Keep the layout a bit tighter on smaller devices.
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
   const [menuOpen, setMenuOpen] = useState(false);
   const [status, setStatus] = useState("");
@@ -136,6 +138,7 @@ export function SettingsScreen() {
     ]);
   };
 
+  // Render the mobile Settings screen and its main interactive sections.
   return (
     <Screen>
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />

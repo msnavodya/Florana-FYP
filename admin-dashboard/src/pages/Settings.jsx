@@ -1,3 +1,4 @@
+// Render the admin dashboard page for Settings.
 import { LogOut, UserCircle } from 'lucide-react';
 import { Card } from '../components/Card';
 

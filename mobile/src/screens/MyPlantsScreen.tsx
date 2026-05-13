@@ -1,3 +1,4 @@
+// Render the mobile My Plants screen.
 import { MaterialIcons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -15,6 +16,7 @@ import type { Plant } from "../types/plants";
 
 export function MyPlantsScreen() {
   const { height, width } = useWindowDimensions();
+  // Switch to a slightly tighter layout on smaller devices.
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
   const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -22,8 +24,10 @@ export function MyPlantsScreen() {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [status, setStatus] = useState("");
+  // Keep a single dismiss timer alive so repeated messages replace each other cleanly.
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Show temporary success or error feedback without leaving old timers running.
   const showStatus = (message: string) => {
     setStatus(message);
     if (statusTimer.current) {
@@ -35,6 +39,7 @@ export function MyPlantsScreen() {
   const loadPlants = async () => {
     try {
       const response = await getPlants();
+      // Hide incomplete or intentionally untracked records from the My Plants list.
       const validPlants = (response || []).filter((plant) => plant && plant.tracking !== false && plant.name?.trim());
       setPlants(validPlants);
     } catch {
@@ -46,6 +51,7 @@ export function MyPlantsScreen() {
 
   useEffect(() => {
     void loadPlants();
+    // Poll in the background so reminder/warning changes show up without a full app restart.
     const interval = setInterval(() => void loadPlants(), 30000);
     return () => {
       clearInterval(interval);
@@ -57,10 +63,12 @@ export function MyPlantsScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      // Refresh every time the screen regains focus after navigating back from details or registration.
       void loadPlants();
     }, [])
   );
 
+  // Remove the plant, update the local list immediately, and then sync from the backend.
   const handleDelete = async (plant: Plant) => {
     const plantId = plant.id || plant._id;
     if (!plantId || deletingId) {
@@ -82,6 +90,7 @@ export function MyPlantsScreen() {
 
   const attentionCount = useMemo(() => plants.filter((plant) => plant.warning).length, [plants]);
 
+  // Render the mobile My Plants screen and its main interactive sections.
   return (
     <Screen>
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
@@ -180,6 +189,7 @@ export function MyPlantsScreen() {
                       accessibilityLabel={t("delete_plant")}
                       disabled={deletingId === (plant.id || plant._id)}
                       onPress={(event) => {
+                        // Prevent the card tap handler from opening the plant profile while deleting.
                         event.stopPropagation();
                         void handleDelete(plant);
                       }}
@@ -245,6 +255,7 @@ export function MyPlantsScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Top navigation and loading state.
   topBar: {
     alignItems: "center",
     flexDirection: "row",
@@ -293,6 +304,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
   },
+
+  // Intro header and summary cards.
   headerCard: {
     alignItems: "flex-start",
     backgroundColor: colors.surface,
@@ -395,6 +408,8 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     lineHeight: 20,
   },
+
+  // Status banner and primary register action.
   statusCard: {
     backgroundColor: "rgba(255,255,255,0.94)",
     borderColor: colors.border,
@@ -426,6 +441,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "900",
   },
+
+  // Empty state and plant cards.
   emptyCard: {
     alignItems: "center",
     backgroundColor: colors.surface,
@@ -580,6 +597,8 @@ const styles = StyleSheet.create({
   badgeTextRed: {
     color: "#C76A2C",
   },
+
+  // Card footer arrow.
   arrowWrap: {
     alignItems: "flex-end",
     marginTop: spacing.sm,

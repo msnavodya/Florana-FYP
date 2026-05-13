@@ -1,5 +1,6 @@
+// Render the mobile Flower Profile screen.
 import { useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, FlatList, Image, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
@@ -9,6 +10,7 @@ import { GrowthChart } from "../components/GrowthChart";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { TopBar } from "../components/TopBar";
+import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { buildApiUrl } from "../lib/api/config";
 import { addGrowth, getGrowth, getPlantByName } from "../lib/api/plants";
@@ -18,18 +20,41 @@ import { getHealthColor } from "../utils/format";
 
 export function FlowerProfileScreen() {
   const { plantName } = useLocalSearchParams<{ plantName: string }>();
+  const { authNotice, setAuthNotice } = useAuth();
   const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const [plant, setPlant] = useState<Plant | null>(null);
   const [growthData, setGrowthData] = useState<GrowthRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusMessage, setStatusMessage] = useState("");
   const [newHeight, setNewHeight] = useState("");
   const [newHealth, setNewHealth] = useState("");
   const [newNotes, setNewNotes] = useState("");
   const [savingGrowth, setSavingGrowth] = useState(false);
+  const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Decode once so the route value works cleanly in the header and API lookups.
   const decodedName = decodeURIComponent(plantName || "");
 
   useEffect(() => {
+    // Show one-time success messages when another flow redirects into this profile.
+    if (!authNotice) {
+      return;
+    }
+
+    setStatusMessage(authNotice);
+    if (statusTimer.current) {
+      clearTimeout(statusTimer.current);
+    }
+
+    statusTimer.current = setTimeout(() => {
+      setStatusMessage("");
+    }, 3200);
+
+    setAuthNotice(null);
+  }, [authNotice, setAuthNotice]);
+
+  useEffect(() => {
+    // Load the plant profile first, then fetch growth history when we have a saved plant id.
     const load = async () => {
       try {
         const plantData = await getPlantByName(decodedName);
@@ -53,6 +78,15 @@ export function FlowerProfileScreen() {
     void load();
   }, [decodedName, t]);
 
+  useEffect(() => {
+    return () => {
+      if (statusTimer.current) {
+        clearTimeout(statusTimer.current);
+      }
+    };
+  }, []);
+
+  // Keep chart data chronological and omit empty detail rows from the info grid.
   const sortedGrowth = useMemo(
     () => [...growthData].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
     [growthData]
@@ -75,6 +109,7 @@ export function FlowerProfileScreen() {
       ].filter(([, value]) => Boolean(value && String(value).trim()))
     : [];
 
+  // Validate and save a new growth record, then reload the latest history from the backend.
   const handleAddGrowth = async () => {
     const heightValue = Number(newHeight);
 
@@ -110,6 +145,7 @@ export function FlowerProfileScreen() {
     }
   };
 
+  // Render the mobile Flower Profile screen and its main interactive sections.
   return (
     <Screen>
       <TopBar title={decodedName || t("plant_label")} onMenuPress={() => setMenuOpen(true)} />
@@ -119,6 +155,13 @@ export function FlowerProfileScreen() {
 
       {plant ? (
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          {statusMessage ? (
+            <View style={styles.statusBanner}>
+              <MaterialIcons name="check-circle" size={18} color={colors.success} />
+              <Text style={styles.statusBannerText}>{statusMessage}</Text>
+            </View>
+          ) : null}
+
           <View style={styles.heroCard}>
             {imageUri ? (
               <Image resizeMode="cover" source={{ uri: imageUri }} style={styles.heroImage} />
@@ -198,6 +241,7 @@ export function FlowerProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Loading state and overall scroll spacing.
   loading: {
     color: colors.textMuted,
     fontSize: 14,
@@ -206,6 +250,25 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingBottom: spacing.xl,
   },
+  statusBanner: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderRadius: 18,
+    flexDirection: "row",
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    ...shadows.soft,
+  },
+  statusBannerText: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "700",
+    lineHeight: 20,
+  },
+
+  // Hero media, overlay, and metadata chips.
   heroCard: {
     backgroundColor: colors.backgroundDeep,
     borderRadius: 28,
@@ -263,6 +326,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "800",
   },
+
+  // Shared content cards, section headings, and detail rows.
   infoCard: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
@@ -282,6 +347,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+
+  // Detail and history lists.
   detailsGrid: {
     gap: spacing.sm,
   },
@@ -318,6 +385,8 @@ const styles = StyleSheet.create({
   historyList: {
     gap: spacing.sm,
   },
+
+  // Growth entry form fields.
   input: {
     backgroundColor: colors.white,
     borderColor: colors.border,

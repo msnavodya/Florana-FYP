@@ -1,8 +1,9 @@
+// Render the mobile Sell screen.
 import { MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from "react-native";
 
 import { AppMenu } from "../components/AppMenu";
 import { BottomNav } from "../components/BottomNav";
@@ -28,9 +29,11 @@ const seasonKeyMap: Record<(typeof seasons)[number], string> = {
 
 export function SellScreen() {
   const { height, width } = useWindowDimensions();
+  // Keep the layout a bit tighter on smaller devices.
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
   const { totalItems, removeItem, formatMoney } = useCart();
   const { t } = useLanguage();
+  // Reuse one timer so new status messages replace the previous banner cleanly.
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -53,6 +56,7 @@ export function SellScreen() {
     statusTimer.current = setTimeout(() => setStatus(""), 2500);
   };
 
+  // Refresh the seller's current listings from the backend marketplace.
   const loadProducts = async () => {
     setLoading(true);
     try {
@@ -67,6 +71,7 @@ export function SellScreen() {
   };
 
   useEffect(() => {
+    // Load the saved listings on entry and clear the banner timer on exit.
     void loadProducts();
 
     return () => {
@@ -77,6 +82,7 @@ export function SellScreen() {
   }, []);
 
   const listingPrice = Number(newPlant.price);
+  // Keep the CTA disabled until the listing has the minimum information required by the backend.
   const listingReady = Boolean(newPlant.name.trim() && Number.isFinite(listingPrice) && listingPrice > 0 && newPlant.image);
   const listedCount = products.length;
   const totalValue = useMemo(
@@ -88,6 +94,7 @@ export function SellScreen() {
     setNewPlant({ name: "", price: "", season: "Spring", image: null });
   };
 
+  // Let the seller choose a photo only after the gallery permission has been granted.
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -131,6 +138,7 @@ export function SellScreen() {
     formData.append("season", newPlant.season);
 
     try {
+      // Save the new listing, refresh the marketplace, and confirm the successful upload to the seller.
       setSavingListing(true);
       await appendImageAsset(formData, "file", newPlant.image, "plant");
       const savedProduct = await createProduct(formData);
@@ -141,6 +149,14 @@ export function SellScreen() {
           name: savedProduct.name,
           season: t(seasonKeyMap[savedProduct.season as keyof typeof seasonKeyMap] || "catalog_season"),
         })
+      );
+      Alert.alert(
+        t("catalog_listing_saved_title"),
+        t("catalog_listing_saved_body", {
+          name: savedProduct.name,
+          season: t(seasonKeyMap[savedProduct.season as keyof typeof seasonKeyMap] || "catalog_season"),
+        }),
+        [{ text: t("continue_label") }]
       );
       await loadProducts();
     } catch (error) {
@@ -156,6 +172,7 @@ export function SellScreen() {
     }
 
     try {
+      // Remove the listing from both the backend and any matching cart entries.
       setDeletingProductId(product.id);
       await deleteProduct(product.id);
       await removeItem(product.id);
@@ -169,6 +186,7 @@ export function SellScreen() {
     }
   };
 
+  // Render the mobile Sell screen and its main interactive sections.
   return (
     <Screen>
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
@@ -381,6 +399,7 @@ export function SellScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Top navigation row and utility actions.
   topBar: {
     alignItems: "center",
     flexDirection: "row",
@@ -449,6 +468,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingBottom: spacing.lg,
   },
+  // Hero summary, status banner, and listing form shell.
   heroCard: {
     backgroundColor: "#21493A",
     borderRadius: 30,
@@ -713,6 +733,7 @@ const styles = StyleSheet.create({
   sellActions: {
     gap: spacing.sm,
   },
+  // Seller inventory list and empty/loading states.
   manageSection: {
     gap: spacing.md,
   },

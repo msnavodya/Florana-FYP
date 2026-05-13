@@ -1,3 +1,4 @@
+# Provide the template Cloudinary configuration for the ML pipeline.
 """
 Configuration template for Cloudinary credentials.
 IMPORTANT: Rename this file to config.py and fill in your actual credentials.

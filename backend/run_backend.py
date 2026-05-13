@@ -1,3 +1,4 @@
+# Start the backend service with the local development configuration.
 from __future__ import annotations
 
 import argparse
@@ -21,6 +22,7 @@ load_dotenv(Path(__file__).resolve().with_name(".env"))
 
 
 def can_open_port(host: str, port: int) -> bool:
+    # If we can bind here, the port is free for a new backend process.
     probe_host = "0.0.0.0" if host in {"0.0.0.0", "::"} else host
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
         server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -47,6 +49,7 @@ def find_listening_pids(port: int) -> list[int]:
 
     pids: set[int] = set()
     for line in result.stdout.splitlines():
+        # Parse Windows netstat output and keep only TCP listeners for the target port.
         parts = line.split()
         if len(parts) < 5 or parts[0].upper() != "TCP":
             continue
@@ -76,6 +79,7 @@ def stop_processes(pids: list[int]) -> bool:
     current_pid = os.getpid()
     stopped_any = False
     for pid in pids:
+        # Never attempt to terminate the helper process that is currently handling the request.
         if pid == current_pid:
             continue
 
@@ -104,6 +108,7 @@ def stop_processes(pids: list[int]) -> bool:
 
 
 def wait_for_port(host: str, port: int, timeout_seconds: float = 8) -> bool:
+    # Give the OS a moment to release the port after a stop or restart request.
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
         if can_open_port(host, port):
@@ -113,6 +118,7 @@ def wait_for_port(host: str, port: int, timeout_seconds: float = 8) -> bool:
 
 
 def read_health(port: int) -> dict | None:
+    # Ask the running service for its health payload so we can confirm it is the Florana backend.
     url = f"http://127.0.0.1:{port}/health"
     try:
         with urllib.request.urlopen(url, timeout=3) as response:
@@ -134,6 +140,7 @@ def main() -> int:
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
 
+    # Support normal start, health inspection, stop, and restart from one CLI entry point.
     parser = argparse.ArgumentParser(description="Start the Florana FastAPI backend safely.")
     parser.add_argument("--host", default=os.getenv("HOST", DEFAULT_HOST))
     parser.add_argument("--port", type=int, default=int(os.getenv("PORT", str(DEFAULT_PORT))))
@@ -163,6 +170,7 @@ def main() -> int:
         return 1
 
     if args.stop:
+        # Only stop a process when the health response confirms it is our backend.
         if not is_florana_backend(health):
             print(f"No healthy Florana backend is running on port {args.port}.")
             return 0 if can_open_port(args.host, args.port) else 1
@@ -215,6 +223,7 @@ def main() -> int:
     os.environ["HOST"] = args.host
     os.environ["PORT"] = str(args.port)
     os.environ["RELOAD"] = "true" if args.reload else "false"
+    # Downstream code can use this flag to know the safe launcher was used.
     os.environ["FLORANA_BACKEND_RUNNER"] = "1"
 
     import uvicorn

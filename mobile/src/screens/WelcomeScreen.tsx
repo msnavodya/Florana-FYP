@@ -1,3 +1,4 @@
+// Render the mobile Welcome screen.
 import { router } from "expo-router";
 import { Image, ImageBackground, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
@@ -10,8 +11,10 @@ import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 export function WelcomeScreen() {
   const { height, width } = useWindowDimensions();
   const { t } = useLanguage();
+  // Keep the layout a bit tighter on smaller devices.
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
 
+  // Render the mobile Welcome screen and its main interactive sections.
   return (
     <Screen contentStyle={[styles.content, compact ? styles.contentCompact : null]}>
       <Image resizeMode="contain" source={brandAssets.logo} style={[styles.logo, compact ? styles.logoCompact : null]} />
@@ -28,6 +31,7 @@ export function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Full-screen welcome layout and hero media.
   content: {
     justifyContent: "space-between",
     paddingVertical: spacing.xl,

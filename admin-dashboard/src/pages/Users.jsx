@@ -1,3 +1,4 @@
+// Render the admin dashboard page for Users.
 import { DataTable } from '../components/DataTable';
 import { api } from '../services/api';
 import { useApi } from '../hooks/useApi';

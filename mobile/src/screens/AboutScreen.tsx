@@ -1,3 +1,4 @@
+// Render the mobile About screen.
 import { Image, StyleSheet, Text, View } from "react-native";
 
 import { AppMenu } from "../components/AppMenu";
@@ -10,9 +11,11 @@ import { colors, radii, shadows, spacing } from "../theme/tokens";
 import { useState } from "react";
 
 export function AboutScreen() {
+  // Keep the menu state local because this screen only reads static content.
   const [menuOpen, setMenuOpen] = useState(false);
   const { t } = useLanguage();
 
+  // Render the mobile About screen and its main interactive sections.
   return (
     <Screen>
       <TopBar title={t("about_title")} onMenuPress={() => setMenuOpen(true)} />
@@ -46,6 +49,7 @@ export function AboutScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Intro hero card.
   heroCard: {
     backgroundColor: "#E7D7FF",
     borderRadius: radii.xl,
@@ -67,6 +71,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     lineHeight: 30,
   },
+  // Shared content cards.
   card: {
     backgroundColor: colors.surface,
     borderColor: colors.border,

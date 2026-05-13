@@ -1,3 +1,4 @@
+// Support legacy web language features for Language Selector.
 import React from "react";
 import { Languages } from "lucide-react";
 import { useTranslation } from "./LanguageContext";
@@ -30,6 +31,7 @@ export default function LanguageSelector() {
     setLanguage(codeToLabel[languageCode] || "English");
   };
 
+  // Render the legacy web Language Selector interface and its interactive controls.
   return (
     <div className="language-selector">
       <label className="language-field" aria-label="Language selector">
@@ -42,7 +44,7 @@ export default function LanguageSelector() {
         >
           {languages.map((languageOption) => (
             <option key={languageOption.code} value={languageOption.code}>
-              {languageOption.short} · {languageOption.label}
+              {languageOption.short} Â· {languageOption.label}
             </option>
           ))}
         </select>

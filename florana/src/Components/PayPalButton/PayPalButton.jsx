@@ -1,9 +1,11 @@
+// Render the legacy web component for Pay Pal Button.
 import React from "react";
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 
 export default function PayPalButton({ cart, onSuccess }) {
   const totalAmount = cart.reduce((acc, item) => acc + Number(item.price), 0);
 
+  // Render the legacy web Pay Pal Button interface and its interactive controls.
   return (
     <PayPalScriptProvider options={{ "client-id": "YOUR_CLIENT_ID" }}>
       <PayPalButtons
@@ -22,7 +24,7 @@ export default function PayPalButton({ cart, onSuccess }) {
         }}
         onError={(err) => {
           console.error("PayPal Checkout Error:", err);
-          alert("Payment failed ❌");
+          alert("Payment failed âŒ");
         }}
       />
     </PayPalScriptProvider>

@@ -1,3 +1,4 @@
+// Render the mobile Login screen.
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -13,8 +14,9 @@ import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 
 export function LoginScreen() {
   const { height, width } = useWindowDimensions();
+  // Keep the layout a bit tighter on smaller devices.
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
-  const { ready, token, signIn } = useAuth();
+  const { ready, token, signIn, setAuthNotice } = useAuth();
   const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,12 +24,14 @@ export function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
 
+  // Restore returning users straight into the app as soon as a valid session is available.
   useEffect(() => {
     if (ready && token) {
       router.replace("/home");
     }
   }, [ready, token]);
 
+  // Validate the email format after the user starts typing.
   const emailError = useMemo(() => {
     if (!email) {
       return "";
@@ -60,7 +64,9 @@ export function LoginScreen() {
     setLoading(true);
 
     try {
+      // Save the session and move directly into the signed-in home experience.
       await signIn(email.trim(), password);
+      setAuthNotice(t("login_success_body"));
       router.replace("/home");
     } catch (error) {
       const message = error instanceof Error ? error.message : t("backend_unreachable");
@@ -70,6 +76,7 @@ export function LoginScreen() {
     }
   };
 
+  // Render the mobile Login screen and its main interactive sections.
   return (
     <Screen contentStyle={styles.screen}>
       <KeyboardAvoidingView
@@ -141,6 +148,7 @@ export function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Screen shell and hero introduction.
   screen: {
     justifyContent: "center",
   },
@@ -189,6 +197,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  // Main login card and form content.
   card: {
     backgroundColor: "rgba(255, 253, 248, 0.9)",
     borderColor: colors.border,
@@ -256,6 +265,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  // Loading hint shown while a saved session is being restored.
   loadingRow: {
     alignItems: "center",
     flexDirection: "row",

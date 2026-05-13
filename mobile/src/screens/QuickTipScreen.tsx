@@ -1,3 +1,4 @@
+// Render the mobile Quick Tip screen.
 import { MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
@@ -81,8 +82,11 @@ function localizeStarterChat(savedMessages: ChatMessage[], localizedStarterChat:
 }
 
 export function QuickTipScreen() {
+  // Tighten the layout a bit on smaller screens so the long community sections remain readable.
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
+
+  // Screen state for tips, community posts, and the lightweight local chat.
   const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTipKey, setActiveTipKey] = useState<(typeof tipOptions)[number]["key"]>("soil");
@@ -94,6 +98,7 @@ export function QuickTipScreen() {
   const [chatDraft, setChatDraft] = useState("");
 
   const translatedTips = useMemo(
+    // Build the quick-tip picker from translation keys so each topic switches language with the app.
     () =>
       tipOptions.map((item) => ({
         key: item.key,
@@ -105,6 +110,7 @@ export function QuickTipScreen() {
   );
 
   const starterPosts = useMemo<CommunityPost[]>(
+    // Seed the community feed with localized starter content for first-time users.
     () => [
       {
         id: "seed-swap",
@@ -133,6 +139,7 @@ export function QuickTipScreen() {
   );
 
   const starterChat = useMemo<ChatMessage[]>(
+    // Keep a default welcome message so the chat area never renders empty on first load.
     () => [
       {
         id: "welcome",
@@ -145,6 +152,7 @@ export function QuickTipScreen() {
     [t]
   );
 
+  // Read the currently selected quick-tip topic from the localized list.
   const activeTip = useMemo(
     () => translatedTips.find((item) => item.key === activeTipKey) || translatedTips[0],
     [activeTipKey, translatedTips]
@@ -153,6 +161,7 @@ export function QuickTipScreen() {
   useEffect(() => {
     let mounted = true;
 
+    // Load locally saved community content, then fall back to starter examples if needed.
     const loadCommunity = async () => {
       try {
         const [savedPosts, savedChat] = await Promise.all([
@@ -176,7 +185,6 @@ export function QuickTipScreen() {
           setChatMessages(starterChat);
         }
       } catch {
-        // Keep starter community content when local storage is unavailable.
         if (mounted) {
           setPosts(starterPosts);
           setChatMessages(starterChat);
@@ -192,20 +200,24 @@ export function QuickTipScreen() {
   }, [starterChat, starterPosts]);
 
   const persistPosts = async (nextPosts: CommunityPost[]) => {
+    // Save updates immediately so likes, comments, and new ideas survive app restarts.
     setPosts(nextPosts);
     await AsyncStorage.setItem(COMMUNITY_POSTS_KEY, JSON.stringify(nextPosts));
   };
 
   const persistChat = async (nextMessages: ChatMessage[]) => {
+    // Store the lightweight local chat history alongside the rendered state.
     setChatMessages(nextMessages);
     await AsyncStorage.setItem(COMMUNITY_CHAT_KEY, JSON.stringify(nextMessages));
   };
 
+  // Refresh starter content translations without wiping user-created posts or messages.
   useEffect(() => {
     setPosts((current) => localizeStarterPosts(current, starterPosts));
     setChatMessages((current) => localizeStarterChat(current, starterChat));
   }, [starterChat, starterPosts]);
 
+  // Add a new community idea card to the local feed.
   const handleAddIdea = async () => {
     const title = ideaTitle.trim();
     const body = ideaBody.trim();
@@ -233,6 +245,7 @@ export function QuickTipScreen() {
   };
 
   const handleToggleLike = async (postId: string) => {
+    // Keep likes fully local for now by updating the stored post collection in place.
     const nextPosts = posts.map((post) => {
       if (post.id !== postId) {
         return post;
@@ -281,6 +294,7 @@ export function QuickTipScreen() {
     setChatDraft("");
   };
 
+  // Render the mobile Quick Tip screen and its main interactive sections.
   return (
     <Screen>
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
@@ -449,6 +463,7 @@ export function QuickTipScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Header controls.
   topBar: {
     alignItems: "center",
     flexDirection: "row",
@@ -480,6 +495,8 @@ const styles = StyleSheet.create({
     width: 42,
     ...shadows.soft,
   },
+
+  // Hero and topic chips.
   heroCard: {
     backgroundColor: "#4F5FA8",
     borderRadius: 28,
@@ -537,6 +554,8 @@ const styles = StyleSheet.create({
   tipChipTextActive: {
     color: colors.white,
   },
+
+  // Tip detail card and shortcut button.
   tipDetailBox: {
     backgroundColor: colors.surface,
     borderRadius: 24,
@@ -581,6 +600,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "800",
   },
+
+  // Community feed heading and composer.
   communityHeader: {
     gap: spacing.xs,
     marginBottom: spacing.md,
@@ -643,6 +664,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "900",
   },
+
+  // Community post cards, comments, and reactions.
   postList: {
     gap: spacing.md,
     marginBottom: spacing.md,
@@ -741,6 +764,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 42,
   },
+
+  // Local chat area.
   chatBox: {
     backgroundColor: colors.surface,
     borderRadius: 24,

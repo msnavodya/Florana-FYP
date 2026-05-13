@@ -1,3 +1,4 @@
+// Provide admin dashboard service helpers for Api data access.
 import axios from 'axios';
 
 const TOKEN_KEY = 'florana_admin_token';

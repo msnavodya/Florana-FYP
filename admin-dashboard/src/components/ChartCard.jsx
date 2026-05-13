@@ -1,3 +1,4 @@
+// Render a reusable admin dashboard component for Chart Card.
 import { Card } from './Card';
 
 export function ChartCard({ title, subtitle, children }) {

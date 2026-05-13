@@ -1,3 +1,4 @@
+// Render the legacy web component for Menu.
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -32,19 +33,23 @@ const menuItems = [
 ];
 
 export default function Menu({ isOpen, onClose }) {
+  // Use client-side navigation to move between legacy web pages from this component.
   const navigate = useNavigate();
 
+  // Close the drawer after navigation so the next screen starts in a clean state.
   const goTo = (path) => {
     navigate(path);
     onClose();
   };
 
+  // Clear auth state before returning to the landing page.
   const handleLogout = () => {
     logoutUser();
     navigate("/");
     onClose();
   };
 
+  // Render the legacy web menu interface and its interactive controls.
   return (
     <div
       className={`menu-overlay ${isOpen ? "show" : ""}`}
@@ -53,6 +58,7 @@ export default function Menu({ isOpen, onClose }) {
     >
       <aside
         className={`menu-container ${isOpen ? "open" : ""}`}
+        // Keep clicks inside the panel from bubbling up and closing the overlay.
         onClick={(event) => event.stopPropagation()}
         aria-label="Main navigation"
       >

@@ -1,3 +1,4 @@
+// Render a reusable mobile UI component for Product Card.
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
@@ -21,6 +22,7 @@ export function ProductCard({ product, actionLabel, deleting = false, onAdded, o
   const { addItem, formatMoney } = useCart();
   const { t } = useLanguage();
   const { height, width } = useWindowDimensions();
+  // Shrink image and text sizing a bit when the card has less vertical space available.
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
   const imageUri = product.image ? buildApiUrl(product.image) : null;
   const resolvedActionLabel = actionLabel || t("add_to_cart");
@@ -60,6 +62,7 @@ export function ProductCard({ product, actionLabel, deleting = false, onAdded, o
       <PrimaryButton
         label={resolvedActionLabel}
         onPress={() => {
+          // Let shoppers add directly from the list without opening the details page first.
           void addItem(product).then(() => onAdded?.(product));
         }}
       />

@@ -1,3 +1,5 @@
+// Define shared mobile TypeScript types for Plants data.
+// Main plant profile shape used across registration, listing, and detail screens.
 export interface Plant {
   _id?: string;
   id?: string;
@@ -21,6 +23,7 @@ export interface Plant {
   warning?: boolean;
 }
 
+// One saved growth measurement entry for the plant history chart and timeline.
 export interface GrowthRecord {
   _id?: string;
   plant_id: string;

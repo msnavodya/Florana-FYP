@@ -1,3 +1,4 @@
+// Render the legacy web component for Profile.
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Menu as MenuIcon } from "lucide-react";
@@ -6,6 +7,7 @@ import Menu from "../menu/menu";
 import "./profile.css";
 
 export default function Profile() {
+  // Use client-side navigation to move between legacy web pages from this component.
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState({
@@ -27,6 +29,7 @@ export default function Profile() {
     }
   }, [navigate]);
 
+  // Render the legacy web profile interface and its interactive controls.
   return (
     <div className="profile-container">
       <Menu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />

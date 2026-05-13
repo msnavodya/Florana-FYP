@@ -1,3 +1,4 @@
+// Render the admin dashboard page for Dashboard.
 import { CreditCard, Leaf, MessageSquare, Users as UsersIcon } from 'lucide-react';
 import {
   Area,

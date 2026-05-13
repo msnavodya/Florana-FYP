@@ -1,4 +1,4 @@
-/** @type {import('tailwindcss').Config} */
+// Configure the admin dashboard build settings for Tailwind.Config.
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {

@@ -1,3 +1,4 @@
+# Provide shared backend utility helpers for Paths operations.
 import shutil
 from pathlib import Path
 

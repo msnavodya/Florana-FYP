@@ -1,3 +1,4 @@
+// Render the legacy web component for Home.
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Menu as MenuIcon } from "lucide-react";
@@ -10,6 +11,7 @@ import Menu from "../menu/menu";
 import "./home.css";
 
 export default function Home() {
+  // Use client-side navigation to move between legacy web pages from this component.
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
@@ -117,6 +119,7 @@ export default function Home() {
     }
   };
 
+  // Render the legacy web home interface and its interactive controls.
   return (
     <div className="home-container">
       <Menu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />

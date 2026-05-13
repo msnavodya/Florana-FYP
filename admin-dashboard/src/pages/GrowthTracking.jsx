@@ -1,3 +1,4 @@
+// Render the admin dashboard page for Growth Tracking.
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from 'recharts';
 import { ChartCard } from '../components/ChartCard';
 import { mock } from '../services/api';

@@ -1,4 +1,4 @@
-# =============================================
+# Run plant disease model inference for uploaded images.
 # Florana AI Prediction Module
 # File: backend/ai/predict.py
 # =============================================

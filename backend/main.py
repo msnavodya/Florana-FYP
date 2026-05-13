@@ -1,3 +1,4 @@
+# Configure and expose the main FastAPI application for the backend service.
 import os
 import sys
 import io

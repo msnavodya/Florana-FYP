@@ -1,3 +1,4 @@
+// Render the legacy web component for Quicktip.
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Menu as MenuIcon } from "lucide-react";
@@ -18,14 +19,18 @@ const tipOptions = [
 ];
 
 export default function QuickTip() {
+  // Use client-side navigation to move between legacy web pages from this component.
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTipKey, setActiveTipKey] = useState("soil");
 
+  // Keep the selected tip driven by a small local key instead of duplicating full tip objects in state.
   const activeTip = tipOptions.find((item) => item.key === activeTipKey) || tipOptions[0];
 
+  // Render the legacy web quicktip interface and its interactive controls.
   return (
+    // Render the legacy quick-tip page with a topic picker and the currently selected care tip.
     <div className="quick-tip-container">
       <Menu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
       <LanguageSelector />

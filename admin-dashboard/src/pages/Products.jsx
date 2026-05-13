@@ -1,3 +1,4 @@
+// Render the admin dashboard page for Products.
 import { useMemo, useState } from 'react';
 import { ImagePlus, Package2, ShieldCheck, Sparkles, Trash2, UploadCloud } from 'lucide-react';
 import { Card } from '../components/Card';

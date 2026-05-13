@@ -1,3 +1,4 @@
+# Train the plant disease model with the ML pipeline defaults.
 """
 Train the Florana plant disease model and export it for the FastAPI backend.
 

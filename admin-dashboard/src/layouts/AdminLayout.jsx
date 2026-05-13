@@ -1,3 +1,4 @@
+// Provide the admin dashboard layout for Admin Layout.
 import { CreditCard, LayoutDashboard, Leaf, LogOut, MessageSquare, Users } from 'lucide-react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { auth } from '../services/api';

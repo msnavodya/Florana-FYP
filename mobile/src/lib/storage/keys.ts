@@ -1,3 +1,5 @@
+// Handle mobile local storage for Keys data.
+// Keep every AsyncStorage key in one place so reads and clears stay aligned across the app.
 export const storageKeys = {
   token: "mobile_token",
   user: "mobile_user",

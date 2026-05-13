@@ -1,3 +1,4 @@
+// Render a shared Expo UI component for Header.
 import type { ReactNode } from "react";
 import { useRef } from "react";
 import {

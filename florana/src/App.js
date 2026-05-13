@@ -1,3 +1,4 @@
+// Assemble the main routes and providers for the legacy Florana web app.
 import React, { useEffect, useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { LanguageProvider, useTranslation } from "./Components/language/LanguageContext";

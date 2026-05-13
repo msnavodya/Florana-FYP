@@ -1,4 +1,4 @@
-# routes/auth.py
+# Define backend API routes for Auth features.
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, HTTPException, Request

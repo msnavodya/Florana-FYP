@@ -1,3 +1,4 @@
+// Define shared mobile constants for Colors values.
 export const colors = {
   primary: "#9B6DFF",
   secondary: "#D9C2FF",

@@ -1,3 +1,4 @@
+// Render a shared Expo UI component for Feedback Carousel.
 import type { ComponentProps } from "react";
 import { useMemo, useRef } from "react";
 import {

@@ -1,3 +1,4 @@
+// Render a shared Expo UI component for Search Bar.
 import { useRef } from "react";
 import {
   Animated,

@@ -1,3 +1,4 @@
+// Render the legacy web component for Cart Page.
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PhoneInput from "react-phone-input-2";
@@ -11,6 +12,7 @@ const exchangeRates = { LKR: 1, USD: 0.0033, EUR: 0.003 };
 const currencySymbols = { LKR: "Rs.", USD: "$", EUR: "EUR" };
 
 export default function CartPage() {
+  // Use client-side navigation to move between legacy web pages from this component.
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartItems, setCartItems] = useState([]);
@@ -152,6 +154,7 @@ export default function CartPage() {
     setStep(0);
   };
 
+  // Render the legacy web cart Page interface and its interactive controls.
   return (
     <div className="app mobile-screen">
       <div className="cart-page mobile-frame">

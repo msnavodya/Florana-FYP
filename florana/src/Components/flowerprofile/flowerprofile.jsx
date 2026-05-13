@@ -1,3 +1,4 @@
+// Render the legacy web component for Flowerprofile.
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Line } from "react-chartjs-2";
@@ -24,6 +25,7 @@ ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement, Tooltip,
 
 export default function FlowerProfile() {
   const { plantName } = useParams();
+  // Use client-side navigation to move between legacy web pages from this component.
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [plant, setPlant] = useState(null);
@@ -144,6 +146,7 @@ export default function FlowerProfile() {
     return "orange";
   };
 
+  // Render the legacy web flowerprofile interface and its interactive controls.
   return (
     <div className="flower-wrapper">
       <div className="flower-container">

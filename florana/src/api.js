@@ -1,3 +1,4 @@
+// Wrap API calls used by the legacy Florana web client.
 import axios from "axios";
 
 

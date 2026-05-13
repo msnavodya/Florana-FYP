@@ -1,3 +1,4 @@
+// Render the mobile Home screen.
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -49,6 +50,7 @@ type DiseaseCareInfo = {
 };
 
 function resolveModelState(aiModel?: { loaded?: boolean; status?: string | null }): ModelState {
+  // Normalize backend health data into the small state model used by the dashboard.
   return {
     loaded: Boolean(aiModel?.loaded),
     status: aiModel?.status === "ready" ? "ready" : aiModel?.status === "offline" ? "offline" : "checking",
@@ -94,11 +96,13 @@ function isHealthyPrediction(prediction: string) {
 }
 
 function normalizeDiseaseKey(prediction: string) {
+  // Collapse backend labels into predictable lookup keys for local care advice.
   return prediction
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "");
 }
 
+// Lightweight local care guidance used when the prediction response does not include treatment text.
 const diseaseCareInfo: Record<string, DiseaseCareInfo> = {
   appledisease: {
     protection: "Spray a copper-based fungicide early in the season and remove infected leaves.",
@@ -159,6 +163,7 @@ function getDiseaseCareInfo(prediction: string) {
 }
 
 function getDiagnosisToneColors(tone: DiagnosisState["tone"]) {
+  // Pair each diagnosis tone with a small palette so the alert card reads clearly at a glance.
   if (tone === "healthy") {
     return {
       bg: "#E0F5E9",
@@ -191,6 +196,7 @@ function getDiagnosisToneColors(tone: DiagnosisState["tone"]) {
 function FeedbackCard({ feedback }: { feedback: FeedbackEntry }) {
   const { t } = useLanguage();
 
+  // Render one feedback item for the home carousel.
   return (
     <View style={styles.feedbackCard}>
       <View style={styles.feedbackContent}>
@@ -207,22 +213,25 @@ function FeedbackCard({ feedback }: { feedback: FeedbackEntry }) {
 }
 
 export function HomeScreen() {
-  const { user } = useAuth();
+  const { user, authNotice, setAuthNotice } = useAuth();
   const { feedbacks, refreshFeedbacks } = useSettings();
   const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
   const [diagnosis, setDiagnosis] = useState<DiagnosisState | null>(null);
   const [modelState, setModelState] = useState<ModelState>({ loaded: false, status: "checking" });
   const [feedbackIndex, setFeedbackIndex] = useState(0);
   const [hasMediaPermission, setHasMediaPermission] = useState<boolean | null>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const greeting = user?.full_name ? t("hello_user", { name: user.full_name }) : t("hello_guest");
 
   const refreshModelState = async () => {
     try {
+      // Ping backend health so the diagnose card can reflect whether the AI model is actually available.
       const response = await getBackendHealth();
       setModelState(resolveModelState(response.ai_model));
     } catch {
@@ -239,12 +248,31 @@ export function HomeScreen() {
   }, [modelState.loaded, modelState.status, t]);
 
   useEffect(() => {
+    // Fade the screen content in once the component mounts for a softer dashboard entrance.
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 400,
       useNativeDriver: true,
     }).start();
   }, [fadeAnim]);
+
+  useEffect(() => {
+    // Show one-time auth success messages after redirects from login or registration flows.
+    if (!authNotice) {
+      return;
+    }
+
+    setStatusMessage(authNotice);
+    if (statusTimer.current) {
+      clearTimeout(statusTimer.current);
+    }
+
+    statusTimer.current = setTimeout(() => {
+      setStatusMessage("");
+    }, 3200);
+
+    setAuthNotice(null);
+  }, [authNotice, setAuthNotice]);
 
   useEffect(() => {
     let active = true;
@@ -267,6 +295,7 @@ export function HomeScreen() {
       }
     };
 
+    // Re-check the backend model periodically so the dashboard reflects outages or reloads quickly.
     void syncModelState();
     const intervalId = setInterval(() => {
       void syncModelState();
@@ -279,6 +308,7 @@ export function HomeScreen() {
   }, []);
 
   useEffect(() => {
+    // Refresh user feedback in the background so the carousel stays current while the screen is open.
     void refreshFeedbacks();
     const intervalId = setInterval(() => {
       void refreshFeedbacks();
@@ -286,6 +316,14 @@ export function HomeScreen() {
 
     return () => clearInterval(intervalId);
   }, [refreshFeedbacks]);
+
+  useEffect(() => {
+    return () => {
+      if (statusTimer.current) {
+        clearTimeout(statusTimer.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (feedbacks.length === 0) {
@@ -304,6 +342,7 @@ export function HomeScreen() {
   };
 
   const feedbackPanResponder = useMemo(
+    // Support swipe gestures in addition to the arrow buttons for the feedback carousel.
     () =>
       PanResponder.create({
         onMoveShouldSetPanResponder: (_, gestureState) =>
@@ -331,6 +370,7 @@ export function HomeScreen() {
   };
 
   const handleScan = async () => {
+    // Request media access lazily so the permission prompt only appears when the user starts a scan.
     const permission =
       hasMediaPermission == null
         ? await ImagePicker.requestMediaLibraryPermissionsAsync()
@@ -366,6 +406,7 @@ export function HomeScreen() {
     setLoading(true);
 
     try {
+      // Upload the selected leaf image and ask the backend model for the top diagnosis.
       await appendImageAsset(formData, "file", file, "scan");
       const response = await predictImage(formData);
       const healthy = isHealthyPrediction(response.prediction);
@@ -386,6 +427,7 @@ export function HomeScreen() {
         workingTime: careInfo?.workingTime,
         tone: healthy ? "healthy" : "warning",
       });
+      // A successful prediction confirms the backend model is reachable and working.
       setModelState({ loaded: true, status: "ready" });
     } catch (error) {
       setDiagnosis({
@@ -402,6 +444,7 @@ export function HomeScreen() {
   const diagnosisColors = diagnosis ? getDiagnosisToneColors(diagnosis.tone) : null;
 
   return (
+    // Render the dashboard cards, model status, scan result, and feedback carousel in one scrollable screen.
     <Screen contentStyle={styles.screenContent}>
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
 
@@ -432,6 +475,13 @@ export function HomeScreen() {
             <Text style={styles.searchButtonText}>{t("search_action")}</Text>
           </Pressable>
         </View>
+
+        {statusMessage ? (
+          <View style={styles.statusBanner}>
+            <MaterialIcons name="check-circle" size={18} color={colors.success} />
+            <Text style={styles.statusBannerText}>{statusMessage}</Text>
+          </View>
+        ) : null}
 
         {diagnosis && diagnosisColors ? (
           <View style={[styles.diagnosisAlert, { backgroundColor: diagnosisColors.bg }]}>
@@ -550,6 +600,7 @@ export function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Screen shell, greeting row, and search bar.
   screenContent: {
     paddingBottom: spacing.sm,
   },
@@ -623,6 +674,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "800",
   },
+  statusBanner: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderRadius: 18,
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    ...shadows.soft,
+  },
+  statusBannerText: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "700",
+    lineHeight: 20,
+  },
+
+  // Diagnosis result alert.
   diagnosisAlert: {
     alignItems: "flex-start",
     borderRadius: 24,
@@ -692,6 +763,8 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     marginBottom: spacing.md,
   },
+
+  // Quick action cards on the dashboard.
   cardsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -762,6 +835,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: spacing.xs,
   },
+
+  // Feedback carousel and pagination.
   feedbackSection: {
     backgroundColor: "#E6D0F3",
     borderRadius: radii.xl,

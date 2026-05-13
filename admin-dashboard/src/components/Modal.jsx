@@ -1,3 +1,4 @@
+// Render a reusable admin dashboard component for Modal.
 import { X } from 'lucide-react';
 
 export function Modal({ open, title, children, onClose }) {

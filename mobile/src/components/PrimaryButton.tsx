@@ -1,3 +1,4 @@
+// Render a reusable mobile UI component for Primary Button.
 import { Pressable, StyleSheet, Text, useWindowDimensions } from "react-native";
 
 import { useSettings } from "../context/SettingsContext";
@@ -18,6 +19,7 @@ export function PrimaryButton({
 }: PrimaryButtonProps) {
   const { width } = useWindowDimensions();
   const { fontScale } = useSettings();
+  // Respect both narrow screens and the user's saved font-size preference.
   const compact = width < 390;
 
   return (

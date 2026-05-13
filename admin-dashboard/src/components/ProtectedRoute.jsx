@@ -1,3 +1,4 @@
+// Render a reusable admin dashboard component for Protected Route.
 import { Navigate, Outlet } from 'react-router-dom';
 import { auth } from '../services/api';
 

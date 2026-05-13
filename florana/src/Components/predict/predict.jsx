@@ -1,3 +1,4 @@
+// Render the legacy web component for Predict.
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Menu as MenuIcon } from "lucide-react";
@@ -8,6 +9,7 @@ import Menu from "../menu/menu";
 import "./predict.css";
 
 export default function Predict() {
+  // Use client-side navigation to move between legacy web pages from this component.
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [file, setFile] = useState(null);
@@ -51,6 +53,7 @@ export default function Predict() {
     }
   };
 
+  // Render the legacy web predict interface and its interactive controls.
   return (
     <div className="predict-container">
       <Menu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />

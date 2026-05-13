@@ -1,3 +1,4 @@
+// Render a reusable mobile UI component for Bottom Nav.
 import { MaterialIcons } from "@expo/vector-icons";
 import { router, usePathname } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -28,6 +29,7 @@ const navItems: NavItem[] = [
   },
 ];
 
+// Match both exact routes and nested detail pages to the same bottom-navigation tab.
 function isActivePath(pathname: string, matches: string[]) {
   return matches.some((match) => pathname === match || pathname.startsWith(`${match}/`));
 }
@@ -38,6 +40,7 @@ export function BottomNav() {
   const { totalItems } = useCart();
   const { t } = useLanguage();
 
+  // Keep the safe-area padding outside the visual nav pill so the buttons stay centered.
   return (
     <View style={[styles.shell, { paddingBottom: Math.max(insets.bottom, 10) }]}>
       <View style={styles.navBar}>

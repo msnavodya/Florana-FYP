@@ -1,3 +1,4 @@
+// Register the Expo Router entry for the profile route.
 import { ProfileScreen } from "../src/screens/ProfileScreen";
 
 export default function ProfileRoute() {

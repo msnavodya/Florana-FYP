@@ -1,7 +1,8 @@
+// Render the mobile Register screen.
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
@@ -13,9 +14,12 @@ import { colors, radii, shadows, spacing, viewport } from "../theme/tokens";
 const locations = ["Colombo", "Gampaha", "Kandy", "Galle", "Kurunegala", "Jaffna", "Matara", "Negombo", "Batticaloa"];
 
 export function RegisterScreen() {
+  // Switch to a tighter layout on small devices so the form stays comfortable to scroll.
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
-  const { signUp } = useAuth();
+
+  // Form state and shared app helpers.
+  const { signUp, setAuthNotice } = useAuth();
   const { t } = useLanguage();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -27,6 +31,7 @@ export function RegisterScreen() {
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
 
+  // Validate the email format after the user starts typing.
   const emailError = useMemo(() => {
     if (!email) {
       return "";
@@ -35,6 +40,7 @@ export function RegisterScreen() {
     return /\S+@\S+\.\S+/.test(email.trim()) ? "" : t("valid_email_error");
   }, [email, t]);
 
+  // Require at least six characters before the password is considered usable.
   const passwordError = useMemo(() => {
     if (!password) {
       return "";
@@ -43,6 +49,7 @@ export function RegisterScreen() {
     return password.trim().length >= 6 ? "" : t("use_six_or_more");
   }, [password, t]);
 
+  // Allow common phone formats while still catching obviously invalid values.
   const contactError = useMemo(() => {
     if (!contact.trim()) {
       return "";
@@ -51,10 +58,12 @@ export function RegisterScreen() {
     return /^[0-9+\-\s]{7,15}$/.test(contact.trim()) ? "" : t("valid_phone_error");
   }, [contact, t]);
 
+  // Derive progress, readiness, and a simple password-strength label for the UI.
   const completedFields = [fullName.trim(), email.trim(), password.trim(), location.trim()].filter(Boolean).length;
   const formReady = Boolean(fullName.trim() && email.trim() && password.trim() && !emailError && !passwordError && !contactError);
   const passwordStrength = password.trim().length >= 10 ? t("strength_strong") : password.trim().length >= 6 ? t("strength_good") : t("strength_weak");
 
+  // Submit the registration request once the form passes the local checks.
   const handleSignup = async () => {
     setErrorMessage("");
 
@@ -70,6 +79,7 @@ export function RegisterScreen() {
 
     setLoading(true);
     try {
+      // Create the account and move directly into the signed-in home experience.
       await signUp({
         full_name: fullName.trim(),
         email: email.trim(),
@@ -77,9 +87,8 @@ export function RegisterScreen() {
         contact: contact.trim() || null,
         location: location || null,
       });
-      Alert.alert(t("account_saved"), t("account_saved_body"), [
-        { text: t("continue_label"), onPress: () => router.replace("/home") },
-      ]);
+      setAuthNotice(t("account_saved_body"));
+      router.replace("/home");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : t("register_failed"));
     } finally {
@@ -87,6 +96,7 @@ export function RegisterScreen() {
     }
   };
 
+  // Render the mobile Register screen and its main interactive sections.
   return (
     <Screen contentStyle={styles.screen}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.keyboardArea}>
@@ -239,8 +249,11 @@ export function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Screen layout shell.
   screen: { justifyContent: "center" },
   keyboardArea: { flex: 1, justifyContent: "center" },
+
+  // Intro hero.
   heroPanel: {
     gap: spacing.xs,
     marginBottom: spacing.md,
@@ -288,6 +301,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
+
+  // Main registration card.
   card: {
     backgroundColor: "rgba(255, 253, 248, 0.94)",
     borderColor: colors.border,
@@ -364,6 +379,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+
+  // Form layout, section labels, and password helper rows.
   form: {
     gap: spacing.md,
     paddingBottom: spacing.sm,
@@ -419,6 +436,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
+
+  // Custom location dropdown.
   locationWrap: {
     gap: spacing.sm,
     paddingBottom: spacing.sm,
@@ -478,11 +497,15 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
     fontWeight: "800",
   },
+
+  // Inline validation feedback.
   errorText: {
     color: colors.danger,
     fontSize: 14,
     lineHeight: 20,
   },
+
+  // Footer actions and password toggle.
   footer: {
     gap: spacing.sm,
   },

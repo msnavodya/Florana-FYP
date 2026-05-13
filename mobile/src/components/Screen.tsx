@@ -1,3 +1,4 @@
+// Render a reusable mobile UI component for Screen.
 import { Children, isValidElement } from "react";
 import {
   KeyboardAvoidingView,
@@ -23,9 +24,11 @@ interface ScreenProps {
 export function Screen({ children, scroll = true, contentStyle }: ScreenProps) {
   const { height, width } = useWindowDimensions();
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
+  // Add a framed handset presentation on medium and large viewports while keeping phones edge to edge.
   const framed = width >= 768;
   const handsetFrame = !framed && width >= 480;
   const childArray = Children.toArray(children);
+  // Pull the bottom navigation out so it can stay pinned while the main content scrolls above it.
   const bottomNavChild = childArray.find((child) => {
     if (!isValidElement(child)) {
       return false;
@@ -36,6 +39,7 @@ export function Screen({ children, scroll = true, contentStyle }: ScreenProps) {
   });
   const mainChildren = childArray.filter((child) => child !== bottomNavChild);
 
+  // Centralize padding decisions here so every screen gets the same shell behavior.
   const contentBody = (
     <View
       style={[

@@ -1,3 +1,4 @@
+// Render a reusable mobile UI component for Currency Switcher.
 import { useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -13,6 +14,7 @@ const currencies = [
 export function CurrencySwitcher() {
   const { currency, setCurrency, ratesLoading, ratesUpdatedAt, refreshExchangeRates } = useCart();
   const [open, setOpen] = useState(false);
+  // Show the currently selected currency even before the refresh request completes.
   const selected = currencies.find((item) => item.code === currency) || currencies[0];
   const updatedLabel = ratesUpdatedAt ? `Latest ${ratesUpdatedAt}` : "Using cached rates";
 

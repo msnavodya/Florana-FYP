@@ -1,4 +1,4 @@
-# schemas/user.py
+# Define Pydantic schemas for User API payloads.
 from pydantic import BaseModel, EmailStr
 
 class UserCreate(BaseModel):

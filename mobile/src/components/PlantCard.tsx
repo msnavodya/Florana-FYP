@@ -1,3 +1,4 @@
+// Render a reusable mobile UI component for Plant Card.
 import { router } from "expo-router";
 import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
@@ -15,6 +16,7 @@ interface PlantCardProps {
 export function PlantCard({ plant, onDelete, deleting = false }: PlantCardProps) {
   const { t } = useLanguage();
   const { height, width } = useWindowDimensions();
+  // Tighten the card slightly on smaller devices while preserving the same content order.
   const compact = width <= viewport.compactWidth || height <= viewport.compactHeight;
   const imageUri = plant.image_path ? buildApiUrl(plant.image_path) : null;
 

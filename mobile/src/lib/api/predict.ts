@@ -1,3 +1,4 @@
+// Wrap mobile API requests related to Predict.
 import { apiRequest } from "./client";
 
 export interface PredictionResponse {
@@ -11,6 +12,7 @@ export interface PredictionResponse {
   image_url?: string;
 }
 
+// Upload a diagnosis image and return the model's prediction summary.
 export const predictImage = (formData: FormData) =>
   apiRequest<PredictionResponse>("/predict", {
     method: "POST",

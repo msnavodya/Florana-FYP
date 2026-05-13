@@ -1,3 +1,4 @@
+// Render the mobile Register Plant screen.
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -9,6 +10,7 @@ import { BottomNav } from "../components/BottomNav";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { Screen } from "../components/Screen";
 import { TopBar } from "../components/TopBar";
+import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { createPlant } from "../lib/api/plants";
 import { appendImageAsset } from "../lib/api/upload";
@@ -34,11 +36,13 @@ type SearchableDropdownProps = {
 };
 
 function SearchableDropdown({ error, label, onChange, options, placeholder, required, value }: SearchableDropdownProps) {
+  // Manage the open state, in-menu search, and simple expand/collapse animation.
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const progress = useRef(new Animated.Value(0)).current;
 
+  // Animate the dropdown height and chevron whenever the menu toggles.
   useEffect(() => {
     Animated.timing(progress, {
       duration: 180,
@@ -47,6 +51,7 @@ function SearchableDropdown({ error, label, onChange, options, placeholder, requ
     }).start();
   }, [open, progress]);
 
+  // Narrow the option list as the user types into the search field.
   const filteredOptions = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     if (!normalizedQuery) {
@@ -56,6 +61,7 @@ function SearchableDropdown({ error, label, onChange, options, placeholder, requ
     return options.filter((option) => option.toLowerCase().includes(normalizedQuery));
   }, [options, query]);
 
+  // Reuse the same animation progress for both menu height and icon rotation.
   const menuHeight = progress.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 246],
@@ -66,6 +72,7 @@ function SearchableDropdown({ error, label, onChange, options, placeholder, requ
     outputRange: ["0deg", "180deg"],
   });
 
+  // Render the mobile Register Plant screen and its main interactive sections.
   return (
     <View style={styles.dropdownBlock}>
       <View style={styles.dropdownLabelRow}>
@@ -148,7 +155,10 @@ function SearchableDropdown({ error, label, onChange, options, placeholder, requ
 }
 
 export function RegisterPlantScreen() {
+  const { setAuthNotice } = useAuth();
   const { t } = useLanguage();
+
+  // Track form progress, menu visibility, and the next generated flower id.
   const [menuOpen, setMenuOpen] = useState(false);
   const [nextId, setNextId] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -170,10 +180,12 @@ export function RegisterPlantScreen() {
     image: null as ImagePicker.ImagePickerAsset | null,
   });
 
+  // Update any field in the single form object without rebuilding multiple handlers.
   const updateField = (key: keyof typeof form, value: string | boolean | ImagePicker.ImagePickerAsset | null) => {
     setForm((previous) => ({ ...previous, [key]: value }));
   };
 
+  // Let the user attach a plant photo from the device gallery.
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
@@ -186,13 +198,20 @@ export function RegisterPlantScreen() {
     }
   };
 
+  // Build the multipart payload and save the plant to the backend.
   const handleSubmit = async () => {
     if (!form.name.trim()) {
       Alert.alert(t("register_plant_name_required_title"), t("register_plant_name_required_body"));
       return;
     }
 
+    if (!form.location.trim()) {
+      Alert.alert(t("register_plant_required"), t("register_plant_choose_city_hint"));
+      return;
+    }
+
     try {
+      // Save the new plant profile, then move straight into its profile screen.
       setSaving(true);
       const formData = new FormData();
       formData.append("name", form.name.trim());
@@ -215,13 +234,10 @@ export function RegisterPlantScreen() {
       }
 
       const response = await createPlant(formData);
+      const savedPlantName = response.name?.trim() || form.name.trim();
       setNextId((previous) => previous + 1);
-      Alert.alert(t("register_plant_saved_title"), t("register_plant_saved_body", { name: response.name || form.name }), [
-        {
-          text: t("register_plant_view_profile"),
-          onPress: () => router.replace(`/flower/${encodeURIComponent(response.name || form.name)}`),
-        },
-      ]);
+      setAuthNotice(t("register_plant_saved_body", { name: savedPlantName }));
+      router.replace(`/flower/${encodeURIComponent(savedPlantName)}`);
     } catch (error) {
       Alert.alert(t("register_plant_failed_title"), error instanceof Error ? error.message : t("register_plant_failed_body"));
     } finally {
@@ -229,8 +245,10 @@ export function RegisterPlantScreen() {
     }
   };
 
+  // Reuse the same dropdown updater across all searchable select fields.
   const updateDropdown = (field: DropdownField) => (value: string) => updateField(field, value);
 
+  // Render the main hero, plant form, and save action inside one scrollable layout.
   return (
     <Screen>
       <TopBar title={t("register_plant_title")} onMenuPress={() => setMenuOpen(true)} />
@@ -340,6 +358,7 @@ export function RegisterPlantScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Overall page spacing and card shells.
   content: {
     paddingBottom: spacing.lg,
   },
@@ -357,6 +376,8 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     ...shadows.card,
   },
+
+  // Hero header.
   heroIcon: {
     alignItems: "center",
     backgroundColor: "rgba(255,255,255,0.16)",
@@ -376,6 +397,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
   },
+
+  // Image picker and section headings.
   imageRow: {
     gap: spacing.sm,
     marginBottom: 20,
@@ -418,6 +441,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: 18,
   },
+
+  // Shared text inputs and environment dropdown panel.
   input: {
     backgroundColor: colors.white,
     borderColor: colors.border,
@@ -445,6 +470,8 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     letterSpacing: 0,
   },
+
+  // Searchable dropdown pieces.
   dropdownBlock: {
     gap: 8,
   },
@@ -556,6 +583,8 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     textAlign: "center",
   },
+
+  // Choice chips and tracking toggle.
   optionRow: {
     flexDirection: "row",
     flexWrap: "wrap",

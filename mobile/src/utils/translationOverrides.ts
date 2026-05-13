@@ -1,4 +1,6 @@
+// Override or extend selected translation keys without duplicating the full base dictionaries.
 const translationOverrides: Record<string, Record<string, string>> = {
+  // English adjustments and newer copy additions.
   en: {
     care_eyebrow: "Plant schedule",
     care_title: "Care Reminder",
@@ -45,7 +47,12 @@ const translationOverrides: Record<string, Record<string, string>> = {
     cart_choose_payment_copy: "Choose the payment path that fits this order. Card checkout is faster, while cash on delivery keeps payment at the doorstep.",
     cart_cod_delivery_title: "Pay when the courier arrives",
     cart_cod_delivery_copy: "Your order is confirmed now, and payment happens safely at delivery time.",
+    login_success_title: "Signed in",
+    login_success_body: "Welcome back. Your Florana account is ready.",
+    catalog_listing_saved_title: "Listing saved",
+    catalog_listing_saved_body: "{name} was listed successfully in the {season} catalog.",
   },
+  // Sinhala overrides.
   si: {
     care_eyebrow: "පැල කාලසටහන",
     care_title: "සත්කාර මතක් කිරීම",
@@ -110,6 +117,7 @@ const translationOverrides: Record<string, Record<string, string>> = {
     cart_cod_delivery_title: "කුරියර් පැමිණි විට ගෙවන්න",
     cart_cod_delivery_copy: "ඔබගේ ඇණවුම දැන් තහවුරු වෙයි, ගෙවීම ආරක්ෂිතව භාරදීමේදී සිදු වේ.",
   },
+  // Tamil overrides.
   ta: {
     care_eyebrow: "செடி அட்டவணை",
     care_title: "பராமரிப்பு நினைவூட்டல்",

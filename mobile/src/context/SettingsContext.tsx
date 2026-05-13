@@ -1,3 +1,4 @@
+// Manage shared mobile state for Settings features.
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
@@ -29,6 +30,7 @@ const defaultReminders: ReminderState = {
   inAppMessages: [],
 };
 
+// Fill any missing reminder branches so older saved payloads still match the latest shape.
 function mergeReminderState(partial?: Partial<ReminderState> | null): ReminderState {
   return {
     ...defaultReminders,
@@ -90,6 +92,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Load cached device data first, then quietly refresh it from the backend when possible.
     Promise.all([
       AsyncStorage.getItem(storageKeys.settings),
       AsyncStorage.getItem(storageKeys.reminders),
@@ -111,6 +114,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   }, [refreshFeedbacks, refreshReminders]);
 
   useEffect(() => {
+    // Refresh the shared feedback and reminder caches in the background while the app stays open.
     const interval = setInterval(() => {
       void refreshFeedbacks();
       void refreshReminders();
@@ -120,6 +124,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   }, [refreshFeedbacks, refreshReminders]);
 
   const saveSettings = async (partial: Partial<AppSettings>) => {
+    // Merge partial updates so each setting row can save independently.
     const next = { ...settings, ...partial };
     setSettingsState(next);
     await AsyncStorage.setItem(storageKeys.settings, JSON.stringify(next));
@@ -145,6 +150,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addFeedback = async (value: Omit<FeedbackEntry, "id" | "createdAt">) => {
+    // Fall back to a local optimistic entry when the backend is unavailable.
     let nextEntry: FeedbackEntry;
     try {
       nextEntry = await createFeedback(value);

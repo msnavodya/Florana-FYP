@@ -1,3 +1,4 @@
+// Wrap mobile API requests related to Health.
 import { apiRequest } from "./client";
 
 export interface BackendHealthResponse {
@@ -14,4 +15,5 @@ export interface BackendHealthResponse {
   };
 }
 
+// Check whether the backend server, database, and AI model are available right now.
 export const getBackendHealth = () => apiRequest<BackendHealthResponse>("/health");

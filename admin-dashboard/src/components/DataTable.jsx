@@ -1,3 +1,4 @@
+// Render a reusable admin dashboard component for Data Table.
 import { Loader2 } from 'lucide-react';
 
 export function DataTable({ columns, data, loading, error, empty = 'No records found' }) {

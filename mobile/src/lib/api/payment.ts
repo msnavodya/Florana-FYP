@@ -1,3 +1,4 @@
+// Wrap mobile API requests related to Payment.
 import { apiRequest } from "./client";
 
 export type PaymentMethod = "card" | "cod";
@@ -42,12 +43,14 @@ export interface PaymentConfirmationPayload extends PaymentIntentPayload {
   status: "pending" | "requires_action" | "succeeded" | "cod_confirmed" | "failed";
 }
 
+// Create a backend payment intent before the checkout flow asks for final confirmation.
 export const createPaymentIntent = (payload: PaymentIntentPayload) =>
   apiRequest<PaymentIntentResponse>("/payments/intent", {
     method: "POST",
     body: payload as unknown as Record<string, unknown>,
   });
 
+// Confirm the chosen payment method and let the backend finalize the order state.
 export const confirmPayment = (payload: PaymentConfirmationPayload) =>
   apiRequest<{ status: string; order: { _id?: string } }>("/payments/confirm", {
     method: "POST",

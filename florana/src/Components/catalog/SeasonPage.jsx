@@ -1,3 +1,4 @@
+// Render the legacy web component for Season Page.
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Menu, ShoppingCart, WalletCards } from "lucide-react";
@@ -11,6 +12,7 @@ const currencySymbols = { LKR: "Rs.", USD: "$", EUR: "EUR" };
 
 export default function SeasonPage() {
   const { season } = useParams();
+  // Use client-side navigation to move between legacy web pages from this component.
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [products, setProducts] = useState([]);
@@ -77,6 +79,7 @@ export default function SeasonPage() {
 
   const seasonList = ["spring", "summer", "autumn", "winter", "all"];
 
+  // Render the legacy web Season Page interface and its interactive controls.
   return (
     <div className="catalog-wrapper mobile-screen">
       <div className="catalog-container mobile-frame">

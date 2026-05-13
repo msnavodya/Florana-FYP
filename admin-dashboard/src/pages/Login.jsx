@@ -1,3 +1,4 @@
+// Render the admin dashboard page for Login.
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Leaf, Loader2 } from 'lucide-react';

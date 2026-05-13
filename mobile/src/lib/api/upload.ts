@@ -1,3 +1,4 @@
+// Wrap mobile API requests related to Upload.
 import type { ImagePickerAsset } from "expo-image-picker";
 import { Platform } from "react-native";
 
@@ -5,6 +6,7 @@ type WebImagePickerAsset = ImagePickerAsset & {
   file?: Blob | null;
 };
 
+// Fall back to a simple image extension when the picker does not provide a file name.
 function getFallbackExtension(mimeType?: string | null) {
   if (mimeType === "image/png") {
     return "png";
@@ -19,6 +21,7 @@ export async function appendImageAsset(
   asset: ImagePickerAsset,
   fallbackBaseName: string,
 ) {
+  // Build a FormData-compatible file entry for both web blobs and native URI-based assets.
   const mimeType = asset.mimeType || "image/jpeg";
   const fileName = asset.fileName || `${fallbackBaseName}.${getFallbackExtension(mimeType)}`;
 

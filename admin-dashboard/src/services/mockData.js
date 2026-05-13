@@ -1,3 +1,4 @@
+// Provide admin dashboard service helpers for Mock Data data access.
 export const users = [
   { id: 1, name: 'Sadini Perera', email: 'sadini@florana.lk', role: 'Admin', status: 'Active' },
   { id: 2, name: 'Amal Fernando', email: 'amal@example.com', role: 'Customer', status: 'Active' },

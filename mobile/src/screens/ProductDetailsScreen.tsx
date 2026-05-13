@@ -1,3 +1,4 @@
+// Render the mobile Product Details screen.
 import { MaterialIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, router } from "expo-router";
 import { useState } from "react";
@@ -15,6 +16,7 @@ import { colors, radii, spacing } from "../theme/tokens";
 import type { Product } from "../types/shop";
 
 export function ProductDetailsScreen() {
+  // Rebuild the product object from the route params so the screen can render even from a lightweight link.
   const params = useLocalSearchParams<{ id: string; name?: string; season?: string; price?: string; image?: string }>();
   const { addItem, formatMoney } = useCart();
   const { t } = useLanguage();
@@ -28,6 +30,7 @@ export function ProductDetailsScreen() {
     image: params.image || null,
   };
 
+  // Render the mobile Product Details screen and its main interactive sections.
   return (
     <Screen>
       <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
@@ -70,6 +73,7 @@ export function ProductDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Header row and icon buttons.
   topRow: { alignItems: "flex-start", flexDirection: "row", gap: spacing.md, justifyContent: "space-between", marginBottom: spacing.lg },
   backButton: {
     alignItems: "center",
@@ -95,6 +99,7 @@ const styles = StyleSheet.create({
   },
   eyebrow: { color: colors.primary, fontSize: 13, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase" },
   title: { color: colors.text, fontSize: 30, fontWeight: "800", marginTop: spacing.xs },
+  // Hero image and detail card.
   image: { borderRadius: radii.lg, height: 340, marginBottom: spacing.lg, width: "100%" },
   imageFallback: { alignItems: "center", backgroundColor: colors.surfaceMuted, borderRadius: radii.lg, height: 340, justifyContent: "center", marginBottom: spacing.lg },
   imageFallbackText: { color: colors.textMuted, fontSize: 14, fontWeight: "600" },

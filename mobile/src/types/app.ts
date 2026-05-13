@@ -1,3 +1,5 @@
+// Define shared mobile TypeScript types for App data.
+// Stored feedback entries shown across the app.
 export interface FeedbackEntry {
   id: number | string;
   rating: number;
@@ -5,6 +7,7 @@ export interface FeedbackEntry {
   createdAt: string;
 }
 
+// Device-level app preferences persisted in local storage.
 export interface AppSettings {
   fontSize: "Small" | "Medium" | "Large";
   language: "English" | "Sinhala" | "Tamil" | "Spanish" | "French" | "Arabic" | "Hindi" | "Chinese";
@@ -13,6 +16,7 @@ export interface AppSettings {
   weeklySummary: boolean;
 }
 
+// Full reminder payload used by care settings, local notifications, and backend sync.
 export interface ReminderState {
   options: Record<string, boolean>;
   customNotes: string[];

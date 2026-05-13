@@ -1,3 +1,5 @@
+// Define shared mobile TypeScript types for Auth data.
+// User details kept in memory and local storage after authentication.
 export interface SessionUser {
   id?: string;
   _id?: string;
@@ -7,6 +9,7 @@ export interface SessionUser {
   location?: string | null;
 }
 
+// Backend auth response shared by both login and signup flows.
 export interface AuthResponse {
   message?: string;
   access_token: string;

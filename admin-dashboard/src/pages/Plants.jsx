@@ -1,3 +1,4 @@
+// Render the admin dashboard page for Plants.
 import { Trash2 } from 'lucide-react';
 import { DataTable } from '../components/DataTable';
 import { api } from '../services/api';

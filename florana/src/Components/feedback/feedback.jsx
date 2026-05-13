@@ -1,3 +1,4 @@
+// Render the legacy web component for Feedback.
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Menu as MenuIcon } from "lucide-react";
@@ -8,6 +9,7 @@ import logo from "../Assets/floranalogo.jpg";
 import "./feedback.css";
 
 export default function Feedback() {
+  // Use client-side navigation to move between legacy web pages from this component.
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -28,11 +30,12 @@ export default function Feedback() {
     saved.unshift(newEntry);
     localStorage.setItem("feedbacks", JSON.stringify(saved));
 
-    alert(`${t("submit_feedback")} 👍`);
+    alert(`${t("submit_feedback")} ðŸ‘`);
     setFeedback("");
     setRating(0);
   };
 
+  // Render the legacy web feedback interface and its interactive controls.
   return (
     <div className="feedback-wrapper">
       <Menu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
@@ -52,9 +55,9 @@ export default function Feedback() {
 
         <div className="card support-card">
           <h3>{t("contact_support_card")}</h3>
-          <div className="support-item"><span>📧</span> {t("email_support")}</div>
-          <div className="support-item"><span>❓</span> {t("faq_center")}</div>
-          <div className="support-item"><span>📞</span> {t("call_us")}</div>
+          <div className="support-item"><span>ðŸ“§</span> {t("email_support")}</div>
+          <div className="support-item"><span>â“</span> {t("faq_center")}</div>
+          <div className="support-item"><span>ðŸ“ž</span> {t("call_us")}</div>
         </div>
 
         <div className="card thoughts-card">
@@ -68,7 +71,7 @@ export default function Feedback() {
                 className={star <= rating ? "star filled" : "star"}
                 onClick={() => setRating(star)}
               >
-                ★
+                â˜…
               </span>
             ))}
           </div>

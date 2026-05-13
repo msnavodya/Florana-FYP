@@ -1,3 +1,5 @@
+// Define mobile theme values for Tokens styling.
+// Shared color palette used across screens, cards, and controls.
 export const colors = {
   background: "#7360A0",
   backgroundAccent: "#A391CB",
@@ -17,6 +19,7 @@ export const colors = {
   shadow: "rgba(35, 23, 53, 0.18)",
 } as const;
 
+// Spacing scale used for consistent gaps and padding.
 export const spacing = {
   xs: 8,
   sm: 12,
@@ -26,6 +29,7 @@ export const spacing = {
   xxl: 40,
 } as const;
 
+// Viewport thresholds for compact layouts and framed previews.
 export const viewport = {
   compactWidth: 350,
   phoneWidth: 390,
@@ -34,6 +38,7 @@ export const viewport = {
   frameHeight: 844,
 } as const;
 
+// Common corner radii for cards, pills, and screen shells.
 export const radii = {
   sm: 10,
   md: 16,
@@ -42,6 +47,7 @@ export const radii = {
   pill: 999,
 } as const;
 
+// Reusable shadow recipes for soft cards and elevated panels.
 export const shadows = {
   card: {
     shadowColor: colors.shadow,

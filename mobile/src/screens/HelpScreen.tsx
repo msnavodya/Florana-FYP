@@ -1,3 +1,4 @@
+// Render the mobile Help screen.
 import { StyleSheet, Text, View } from "react-native";
 import { useState } from "react";
 
@@ -9,9 +10,11 @@ import { useLanguage } from "../context/LanguageContext";
 import { colors, radii, shadows, spacing } from "../theme/tokens";
 
 export function HelpScreen() {
+  // Keep the slide-out app menu state local to this simple static screen.
   const [menuOpen, setMenuOpen] = useState(false);
   const { t } = useLanguage();
 
+  // Render the mobile Help screen and its main interactive sections.
   return (
     <Screen>
       <TopBar title={t("help_title")} onMenuPress={() => setMenuOpen(true)} />
@@ -43,6 +46,7 @@ export function HelpScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Intro card at the top of the help page.
   heroCard: {
     backgroundColor: "#E7D7FF",
     borderRadius: radii.xl,
@@ -61,6 +65,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
   },
+
+  // Reusable info cards for issue guidance, contact details, and FAQ copy.
   card: {
     backgroundColor: colors.surface,
     borderColor: colors.border,

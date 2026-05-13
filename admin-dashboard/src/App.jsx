@@ -1,3 +1,4 @@
+// Compose the main application shell and routes for the admin dashboard.
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AdminLayout } from './layouts/AdminLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';

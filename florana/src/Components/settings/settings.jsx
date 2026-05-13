@@ -1,3 +1,4 @@
+// Render the legacy web component for Settings.
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Home, Menu, Settings as SettingsIcon } from "lucide-react";
@@ -19,6 +20,7 @@ const fontSizes = ["Small", "Medium", "Large"];
 const languages = ["English", "Sinhala", "Tamil"];
 
 export default function Settings() {
+  // Use client-side navigation to move between legacy web pages from this component.
   const navigate = useNavigate();
   const { t, setLanguage } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -166,6 +168,7 @@ export default function Settings() {
     navigate("/");
   };
 
+  // Render the legacy web settings interface and its interactive controls.
   return (
     <div className="settings-page mobile-screen">
       <MenuPanel isOpen={menuOpen} onClose={() => setMenuOpen(false)} />

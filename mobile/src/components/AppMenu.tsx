@@ -1,3 +1,4 @@
+// Render a reusable mobile UI component for App Menu.
 import { MaterialIcons } from "@expo/vector-icons";
 import { router, usePathname } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -45,6 +46,7 @@ export function AppMenu({ visible, onClose }: AppMenuProps) {
   const pathname = usePathname();
   const { width } = useWindowDimensions();
   const [mounted, setMounted] = useState(visible);
+  // Keep the drawer wide enough for labels without letting it sprawl on larger screens.
   const drawerWidth = Math.min(348, Math.max(288, width * 0.86));
   const translateX = useRef(new Animated.Value(360)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
@@ -84,6 +86,7 @@ export function AppMenu({ visible, onClose }: AppMenuProps) {
   };
 
   useEffect(() => {
+    // Keep the modal mounted long enough for the open and close animations to finish cleanly.
     const hiddenOffset = drawerWidth + spacing.lg;
 
     if (visible) {
@@ -134,6 +137,7 @@ export function AppMenu({ visible, onClose }: AppMenuProps) {
     });
   }, [drawerWidth, mounted, overlayOpacity, translateX, visible]);
 
+  // Allow a horizontal swipe to dismiss the drawer without fighting vertical scrolling.
   const panResponder = useMemo(
     () =>
       PanResponder.create({

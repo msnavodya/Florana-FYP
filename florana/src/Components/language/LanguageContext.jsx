@@ -1,3 +1,4 @@
+// Support legacy web language features for Language Context.
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import translations from "./translations";
 
