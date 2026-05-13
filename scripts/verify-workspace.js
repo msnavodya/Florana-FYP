@@ -108,7 +108,7 @@ function verifyPythonSyntax() {
 function backendTestsReady(python) {
   const result = spawnSync(
     python.command,
-    [...python.args, "-c", "import pytest; from backend.main import app"],
+    [...python.args, "-c", "import pytest; from fastapi.testclient import TestClient; from backend.main import app"],
     {
       cwd: rootDir,
       stdio: "ignore",
