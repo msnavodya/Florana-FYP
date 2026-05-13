@@ -1,6 +1,11 @@
 {
   "private": true,
   "scripts": {
+    "setup": "node scripts/setup-workspace.js",
+    "setup:js": "node scripts/setup-workspace.js --skip-python",
+    "setup:python": "node scripts/setup-workspace.js --skip-js",
+    "verify": "node scripts/verify-workspace.js",
+    "verify:full": "node scripts/verify-workspace.js --full",
     "backend:start": ".\\.venv\\Scripts\\python.exe backend\\run_backend.py --host 0.0.0.0 --port 8000",
     "backend:start:reload": ".\\.venv\\Scripts\\python.exe backend\\run_backend.py --host 0.0.0.0 --port 8000 --reload",
     "backend:restart": ".\\.venv\\Scripts\\python.exe backend\\run_backend.py --host 0.0.0.0 --port 8000 --restart",

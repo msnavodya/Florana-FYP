@@ -236,6 +236,31 @@ The repository still contains additional admin page components under `admin-dash
 - Optional Cloudinary account for ML dataset download workflow
 - Optional Stripe keys for live card payment testing
 
+## Quick Start For Viewers
+
+If you want the fastest first run from a fresh clone, use the root setup helper:
+
+```bash
+npm run setup
+```
+
+That command:
+
+- installs root, mobile, admin dashboard, and legacy web dependencies
+- creates `backend/.env` and `mobile/.env` from the example files if they are missing
+- creates `.venv/` if needed
+- installs the backend Python requirements into `.venv`
+
+After setup:
+
+```bash
+npm run verify
+npm run backend:start
+npm start
+```
+
+For a first local run, MongoDB is optional. The backend falls back to local JSON storage when MongoDB is unavailable.
+
 ## 5. System Architecture
 
 ```text
@@ -280,6 +305,19 @@ Florana-FYP/
 ```
 
 ## 7. Installation
+
+### Recommended One-Command Setup
+
+```bash
+npm run setup
+```
+
+Optional variants:
+
+```bash
+npm run setup:js
+npm run setup:python
+```
 
 ### Clone Repository
 
@@ -700,10 +738,14 @@ This project is prepared for academic/final-year project submission. No separate
 Useful checks before pushing changes:
 
 ```bash
+npm run verify
+npm run verify:full
 npm run mobile:typecheck
 npm run admin:build
 .\.venv\Scripts\python.exe -m py_compile backend\main.py backend\routes\plant.py backend\routes\shop.py backend\routes\admin.py
 ```
+
+`npm run verify` is the recommended viewer-facing check. It runs the mobile typecheck, admin dashboard build, and Python syntax compilation for the backend and ML scripts.
 
 ## Git Notes
 

@@ -177,6 +177,12 @@ Setup steps:
 4. Start the backend
 5. Start Expo
 
+Fastest root-level setup:
+
+```bash
+npm run setup
+```
+
 ## Install
 
 From the repository root:
@@ -198,6 +204,12 @@ From the repository root:
 ```bash
 npm run backend:start
 npm start
+```
+
+Recommended first-time verification from the repository root:
+
+```bash
+npm run verify
 ```
 
 Or from inside `mobile/`:
@@ -283,4 +295,3 @@ npm run mobile:typecheck
 
 - Root repository guide: [`../README.md`](../README.md)
 - Payment setup notes: [`../PAYMENT_SYSTEM_GUIDE.md`](../PAYMENT_SYSTEM_GUIDE.md)
-
