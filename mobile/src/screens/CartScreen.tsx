@@ -204,9 +204,41 @@ export function CartScreen() {
     convertAmount,
     formatMoney,
   } = useCart();
-  const { languageCode, t } = useLanguage();
-  const localizedLanguageCode: LanguageCode = languageCode === "si" || languageCode === "ta" ? languageCode : "en";
-  const copy = cartCopy[localizedLanguageCode];
+  const { t } = useLanguage();
+  const copy = useMemo(
+    () => ({
+      checkout: t("cart_checkout_title"),
+      myCart: t("cart_my_cart"),
+      itemsInCart: t("cart_items_in_cart"),
+      total: t("cart_total_label"),
+      empty: t("cart_empty_state"),
+      continueShopping: t("cart_continue_shopping"),
+      preparing: t("cart_preparing_checkout"),
+      proceed: t("cart_proceed_to_payment"),
+      paymentMethod: t("cart_select_payment_method"),
+      creditCard: t("cart_stripe_label"),
+      creditCardDesc: t("cart_stripe_description"),
+      cod: t("cart_cod_label"),
+      codDesc: t("cart_cod_description"),
+      verifyMobile: t("cart_verify_mobile_number"),
+      phoneCopy: t("cart_phone_verification_copy"),
+      phoneNumber: t("cart_phone_number_label"),
+      sending: t("cart_sending"),
+      sendOtp: t("continue_label"),
+      cardNumber: t("cart_card_number"),
+      nameOnCard: t("cart_name_on_card"),
+      expiry: t("cart_expiry"),
+      submitting: t("cart_submitting"),
+      pay: t("cart_pay"),
+      codCopy: t("cart_cod_confirm_copy"),
+      confirmCod: t("cart_confirm_cod"),
+      processing: t("cart_payment_processing"),
+      processingCopy: t("cart_processing_copy"),
+      confirmed: t("cart_order_confirmed"),
+      completed: t("cart_completed"),
+    }),
+    [t]
+  );
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
@@ -697,7 +729,7 @@ export function CartScreen() {
                           <MaterialIcons name="verified-user" size={18} color={colors.white} />
                         </View>
                         <Text style={styles.cardPreviewNumber}>
-                          {card.number ? card.number.replace(/(.{4})/g, "$1 ").trim() : "â€¢â€¢â€¢â€¢ â€¢â€¢â€¢â€¢ â€¢â€¢â€¢â€¢ â€¢â€¢â€¢â€¢"}
+                          {card.number ? card.number.replace(/(.{4})/g, "$1 ").trim() : "**** **** **** ****"}
                         </Text>
                         <View style={styles.cardPreviewFooter}>
                           <Text style={styles.cardPreviewMeta}>{card.name || copy.nameOnCard}</Text>
@@ -879,20 +911,20 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
   },
   cartEyebrow: {
-    color: colors.primary,
+    color: colors.white,
     fontSize: 12,
     fontWeight: "800",
     letterSpacing: 0.8,
     textTransform: "uppercase",
   },
   cartHeading: {
-    color: colors.text,
+    color: colors.white,
     fontSize: 28,
     fontWeight: "900",
     marginTop: spacing.xs,
   },
   cartSubtitle: {
-    color: colors.textMuted,
+    color: "rgba(255,255,255,0.86)",
     fontSize: 14,
     lineHeight: 22,
     marginTop: spacing.xs,

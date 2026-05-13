@@ -7,6 +7,7 @@ import { Alert, Pressable, StyleSheet, Text, TextInput, View, useWindowDimension
 
 import { AppMenu } from "../components/AppMenu";
 import { BottomNav } from "../components/BottomNav";
+import { LanguageSelector } from "../components/LanguageSelector";
 import { Screen } from "../components/Screen";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -709,9 +710,13 @@ export function QuickTipScreen() {
           <MaterialIcons name="arrow-back" size={20} color={colors.text} />
         </Pressable>
 
-        <Pressable accessibilityLabel={t("open_menu")} onPress={() => setMenuOpen(true)} style={styles.menuButton}>
-          <MaterialIcons name="menu" size={20} color={colors.text} />
-        </Pressable>
+        <View style={styles.topBarActions}>
+          <LanguageSelector />
+
+          <Pressable accessibilityLabel={t("open_menu")} onPress={() => setMenuOpen(true)} style={styles.menuButton}>
+            <MaterialIcons name="menu" size={20} color={colors.text} />
+          </Pressable>
+        </View>
       </View>
 
       <View style={[styles.heroCard, compact ? styles.heroCardCompact : null]}>
@@ -1019,6 +1024,11 @@ const styles = StyleSheet.create({
   },
   topBarCompact: {
     alignItems: "flex-start",
+  },
+  topBarActions: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
   },
   backButton: {
     alignItems: "center",
