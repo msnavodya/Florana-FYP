@@ -105,8 +105,28 @@ function verifyPythonSyntax() {
   run(python.command, [...python.args, "-m", "py_compile", ...pythonFiles]);
 }
 
+function backendTestsReady(python) {
+  const result = spawnSync(
+    python.command,
+    [...python.args, "-c", "import pytest; from backend.main import app"],
+    {
+      cwd: rootDir,
+      stdio: "ignore",
+      shell: false,
+    },
+  );
+
+  return !result.error && result.status === 0;
+}
+
 function runBackendPytest() {
   const python = resolvePythonCommand();
+  if (!backendTestsReady(python)) {
+    fail(
+      "Backend test dependencies are not installed for the active Python interpreter. Run `npm run setup:python` or `python -m pip install -r backend/requirements.txt` before `npm run verify`.",
+    );
+  }
+
   run(python.command, [...python.args, "-m", "pytest", "backend/tests", "-q"]);
 }
 
