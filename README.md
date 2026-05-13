@@ -82,6 +82,12 @@ Run these commands from the repository root:
 - `.\\.venv\\Scripts\\python.exe -m pytest backend\\tests -q`
   Run backend `pytest` directly without the npm wrapper
 
+Backend test notes:
+
+- Install Python dependencies first with `npm run setup:python` or `python -m pip install -r backend/requirements.txt`
+- The backend `pytest` suite is isolated from MongoDB and is expected to pass with local JSON fallback behavior
+- The same `npm run verify` command is used by the GitHub Actions `Verify` workflow on `main`
+
 ## Repository Modules
 
 Top-level modules in this repository:
@@ -278,6 +284,7 @@ npm start
 ```
 
 For a first local run, MongoDB is optional. The backend falls back to local JSON storage when MongoDB is unavailable.
+If `npm run verify` reports missing backend Python packages, run `npm run setup:python` and rerun verification.
 
 ## 5. System Architecture
 
@@ -369,6 +376,8 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r backend\requirements.txt
 ```
+
+These Python requirements include the packages needed for the backend API, the backend `pytest` suite, and the FastAPI test client used by CI verification.
 
 ### Install ML Pipeline Dependencies
 
@@ -780,7 +789,13 @@ npm run admin:build
 .\.venv\Scripts\python.exe -m py_compile backend\main.py backend\routes\plant.py backend\routes\shop.py backend\routes\admin.py
 ```
 
-`npm run verify` is the recommended viewer-facing check. It runs the mobile typecheck, admin dashboard build, and Python syntax compilation for the backend and ML scripts.
+`npm run verify` is the recommended main pre-push check. It runs the mobile typecheck, admin dashboard build, Python syntax compilation for the backend and ML scripts, and the backend `pytest` suite.
+
+`npm run verify:full` adds the legacy React web production build on top of the standard verification steps.
+
+Backend verification does not require MongoDB to be running. The API and tests are expected to work with the repository's local JSON fallback behavior when MongoDB is unavailable.
+
+The GitHub Actions workflow in `.github/workflows/verify.yml` installs `backend/requirements.txt` and runs the same `npm run verify` command used locally, so a passing local verify run is the closest match to CI.
 
 ## Git Notes
 
