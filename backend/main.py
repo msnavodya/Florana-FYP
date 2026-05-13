@@ -261,8 +261,11 @@ def normalize_prediction_label(raw_label: str) -> str:
     normalized = raw_label.replace("_", " ").strip()
     lowered = normalized.lower()
 
-    if lowered in {"fresh leaf", "healthy", "healthy plant"}:
+    if lowered in {"healthy", "healthy plant"}:
         return "Healthy"
+
+    if lowered == "fresh leaf":
+        return "Fresh Leaf"
 
     if not normalized:
         return "Unknown"

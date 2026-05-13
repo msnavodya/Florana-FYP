@@ -104,12 +104,12 @@ Recent mobile documentation points:
 ### Core Features
 
 - User registration and login
-- Flower plant disease prediction from image upload
+- Flower plant disease prediction from image upload with supported-class validation
 - Flower plant registration with image, city, sunlight, soil, climate, and care details
 - My Flower Plants dashboard with flower profile view and delete support
 - Flower plant care tracking and growth history
 - Care reminders and custom care notes
-- Quick Tip community for sharing seeds, posting care ideas, liking posts, commenting, and chatting locally
+- Quick Tip community for sharing seeds, posting care ideas, liking posts, commenting, chatting locally, and deleting owned items
 - Flower plant shop with seasonal catalog, product details, cart, and checkout
 - Dedicated Sell Flower Plants flow for adding shop listings with photo upload and preview
 - Live currency conversion for LKR, USD, and EUR with app-wide synchronized pricing
@@ -122,6 +122,9 @@ Recent mobile documentation points:
 - Seasonal catalog for Spring, Summer, Autumn, and Winter flower plants
 - Personalized quick tips based on time, season, and tracked flower plants
 - Device-saved Quick Tip community posts, likes, comments, and chat messages using AsyncStorage
+- Quick Tip sender names persist with each saved post, reply, and chat message even after switching accounts
+- Quick Tip community supports deleting owned posts, replies, and chat messages with immediate local updates
+- Diagnose flow rejects unrelated or unclear images instead of showing a false disease result when confidence is too low or the uploaded image is unsupported
 - Growth tracking charts for registered flower plants
 - Multi-language app text support
 - Real-time currency switching for shop prices with cached rate fallback and shared checkout totals
@@ -146,7 +149,7 @@ Recent mobile documentation points:
 - Register Flower Plant
 - Flower plant profile / flower profile
 - Growth chart view
-- Quick Tips with community posts, likes, comments, and chat
+- Quick Tips with community posts, likes, comments, chat, sender persistence, and delete controls
 - Care Reminder
 - Catalog
 - Sell
@@ -286,6 +289,7 @@ Main flow:
 - If MongoDB is unavailable, the backend falls back to local JSON storage.
 - Uploaded images are saved locally and served through `/uploads`.
 - Disease prediction uses the trained TensorFlow/Keras model in `backend/ai/`.
+- The mobile diagnose flow accepts only supported leaf predictions and shows an explicit unsupported-image error for unrelated or low-confidence uploads.
 - The admin dashboard uses protected `/admin` endpoints to manage the system.
 - The ML pipeline can download datasets from Cloudinary and train/export model artifacts.
 
@@ -496,6 +500,7 @@ The production prediction endpoint is served by the backend:
 
 ```text
 POST /predict
+POST /diagnose
 ```
 
 The model files used by the backend are:
@@ -506,6 +511,14 @@ backend/ai/class_names.json
 ```
 
 To train or update the model, use the workflow in `ml_pipeline/`.
+
+Current mobile prediction behavior:
+
+- Supported backend classes are `Botrytis`, `Fresh Leaf`, `Leaf Spot`, `Powdery Mildew`, and `Rust`
+- `Fresh Leaf` is preserved as its own prediction label in the backend
+- Low-confidence predictions return `Needs closer inspection`
+- The mobile app treats unsupported labels, low-confidence results, or narrow top-prediction margins as unsupported image uploads
+- Unrelated or unnecessary images show an error instead of a disease alert
 
 ### Root Scripts
 
@@ -665,6 +678,12 @@ Current backend class labels:
 - Powdery Mildew
 - Rust
 
+Current mobile diagnosis guardrails:
+
+- The backend returns `Needs closer inspection` when confidence is below the configured threshold
+- The mobile app only accepts supported class labels from the trained model
+- Unsupported, unrelated, or unclear uploads are shown as an error instead of a disease result
+
 Image preprocessing:
 
 - Convert uploaded image to RGB
@@ -692,6 +711,7 @@ Dataset workflow:
 - Confidence threshold: backend returns `Needs closer inspection` for low-confidence predictions
 - Current backend class count: 5
 - Current classes: Botrytis, Fresh Leaf, Leaf Spot, Powdery Mildew, Rust
+- Mobile-side guardrails also check supported labels, prediction confidence, and top-prediction margin before showing a disease result
 
 Accuracy depends on the dataset used for the latest training run. The repository includes the trained backend model artifact and the full training pipeline, so final validation accuracy and confusion matrix results can be recorded from the training output.
 

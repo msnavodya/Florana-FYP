@@ -49,6 +49,71 @@ type DiseaseCareInfo = {
   workingTime: string;
 };
 
+const MIN_SUPPORTED_PREDICTION_CONFIDENCE = 65;
+const MIN_SUPPORTED_PREDICTION_MARGIN = 12;
+const SUPPORTED_PREDICTION_LABELS = new Set([
+  "Botrytis",
+  "Fresh Leaf",
+  "Leaf Spot",
+  "Powdery Mildew",
+  "Rust",
+  "Healthy",
+]);
+
+function isUnsupportedPredictionLabel(prediction: string) {
+  const normalized = prediction.trim().toLowerCase();
+  return (
+    normalized === "needs closer inspection" ||
+    normalized.includes("not recognized") ||
+    normalized.includes("not supported") ||
+    normalized.includes("unsupported") ||
+    normalized.includes("unrecognized")
+  );
+}
+
+function isUnsupportedDiagnosisMessage(message: string | undefined) {
+  if (!message) {
+    return false;
+  }
+
+  const normalized = message.trim().toLowerCase();
+  return (
+    normalized.includes("not recognized") ||
+    normalized.includes("not supported") ||
+    normalized.includes("unsupported") ||
+    normalized.includes("unrecognized") ||
+    normalized.includes("unable to classify") ||
+    normalized.includes("outside the trained") ||
+    normalized.includes("trained model") ||
+    normalized.includes("needs closer inspection")
+  );
+}
+
+function parsePredictionConfidence(confidence: number | string) {
+  if (typeof confidence === "number") {
+    return confidence > 1 ? confidence : confidence * 100;
+  }
+
+  const parsed = Number(confidence);
+  if (Number.isNaN(parsed)) {
+    return null;
+  }
+
+  return parsed > 1 ? parsed : parsed * 100;
+}
+
+function isSupportedPredictionLabel(prediction: string) {
+  return SUPPORTED_PREDICTION_LABELS.has(prediction.trim());
+}
+
+function getPredictionMargin(topPredictions: Array<{ label: string; confidence: number }> | undefined) {
+  if (!topPredictions || topPredictions.length < 2) {
+    return null;
+  }
+
+  return (topPredictions[0].confidence - topPredictions[1].confidence) * 100;
+}
+
 function resolveModelState(aiModel?: { loaded?: boolean; status?: string | null }): ModelState {
   // Normalize backend health data into the small state model used by the dashboard.
   return {
@@ -409,6 +474,24 @@ export function HomeScreen() {
       // Upload the selected leaf image and ask the backend model for the top diagnosis.
       await appendImageAsset(formData, "file", file, "scan");
       const response = await predictImage(formData);
+      const confidenceValue = parsePredictionConfidence(response.confidence);
+      const predictionMargin = getPredictionMargin(response.top_predictions);
+
+      if (
+        isUnsupportedPredictionLabel(response.prediction) ||
+        !isSupportedPredictionLabel(response.prediction) ||
+        confidenceValue == null ||
+        confidenceValue < MIN_SUPPORTED_PREDICTION_CONFIDENCE ||
+        (predictionMargin != null && predictionMargin < MIN_SUPPORTED_PREDICTION_MARGIN)
+      ) {
+        setDiagnosis({
+          title: t("diagnosis_unavailable"),
+          message: t("diagnosis_image_unsupported"),
+          tone: "error",
+        });
+        return;
+      }
+
       const healthy = isHealthyPrediction(response.prediction);
       const confidence = formatPredictionConfidence(response.confidence);
       const alternatePrediction = response.top_predictions?.find((item) => item.label !== response.prediction);
@@ -430,9 +513,10 @@ export function HomeScreen() {
       // A successful prediction confirms the backend model is reachable and working.
       setModelState({ loaded: true, status: "ready" });
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : t("diagnosis_failed");
       setDiagnosis({
         title: t("diagnosis_unavailable"),
-        message: error instanceof Error ? error.message : t("diagnosis_failed"),
+        message: isUnsupportedDiagnosisMessage(errorMessage) ? t("diagnosis_image_unsupported") : errorMessage,
         tone: "error",
       });
       void refreshModelState();
