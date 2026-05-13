@@ -105,9 +105,15 @@ function verifyPythonSyntax() {
   run(python.command, [...python.args, "-m", "py_compile", ...pythonFiles]);
 }
 
+function runBackendPytest() {
+  const python = resolvePythonCommand();
+  run(python.command, [...python.args, "-m", "pytest", "backend/tests", "-q"]);
+}
+
 run(npmCommand, ["run", "mobile:typecheck"]);
 run(npmCommand, ["run", "admin:build"]);
 verifyPythonSyntax();
+runBackendPytest();
 
 if (fullCheck) {
   run(npmCommand, ["run", "legacy:web:build"]);

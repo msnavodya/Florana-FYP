@@ -66,6 +66,21 @@ Use these files depending on what you need:
   Detailed guide for the Expo mobile app, screens, translations, reminders, and Expo startup flow
 - `PAYMENT_SYSTEM_GUIDE.md`
   Payment-specific implementation notes
+- `USER_TESTING_GUIDE.md`
+  Manual user testing checklist, acceptance scenarios, and bug report template
+
+## Testing Commands
+
+Run these commands from the repository root:
+
+- `npm run backend:test`
+  Run the backend `pytest` suite only
+- `npm run verify`
+  Run the main verification suite for mobile typecheck, admin build, Python syntax, and backend tests
+- `npm run verify:full`
+  Run the full verification suite including the legacy web build
+- `.\\.venv\\Scripts\\python.exe -m pytest backend\\tests -q`
+  Run backend `pytest` directly without the npm wrapper
 
 ## Repository Modules
 
