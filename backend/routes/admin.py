@@ -109,6 +109,24 @@ def get_admin_feedback():
     return get_feedback()
 
 
+@router.delete("/feedback/{feedback_id}")
+def delete_admin_feedback(feedback_id: str):
+    feedback_collection = database.get_feedback_collection()
+    if feedback_collection is None:
+        deleted_count = local_store.delete_item(
+            local_store.FEEDBACK_FILE,
+            lambda item: item.get("_id") == feedback_id or item.get("id") == feedback_id,
+        )
+    else:
+        if not ObjectId.is_valid(feedback_id):
+            raise HTTPException(status_code=400, detail="Invalid feedback ID")
+        deleted_count = feedback_collection.delete_one({"_id": ObjectId(feedback_id)}).deleted_count
+
+    if deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Feedback record not found")
+    return {"message": "Feedback record deleted successfully"}
+
+
 @router.get("/payments")
 def get_admin_payments():
     return list_orders()

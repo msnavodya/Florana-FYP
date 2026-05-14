@@ -22,6 +22,13 @@ const normalizeErrorMessage = (error) => {
   return detail || error.message || 'Something went wrong';
 };
 
+const isReadRequest = (method = 'get') => ['get', 'head'].includes(String(method).toLowerCase());
+
+const getUnavailableActionMessage = (config) => {
+  const method = String(config.method || 'get').toUpperCase();
+  return `The running backend does not support this ${method} action yet. Restart the backend and try again.`;
+};
+
 client.interceptors.request.use((config) => {
   const token = localStorage.getItem(TOKEN_KEY);
   if (token) {
@@ -32,6 +39,7 @@ client.interceptors.request.use((config) => {
 
 const requestWithFallback = async (config) => {
   let lastError;
+  const allowRouteFallback = isReadRequest(config.method);
 
   for (const baseURL of candidateApiBaseUrls) {
     try {
@@ -45,7 +53,16 @@ const requestWithFallback = async (config) => {
           auth.logout();
           throw new Error('Your admin session expired. Please log in again.');
         }
-        if (![404, 405].includes(error.response.status) || baseURL === candidateApiBaseUrls[candidateApiBaseUrls.length - 1]) {
+
+        if (![404, 405].includes(error.response.status)) {
+          throw new Error(normalizeErrorMessage(error));
+        }
+
+        if (!allowRouteFallback) {
+          throw new Error(getUnavailableActionMessage(config));
+        }
+
+        if (baseURL === candidateApiBaseUrls[candidateApiBaseUrls.length - 1]) {
           throw new Error(normalizeErrorMessage(error));
         }
       }
@@ -87,5 +104,6 @@ export const api = {
   getPayments: () => requestWithFallback({ method: 'get', url: '/admin/payments' }),
   deletePlant: (id) => requestWithFallback({ method: 'delete', url: `/admin/plants/${id}` }),
   deleteProduct: (id) => requestWithFallback({ method: 'delete', url: `/admin/products/${id}` }),
+  deleteFeedback: (id) => requestWithFallback({ method: 'delete', url: `/admin/feedback/${id}` }),
   deletePayment: (id) => requestWithFallback({ method: 'delete', url: `/admin/payments/${id}` }),
 };

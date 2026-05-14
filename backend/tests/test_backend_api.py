@@ -1,8 +1,15 @@
 from io import BytesIO
+from datetime import timedelta
 
 from PIL import Image
 
 from backend import main
+from backend.utils.security import create_token
+
+
+def admin_headers():
+    token = create_token({"email": "admin@florana.com", "role": "admin"}, timedelta(minutes=30))
+    return {"Authorization": f"Bearer {token}"}
 
 
 def test_root_endpoint_returns_project_metadata(client):
@@ -106,6 +113,29 @@ def test_feedback_lifecycle_uses_local_storage(client):
     assert clear_response.status_code == 200
     assert clear_response.json()["message"] == "Feedback cleared successfully"
     assert client.get("/feedback/").json() == []
+
+
+def test_admin_can_delete_feedback_entry(client):
+    create_response = client.post(
+        "/feedback/",
+        json={
+            "rating": 4,
+            "message": "Please add more admin moderation tools.",
+        },
+    )
+    feedback_id = create_response.json()["id"]
+
+    list_response = client.get("/admin/feedback", headers=admin_headers())
+    assert list_response.status_code == 200
+    assert any(item["id"] == feedback_id for item in list_response.json())
+
+    delete_response = client.delete(f"/admin/feedback/{feedback_id}", headers=admin_headers())
+    assert delete_response.status_code == 200
+    assert delete_response.json()["message"] == "Feedback record deleted successfully"
+
+    remaining_feedback = client.get("/admin/feedback", headers=admin_headers())
+    assert remaining_feedback.status_code == 200
+    assert all(item["id"] != feedback_id for item in remaining_feedback.json())
 
 
 def test_care_reminders_return_defaults_and_save_updates(client):
