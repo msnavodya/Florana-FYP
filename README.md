@@ -195,66 +195,113 @@ The repository still contains additional admin page components under `admin-dash
 
 ## 4. Tech Stack
 
-### Frontend
+Version snapshot below is based on the current repository manifests and the verified local workspace on May 14, 2026.
 
-- Expo
-- React Native
-- TypeScript
-- React Native SVG
-- React Native Chart Kit
-- AsyncStorage
+### Workspace and CI Tooling
+
+| Technology | Version | Source |
+| --- | --- | --- |
+| Node.js local verification runtime | `24.11.1` | local environment |
+| npm local verification runtime | `11.6.4` | local environment |
+| Python local verification runtime | `3.11.9` | local environment |
+| GitHub Actions Node.js runtime for `Verify` | `20` | `.github/workflows/verify.yml` |
+| GitHub Actions Python runtime for `Verify` | `3.11` | `.github/workflows/verify.yml` |
+
+### Mobile App
+
+| Technology | Version |
+| --- | --- |
+| Expo | `~54.0.34` |
+| Expo Router | `~6.0.23` |
+| React | `19.1.0` |
+| React Native | `0.81.5` |
+| TypeScript | `~5.9.2` |
+| Axios | `^1.13.6` |
+| AsyncStorage | `^2.2.0` |
+| React Native SVG | `15.12.1` |
+| React Native Chart Kit | `^6.12.0` |
+| React Native Web | `^0.21.0` |
 
 ### Admin Dashboard
 
-- React
-- Vite
-- JavaScript
-- Tailwind CSS
-- Recharts
-- Axios
+| Technology | Version |
+| --- | --- |
+| React | `^19.2.0` |
+| React Router DOM | `^7.10.1` |
+| Vite | `^7.2.7` |
+| Tailwind CSS | `^3.4.18` |
+| Axios | `^1.15.0` |
+| Recharts | `^3.5.1` |
+| Lucide React | `^0.561.0` |
 
 ### Legacy Web Client
 
-- React
-- JavaScript
-- React Router
-- Axios
-- Chart.js
+| Technology | Version |
+| --- | --- |
+| React | `19.2.0` |
+| React Router DOM | `^6.28.1` |
+| React Scripts | `5.0.1` |
+| Axios | `^1.16.0` |
+| Chart.js | `^4.5.1` |
+| Framer Motion | `^12.38.0` |
+| Stripe JS | `^9.0.1` |
+| PayPal React SDK | `^9.1.0` |
 
-### Backend
+### Backend API and Data Layer
 
-- FastAPI
-- Python
-- Uvicorn
-- Pydantic
-- python-jose
-- Passlib
-- JWT authentication utilities
-- Local JSON fallback storage
+| Technology | Version |
+| --- | --- |
+| FastAPI | `0.128.1` |
+| Uvicorn | `0.40.0` |
+| Starlette | `0.50.0` |
+| Pydantic | `2.12.5` |
+| PyMongo | `4.15.4` |
+| SQLAlchemy | `2.0.46` |
+| python-jose | `3.5.0` |
+| Passlib | `1.7.4` |
+| pytest | `8.4.1` |
+| httpx | `0.28.1` |
 
-### Database
+### AI and ML Runtime
 
-- MongoDB
-- Local JSON files for development fallback
+| Technology | Version |
+| --- | --- |
+| TensorFlow | `2.20.0` |
+| Keras | `3.13.2` |
+| NumPy | `2.4.2` |
+| OpenCV Python | `4.13.0.92` |
+| Pillow | `12.1.0` |
+| pandas | `3.0.0` |
+| scikit-learn | `1.8.0` |
+| SciPy | `1.17.0` |
 
-### AI/ML
+### ML Pipeline Tooling
 
-- TensorFlow
-- Keras
-- CNN image classification model
-- Pillow / OpenCV image preprocessing
-- NumPy
+| Technology | Version |
+| --- | --- |
+| Cloudinary SDK | `1.35.0` |
+| TensorFlow | `2.14.0` |
+| NumPy | `1.24.3` |
+| OpenCV Python | `4.8.0.74` |
+| Pillow | `10.0.0` |
+| Matplotlib | `3.7.2` |
+| Requests | `2.31.0` |
 
-### Cloud Services
+### Database and Cloud Services
 
-- Cloudinary for optional ML dataset download workflow
-- Stripe configuration support for payment intent flow
-- Firebase Admin SDK support for notification integration when configured
+| Technology | Version / Notes |
+| --- | --- |
+| MongoDB | runtime service, version not pinned in repo |
+| Local JSON fallback storage | built into backend routes and utilities |
+| Stripe integration | configured through backend env vars and `@stripe/stripe-js@^9.0.1` in `florana/` |
+| PayPal integration | `@paypal/react-paypal-js@^9.1.0` in `florana/` |
+| Firebase Admin SDK | optional backend integration when configured at runtime |
 
 ## Prerequisites
 
-- Node.js and npm
-- Python 3.10+ recommended
+- Node.js 20+ recommended, with local verification currently run on `24.11.1`
+- npm, with local verification currently run on `11.6.4`
+- Python 3.11 recommended, with local verification currently run on `3.11.9`
 - Expo Go or Android/iOS emulator for mobile testing
 - MongoDB for persistent storage
 - Optional Cloudinary account for ML dataset download workflow
