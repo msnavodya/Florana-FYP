@@ -1,4 +1,5 @@
 // Render the mobile Home screen.
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -24,11 +25,14 @@ import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useSettings } from "../context/SettingsContext";
 import { getBackendHealth } from "../lib/api/health";
+import { getPlants } from "../lib/api/plants";
+import { storageKeys } from "../lib/storage/keys";
 import { predictImage } from "../lib/api/predict";
 import { appendImageAsset } from "../lib/api/upload";
 import { brandAssets } from "../theme/brand";
 import { colors, radii, shadows, spacing } from "../theme/tokens";
 import type { FeedbackEntry } from "../types/app";
+import type { Plant } from "../types/plants";
 import { formatPredictionConfidence } from "../utils/predict";
 
 type ModelState = {
@@ -49,8 +53,21 @@ type DiseaseCareInfo = {
   workingTime: string;
 };
 
+type SearchResult = {
+  id: string;
+  type: "page" | "plant";
+  title: string;
+  subtitle: string;
+  icon: keyof typeof MaterialIcons.glyphMap;
+  route?: string;
+  action?: "scan";
+  historyValue: string;
+  score: number;
+};
+
 const MIN_SUPPORTED_PREDICTION_CONFIDENCE = 72;
 const MIN_SUPPORTED_PREDICTION_MARGIN = 15;
+const MAX_HOME_SEARCH_HISTORY = 5;
 const SUPPORTED_PREDICTION_LABELS = new Set([
   "Botrytis",
   "Fresh Leaf",
@@ -165,6 +182,43 @@ function normalizeDiseaseKey(prediction: string) {
   return prediction
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "");
+}
+
+function normalizeSearchValue(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function buildSearchBlob(parts: Array<string | null | undefined | false>) {
+  return parts
+    .filter((part): part is string => typeof part === "string" && part.trim().length > 0)
+    .join(" ")
+    .toLowerCase();
+}
+
+function queryMatches(searchBlob: string, queryTokens: string[]) {
+  return queryTokens.every((token) => searchBlob.includes(token));
+}
+
+function scoreSearchMatch(title: string, searchBlob: string, normalizedQuery: string) {
+  const normalizedTitle = normalizeSearchValue(title);
+
+  if (normalizedTitle === normalizedQuery) {
+    return 120;
+  }
+
+  if (normalizedTitle.startsWith(normalizedQuery)) {
+    return 90;
+  }
+
+  if (normalizedTitle.includes(normalizedQuery)) {
+    return 75;
+  }
+
+  if (searchBlob.includes(normalizedQuery)) {
+    return 60;
+  }
+
+  return 40;
 }
 
 // Lightweight local care guidance used when the prediction response does not include treatment text.
@@ -283,6 +337,8 @@ export function HomeScreen() {
   const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [trackedPlants, setTrackedPlants] = useState<Plant[]>([]);
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const [diagnosis, setDiagnosis] = useState<DiagnosisState | null>(null);
@@ -293,6 +349,47 @@ export function HomeScreen() {
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const greeting = user?.full_name ? t("hello_user", { name: user.full_name }) : t("hello_guest");
+  const normalizedSearch = normalizeSearchValue(search);
+  const searchTokens = normalizedSearch.split(/\s+/).filter(Boolean);
+
+  const loadSearchResources = async () => {
+    const [savedHistory, savedPlants] = await Promise.all([
+      AsyncStorage.getItem(storageKeys.searchHistory),
+      getPlants().catch(() => [] as Plant[]),
+    ]);
+
+    try {
+      const parsedHistory = JSON.parse(savedHistory || "[]");
+      if (Array.isArray(parsedHistory)) {
+        setSearchHistory(parsedHistory.filter((item): item is string => typeof item === "string").slice(0, MAX_HOME_SEARCH_HISTORY));
+      }
+    } catch {
+      setSearchHistory([]);
+    }
+
+    const validPlants = (savedPlants || []).filter((plant) => plant && plant.tracking !== false && plant.name?.trim());
+    setTrackedPlants(validPlants);
+  };
+
+  const storeSearchHistory = async (value: string) => {
+    const normalizedValue = value.trim();
+    if (!normalizedValue) {
+      return;
+    }
+
+    const nextHistory = [normalizedValue, ...searchHistory.filter((item) => normalizeSearchValue(item) !== normalizeSearchValue(normalizedValue))].slice(
+      0,
+      MAX_HOME_SEARCH_HISTORY
+    );
+
+    setSearchHistory(nextHistory);
+    await AsyncStorage.setItem(storageKeys.searchHistory, JSON.stringify(nextHistory));
+  };
+
+  const clearSearchHistory = async () => {
+    setSearchHistory([]);
+    await AsyncStorage.removeItem(storageKeys.searchHistory);
+  };
 
   const refreshModelState = async () => {
     try {
@@ -320,6 +417,29 @@ export function HomeScreen() {
       useNativeDriver: true,
     }).start();
   }, [fadeAnim]);
+
+  useEffect(() => {
+    let active = true;
+
+    const syncSearchResources = async () => {
+      try {
+        await loadSearchResources();
+      } catch {
+        if (!active) {
+          return;
+        }
+
+        setSearchHistory([]);
+        setTrackedPlants([]);
+      }
+    };
+
+    void syncSearchResources();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     // Show one-time auth success messages after redirects from login or registration flows.
@@ -426,14 +546,6 @@ export function HomeScreen() {
     [feedbackIndex, feedbacks.length]
   );
 
-  const handleSearch = () => {
-    if (!search.trim()) {
-      return;
-    }
-
-    Alert.alert(t("search_action"), search.trim());
-  };
-
   const handleScan = async () => {
     // Request media access lazily so the permission prompt only appears when the user starts a scan.
     const permission =
@@ -526,6 +638,231 @@ export function HomeScreen() {
     }
   };
 
+  const pageSearchResults = useMemo<SearchResult[]>(
+    () => [
+      {
+        id: "page-home",
+        type: "page",
+        title: t("nav_home"),
+        subtitle: t("home_search_open_screen"),
+        icon: "home-filled",
+        route: "/home",
+        historyValue: t("nav_home"),
+        score: 0,
+      },
+      {
+        id: "page-diagnose",
+        type: "page",
+        title: t("diagnose"),
+        subtitle: t("tap_to_scan_leaf"),
+        icon: "photo-camera",
+        action: "scan",
+        historyValue: t("diagnose"),
+        score: 0,
+      },
+      {
+        id: "page-catalog",
+        type: "page",
+        title: t("nav_catalog"),
+        subtitle: t("home_search_open_screen"),
+        icon: "inventory-2",
+        route: "/catalog",
+        historyValue: t("nav_catalog"),
+        score: 0,
+      },
+      {
+        id: "page-cart",
+        type: "page",
+        title: t("nav_cart"),
+        subtitle: t("home_search_open_screen"),
+        icon: "shopping-cart",
+        route: "/cart",
+        historyValue: t("nav_cart"),
+        score: 0,
+      },
+      {
+        id: "page-profile",
+        type: "page",
+        title: t("profile_title"),
+        subtitle: t("home_search_open_screen"),
+        icon: "person",
+        route: "/profile",
+        historyValue: t("profile_title"),
+        score: 0,
+      },
+      {
+        id: "page-myplants",
+        type: "page",
+        title: t("my_plants_title"),
+        subtitle: t("home_search_open_screen"),
+        icon: "spa",
+        route: "/myplants",
+        historyValue: t("my_plants_title"),
+        score: 0,
+      },
+      {
+        id: "page-register",
+        type: "page",
+        title: t("register_new_plant"),
+        subtitle: t("home_search_open_screen"),
+        icon: "add-circle-outline",
+        route: "/plant-register",
+        historyValue: t("register_new_plant"),
+        score: 0,
+      },
+      {
+        id: "page-care",
+        type: "page",
+        title: t("care_title"),
+        subtitle: t("home_search_open_screen"),
+        icon: "event-note",
+        route: "/care",
+        historyValue: t("care_title"),
+        score: 0,
+      },
+      {
+        id: "page-quicktip",
+        type: "page",
+        title: t("quick_tip_card"),
+        subtitle: t("home_search_open_screen"),
+        icon: "auto-awesome",
+        route: "/quicktip",
+        historyValue: t("quick_tip_card"),
+        score: 0,
+      },
+      {
+        id: "page-feedback",
+        type: "page",
+        title: t("feedback_title"),
+        subtitle: t("home_search_open_screen"),
+        icon: "forum",
+        route: "/feedback",
+        historyValue: t("feedback_title"),
+        score: 0,
+      },
+      {
+        id: "page-settings",
+        type: "page",
+        title: t("settings_title"),
+        subtitle: t("home_search_open_screen"),
+        icon: "settings",
+        route: "/settings",
+        historyValue: t("settings_title"),
+        score: 0,
+      },
+      {
+        id: "page-about",
+        type: "page",
+        title: t("about_title"),
+        subtitle: t("home_search_open_screen"),
+        icon: "info-outline",
+        route: "/about",
+        historyValue: t("about_title"),
+        score: 0,
+      },
+      {
+        id: "page-help",
+        type: "page",
+        title: t("help_title"),
+        subtitle: t("home_search_open_screen"),
+        icon: "help-outline",
+        route: "/help",
+        historyValue: t("help_title"),
+        score: 0,
+      },
+    ],
+    [t]
+  );
+
+  const searchResults = useMemo(() => {
+    if (!normalizedSearch || searchTokens.length === 0) {
+      return [];
+    }
+
+    const matchedPages = pageSearchResults.reduce<SearchResult[]>((results, entry) => {
+        const searchBlob = buildSearchBlob([
+          entry.title,
+          entry.subtitle,
+          entry.historyValue,
+          "scan diagnose disease leaf camera plant shop buy sell feedback help support account profile settings reminders care quick tip",
+        ]);
+
+        if (!queryMatches(searchBlob, searchTokens)) {
+          return results;
+        }
+
+        results.push({
+          ...entry,
+          score: scoreSearchMatch(entry.title, searchBlob, normalizedSearch),
+        });
+
+        return results;
+      }, []);
+
+    const matchedPlants = trackedPlants.reduce<SearchResult[]>((results, plant) => {
+        const plantId = plant.id || plant._id || plant.name;
+        const searchBlob = buildSearchBlob([
+          plant.name,
+          plant.species,
+          plant.location,
+          plant.specificLocation,
+          plant.info,
+          plant.flowerCatalog,
+          plant.wateringFrequency,
+          ...(plant.badges || []),
+        ]);
+
+        if (!plantId || !queryMatches(searchBlob, searchTokens)) {
+          return results;
+        }
+
+        results.push({
+          id: `plant-${plantId}`,
+          type: "plant" as const,
+          title: plant.name,
+          subtitle: [plant.species, plant.location].filter(Boolean).join(" - ") || t("home_search_saved_plant"),
+          icon: "local-florist" as const,
+          route: `/flower/${encodeURIComponent(plantId)}`,
+          historyValue: plant.name,
+          score: scoreSearchMatch(plant.name, searchBlob, normalizedSearch),
+        });
+
+        return results;
+      }, []);
+
+    return [...matchedPlants, ...matchedPages].sort((left, right) => right.score - left.score).slice(0, 6);
+  }, [normalizedSearch, pageSearchResults, searchTokens, t, trackedPlants]);
+
+  const executeSearchResult = async (result: SearchResult, sourceQuery: string) => {
+    await storeSearchHistory(sourceQuery || result.historyValue);
+
+    if (result.action === "scan") {
+      setSearch("");
+      await handleScan();
+      return;
+    }
+
+    if (result.route) {
+      setSearch("");
+      router.push(result.route);
+    }
+  };
+
+  const handleSearch = async () => {
+    const query = search.trim();
+    if (!query) {
+      return;
+    }
+
+    const topResult = searchResults[0];
+    if (!topResult) {
+      Alert.alert(t("search_action"), t("home_search_no_results"));
+      return;
+    }
+
+    await executeSearchResult(topResult, query);
+  };
+
   const diagnosisColors = diagnosis ? getDiagnosisToneColors(diagnosis.tone) : null;
 
   return (
@@ -555,11 +892,81 @@ export function HomeScreen() {
             style={styles.searchInput}
             value={search}
             onChangeText={setSearch}
+            onSubmitEditing={() => {
+              void handleSearch();
+            }}
+            returnKeyType="search"
           />
-          <Pressable onPress={handleSearch} style={styles.searchButton}>
+          <Pressable
+            onPress={() => {
+              void handleSearch();
+            }}
+            style={styles.searchButton}
+          >
             <Text style={styles.searchButtonText}>{t("search_action")}</Text>
           </Pressable>
         </View>
+
+        {normalizedSearch ? (
+          <View style={styles.searchPanel}>
+            <View style={styles.searchPanelHeader}>
+              <Text style={styles.searchPanelTitle}>{t("home_search_results_title")}</Text>
+            </View>
+
+            {searchResults.length === 0 ? (
+              <View style={styles.searchEmptyState}>
+                <MaterialIcons name="search-off" size={18} color={colors.textMuted} />
+                <Text style={styles.searchEmptyText}>{t("home_search_no_results")}</Text>
+              </View>
+            ) : (
+              searchResults.map((result) => (
+                <Pressable
+                  key={result.id}
+                  onPress={() => {
+                    void executeSearchResult(result, search.trim());
+                  }}
+                  style={styles.searchResultRow}
+                >
+                  <View style={styles.searchResultIcon}>
+                    <MaterialIcons name={result.icon} size={18} color={colors.primaryDark} />
+                  </View>
+
+                  <View style={styles.searchResultCopy}>
+                    <Text style={styles.searchResultTitle}>{result.title}</Text>
+                    <Text style={styles.searchResultSubtitle}>{result.subtitle}</Text>
+                  </View>
+
+                  <View style={[styles.searchTypePill, result.type === "plant" ? styles.searchTypePillPlant : null]}>
+                    <Text style={[styles.searchTypePillText, result.type === "plant" ? styles.searchTypePillTextPlant : null]}>
+                      {result.type === "plant" ? t("home_search_plants_label") : t("home_search_pages_label")}
+                    </Text>
+                  </View>
+                </Pressable>
+              ))
+            )}
+          </View>
+        ) : searchHistory.length > 0 ? (
+          <View style={styles.searchPanel}>
+            <View style={styles.searchPanelHeader}>
+              <Text style={styles.searchPanelTitle}>{t("home_search_recent_title")}</Text>
+              <Pressable
+                onPress={() => {
+                  void clearSearchHistory();
+                }}
+                style={styles.searchClearButton}
+              >
+                <Text style={styles.searchClearButtonText}>{t("home_search_clear_recent")}</Text>
+              </Pressable>
+            </View>
+
+            {searchHistory.map((entry) => (
+              <Pressable key={entry} onPress={() => setSearch(entry)} style={styles.searchHistoryRow}>
+                <MaterialIcons name="history" size={18} color={colors.textMuted} />
+                <Text style={styles.searchHistoryText}>{entry}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
 
         {statusMessage ? (
           <View style={styles.statusBanner}>
@@ -758,6 +1165,108 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 13,
     fontWeight: "800",
+  },
+  searchPanel: {
+    backgroundColor: "rgba(255,255,255,0.96)",
+    borderRadius: 22,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    ...shadows.soft,
+  },
+  searchPanelHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: spacing.sm,
+  },
+  searchPanelTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  searchClearButton: {
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 4,
+  },
+  searchClearButtonText: {
+    color: colors.primaryDark,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  searchEmptyState: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  searchEmptyText: {
+    color: colors.textMuted,
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "700",
+    lineHeight: 20,
+  },
+  searchResultRow: {
+    alignItems: "center",
+    borderTopColor: "rgba(124,92,255,0.12)",
+    borderTopWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  searchResultIcon: {
+    alignItems: "center",
+    backgroundColor: "#F2ECFF",
+    borderRadius: 16,
+    height: 34,
+    justifyContent: "center",
+    width: 34,
+  },
+  searchResultCopy: {
+    flex: 1,
+  },
+  searchResultTitle: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  searchResultSubtitle: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: "700",
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  searchTypePill: {
+    backgroundColor: "#F0E9FF",
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+  },
+  searchTypePillPlant: {
+    backgroundColor: "#E7F6EA",
+  },
+  searchTypePillText: {
+    color: colors.primaryDark,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  searchTypePillTextPlant: {
+    color: "#1C6B47",
+  },
+  searchHistoryRow: {
+    alignItems: "center",
+    borderTopColor: "rgba(124,92,255,0.12)",
+    borderTopWidth: 1,
+    flexDirection: "row",
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  searchHistoryText: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "700",
   },
   statusBanner: {
     alignItems: "center",
