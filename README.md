@@ -64,6 +64,10 @@ Use these files depending on what you need:
   Full repository overview, architecture, setup, backend routes, and module summary
 - `mobile/README.md`
   Detailed guide for the Expo mobile app, screens, translations, reminders, and Expo startup flow
+- `florana/README.md`
+  Legacy web client overview, local startup steps, and when to use that module
+- `ml_pipeline/README.md`
+  Dataset, training, Cloudinary download, and backend model refresh workflow
 - `PAYMENT_SYSTEM_GUIDE.md`
   Payment-specific implementation notes
 - `USER_TESTING_GUIDE.md`

@@ -179,7 +179,7 @@ Setup steps:
 
 Fastest root-level setup:
 
-```bash
+```powershell
 npm run setup
 ```
 
@@ -187,36 +187,56 @@ npm run setup
 
 From the repository root:
 
-```bash
+```powershell
 npm --prefix mobile install
 ```
 
 Or from inside `mobile/`:
 
-```bash
+```powershell
 npm install
 ```
 
 ## Run
 
+Recommended from the repository root with separate terminals:
+
+Terminal 1:
+
+```powershell
+npm run backend:start
+```
+
+Terminal 2:
+
+```powershell
+npm start
+```
+
 From the repository root:
 
-```bash
+```powershell
 npm run backend:start
 npm start
 ```
 
 Recommended first-time verification from the repository root:
 
-```bash
+```powershell
 npm run verify
 ```
 
 Or from inside `mobile/`:
 
-```bash
+```powershell
 npm start
 ```
+
+Common local URLs:
+
+- Backend API: `http://127.0.0.1:8000`
+- Backend docs: `http://127.0.0.1:8000/docs`
+- Expo dev server: usually `http://127.0.0.1:8081` or the next free Expo port
 
 Useful commands:
 
@@ -281,17 +301,19 @@ Care Reminder-specific checks:
 
 Recommended validation:
 
-```bash
+```powershell
 npm run typecheck
 ```
 
 From the repository root:
 
-```bash
+```powershell
 npm run mobile:typecheck
 ```
 
 ## Related Documentation
 
 - Root repository guide: [`../README.md`](../README.md)
+- Legacy web module guide: [`../florana/README.md`](../florana/README.md)
+- ML pipeline guide: [`../ml_pipeline/README.md`](../ml_pipeline/README.md)
 - Payment setup notes: [`../PAYMENT_SYSTEM_GUIDE.md`](../PAYMENT_SYSTEM_GUIDE.md)
