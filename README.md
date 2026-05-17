@@ -83,6 +83,14 @@ Use these files depending on what you need:
 - `USER_TESTING_GUIDE.md`
   Manual user testing checklist, acceptance scenarios, and bug report template
 
+Important root scripts:
+
+- `npm run setup` — install dependencies and configure local environment files
+- `npm run verify` — run the main project verification suite across mobile, backend, and dashboard
+- `npm run backend:start` — start the FastAPI backend locally
+- `npm start` — start the mobile Expo app from the repository root
+- `npm run admin:start` — start the admin dashboard locally
+
 ## Testing Commands
 
 Run these commands from the repository root:
