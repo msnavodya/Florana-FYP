@@ -357,12 +357,21 @@ If you are using a real phone with Expo Go, update `mobile/.env` before starting
 EXPO_PUBLIC_API_BASE_URL=http://YOUR_COMPUTER_LAN_IP:8000
 ```
 
-Examples:
+Common local addresses:
 
 - Real phone on same Wi-Fi: `http://192.168.x.x:8000`
 - Android emulator: `http://10.0.2.2:8000`
 - iOS simulator: `http://127.0.0.1:8000`
 - Web on the same computer: `http://127.0.0.1:8000`
+
+Required local ports:
+
+- backend API: `8000`
+- admin dashboard: `5173`
+- legacy web client: `3000`
+- Expo dev server: usually `8081`
+
+If ports are already in use, stop the conflicting service or configure the port in the corresponding module start script.
 
 ### Start The Full Local Stack
 
