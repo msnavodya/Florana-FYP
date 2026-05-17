@@ -6,13 +6,13 @@
 
 Florana is a final-year project that combines a mobile plant-care experience, AI-assisted disease prediction, growth tracking, reminders, shopping, and admin management in one connected platform.
 
-[![Expo](https://img.shields.io/badge/Expo-000020?style=for-the-badge&logo=expo&logoColor=white)](https://expo.dev/)
-[![React Native](https://img.shields.io/badge/React%20Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactnative.dev/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![TensorFlow / Keras](https://img.shields.io/badge/TensorFlow%20%2F%20Keras-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white)](https://www.tensorflow.org/)
-[![Admin Dashboard](https://img.shields.io/badge/Admin%20Dashboard-4F46E5?style=for-the-badge&logoColor=white)](#)
-[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![Status: Academic Complete](https://img.shields.io/badge/Status-Academic%20Complete-2EA043?style=for-the-badge&logoColor=white)](#)
+[![Expo](https://img.shields.io/badge/Expo-SDK%2054-000020?style=flat&logo=expo&logoColor=white)](https://expo.dev/)
+[![React Native](https://img.shields.io/badge/React%20Native-0.81.5-20232A?style=flat&logo=react&logoColor=61DAFB)](https://reactnative.dev/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![TensorFlow / Keras](https://img.shields.io/badge/TensorFlow%20%2F%20Keras-AI%20Model-FF6F00?style=flat&logo=tensorflow&logoColor=white)](https://www.tensorflow.org/)
+[![Admin Dashboard](https://img.shields.io/badge/Admin-Dashboard-2563EB?style=flat&logoColor=white)](#)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Database-47A248?style=flat&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Status](https://img.shields.io/badge/Status-Academic%20Complete-65A30D?style=flat)](#)
 
 </div>
 
