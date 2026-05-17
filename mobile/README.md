@@ -56,6 +56,7 @@ Implemented screens in `mobile/src/screens/`:
 - `QuickTipScreen.tsx`
 - `CatalogScreen.tsx`
 - `SeasonScreen.tsx`
+- `SellScreen.tsx`
 - `ProductDetailsScreen.tsx`
 - `CartScreen.tsx`
 - `ProfileScreen.tsx`
@@ -63,6 +64,37 @@ Implemented screens in `mobile/src/screens/`:
 - `SettingsScreen.tsx`
 - `HelpScreen.tsx`
 - `AboutScreen.tsx`
+
+## Route Coverage
+
+Main Expo Router entry files in `mobile/app/`:
+
+- `index.tsx`
+  Renders `WelcomeScreen` for signed-out users and redirects authenticated users to `/home`.
+- `home.tsx`
+- `login.tsx`
+- `register.tsx`
+- `myplants.tsx`
+- `plant-register.tsx`
+- `care.tsx`
+- `quicktip.tsx`
+- `catalog.tsx`
+- `season/[season].tsx`
+- `sell.tsx`
+- `product/[id].tsx`
+- `cart.tsx`
+- `profile.tsx`
+- `feedback.tsx`
+- `settings.tsx`
+- `help.tsx`
+- `about.tsx`
+
+Compatibility aliases:
+
+- `tips.tsx`
+  Redirects legacy `/tips` navigation to `/quicktip`.
+- `reminder.tsx`
+  Redirects legacy `/reminder` navigation to `/care`.
 
 ## Project Structure
 
