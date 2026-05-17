@@ -342,6 +342,8 @@ npm run setup
 npm run verify
 ```
 
+If you want to start the backend and mobile app directly after setup, use separate terminals for `npm run backend:start` and `npm start`.
+
 `npm run setup` does all of the following:
 
 - installs root, mobile, admin dashboard, and legacy web dependencies
