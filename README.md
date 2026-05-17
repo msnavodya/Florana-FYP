@@ -309,29 +309,76 @@ Version snapshot below is based on the current repository manifests and the veri
 
 ## Quick Start For Viewers
 
-If you want the fastest first run from a fresh clone, use the root setup helper:
+Use this path if you want someone new to the repository to get the whole project running with the fewest surprises.
 
-```bash
+### Fastest First Run
+
+From a fresh clone in the repository root:
+
+```powershell
 npm run setup
+npm run verify
 ```
 
-That command:
+`npm run setup` does all of the following:
 
 - installs root, mobile, admin dashboard, and legacy web dependencies
 - creates `backend/.env` and `mobile/.env` from the example files if they are missing
 - creates `.venv/` if needed
 - installs the backend Python requirements into `.venv`
 
-After setup:
+### Configure Local API URL For Mobile
 
-```bash
-npm run verify
+If you are using a real phone with Expo Go, update `mobile/.env` before starting Expo:
+
+```env
+EXPO_PUBLIC_API_BASE_URL=http://YOUR_COMPUTER_LAN_IP:8000
+```
+
+Examples:
+
+- Real phone on same Wi-Fi: `http://192.168.x.x:8000`
+- Android emulator: `http://10.0.2.2:8000`
+- iOS simulator: `http://127.0.0.1:8000`
+- Web on the same computer: `http://127.0.0.1:8000`
+
+### Start The Full Local Stack
+
+Use separate terminals from the repository root:
+
+Terminal 1:
+
+```powershell
 npm run backend:start
+```
+
+Terminal 2:
+
+```powershell
 npm start
 ```
 
-For a first local run, MongoDB is optional. The backend falls back to local JSON storage when MongoDB is unavailable.
-If `npm run verify` reports missing backend Python packages, run `npm run setup:python` and rerun verification.
+Terminal 3:
+
+```powershell
+npm run admin:start
+```
+
+Optional Terminal 4 for the older web client:
+
+```powershell
+npm run legacy:web:start
+```
+
+### Local URLs
+
+- Backend API: `http://127.0.0.1:8000`
+- Backend docs: `http://127.0.0.1:8000/docs`
+- Admin dashboard: `http://127.0.0.1:5173`
+- Legacy web client: `http://127.0.0.1:3000`
+- Expo dev server: usually `http://127.0.0.1:8081` or the next free Expo port
+
+MongoDB is recommended for persistent storage but is not required for a first run. If MongoDB is unavailable, the backend falls back to local JSON storage.
 
 ## 5. System Architecture
 
@@ -379,46 +426,76 @@ Florana-FYP/
 
 ## 7. Installation
 
-### Recommended One-Command Setup
+### 1. Clone The Repository
 
-```bash
-npm run setup
-```
-
-Optional variants:
-
-```bash
-npm run setup:js
-npm run setup:python
-```
-
-### Clone Repository
-
-```bash
+```powershell
 git clone https://github.com/msnavodya/Florana-FYP.git
 cd Florana-FYP
 ```
 
-### Install JavaScript Dependencies
+### 2. Recommended One-Command Setup
 
-```bash
+```powershell
+npm run setup
+```
+
+Optional setup variants:
+
+```powershell
+npm run setup:js
+npm run setup:python
+```
+
+### 3. Configure Environment Files
+
+`npm run setup` creates these automatically if they do not exist:
+
+- `backend/.env`
+- `mobile/.env`
+
+Review and adjust them before running on real devices or shared networks.
+
+Minimum values for local development:
+
+`backend/.env`
+
+```env
+MONGO_URL=mongodb://localhost:27017
+JWT_SECRET_KEY=replace_with_a_long_random_secret
+HOST=0.0.0.0
+PORT=8000
+```
+
+`mobile/.env`
+
+```env
+EXPO_PUBLIC_API_BASE_URL=http://YOUR_COMPUTER_LAN_IP:8000
+```
+
+### 4. Manual Dependency Install Commands
+
+Use these if you want to install parts of the workspace manually instead of `npm run setup`.
+
+#### JavaScript Dependencies
+
+```powershell
 npm install
 npm --prefix mobile install
 npm --prefix admin-dashboard install
 npm --prefix florana install
 ```
 
-### Install Backend Python Dependencies
+#### Backend Python Dependencies
 
-Using the existing project virtual environment path:
+Using the project virtual environment path:
 
-```bash
+```powershell
 .\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
 ```
 
 Or create a new virtual environment:
 
-```bash
+```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r backend\requirements.txt
@@ -426,20 +503,67 @@ pip install -r backend\requirements.txt
 
 These Python requirements include the packages needed for the backend API, the backend `pytest` suite, and the FastAPI test client used by CI verification.
 
-### Install ML Pipeline Dependencies
+#### ML Pipeline Dependencies
 
-```bash
+The ML pipeline uses different TensorFlow-related versions from the backend, so use a separate virtual environment inside `ml_pipeline/`.
+
+```powershell
 cd ml_pipeline
+python -m venv .venv-ml
+.\.venv-ml\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
 ## 8. Running the Project
 
+### Recommended Run Order
+
+For day-to-day mobile development:
+
+```powershell
+npm run backend:start
+npm start
+```
+
+For the full local project:
+
+```powershell
+npm run backend:start
+npm start
+npm run admin:start
+npm run legacy:web:start
+```
+
+### MongoDB
+
+MongoDB is optional for a first run because the backend falls back to local JSON storage. If you want persistent database-backed storage, start MongoDB before the backend.
+
+If MongoDB is installed as a Windows service:
+
+```powershell
+Get-Service MongoDB
+Start-Service MongoDB
+```
+
+If you run MongoDB manually:
+
+```powershell
+mongod --dbpath C:\data\db
+```
+
+Default backend connection string:
+
+```text
+mongodb://localhost:27017
+```
+
+If MongoDB is not available, the app can still run with local JSON fallback storage for many flows.
+
 ### Backend
 
 Start the FastAPI backend from the repository root:
 
-```bash
+```powershell
 npm run backend:start
 ```
 
@@ -449,13 +573,13 @@ process.
 
 Run with reload only during development:
 
-```bash
+```powershell
 npm run backend:start:reload
 ```
 
 Check or restart the backend:
 
-```bash
+```powershell
 npm run backend:status
 npm run backend:restart
 npm run backend:stop
@@ -493,25 +617,25 @@ also checks the backend before Expo opens:
 
 Start the Expo app:
 
-```bash
+```powershell
 npm start
 ```
 
 Run Android:
 
-```bash
+```powershell
 npm run android
 ```
 
 Run iOS:
 
-```bash
+```powershell
 npm run ios
 ```
 
 Run mobile app in the browser:
 
-```bash
+```powershell
 npm run web
 ```
 
@@ -519,14 +643,14 @@ For Expo Go on a real phone, set `EXPO_PUBLIC_API_BASE_URL` to your computer LAN
 
 Recommended daily startup:
 
-```bash
+```powershell
 npm run backend:start
 npm start
 ```
 
 If you need a fresh backend, run this exact command:
 
-```bash
+```powershell
 npm run backend:restart
 ```
 
@@ -541,13 +665,13 @@ Use the npm backend scripts so duplicate backend processes are handled safely.
 
 Start the admin dashboard:
 
-```bash
+```powershell
 npm run admin:start
 ```
 
 Build the admin dashboard:
 
-```bash
+```powershell
 npm run admin:build
 ```
 
@@ -555,13 +679,13 @@ npm run admin:build
 
 Start the legacy React web client:
 
-```bash
+```powershell
 npm run legacy:web:start
 ```
 
 Build the legacy React web client:
 
-```bash
+```powershell
 npm run legacy:web:build
 ```
 
@@ -581,7 +705,60 @@ backend/ai/plant_disease_model.keras
 backend/ai/class_names.json
 ```
 
-To train or update the model, use the workflow in `ml_pipeline/`.
+#### Train Or Refresh The Model
+
+The current recommended training script is `ml_pipeline/train.py`. It saves the updated model directly into `backend/ai/`.
+
+1. Prepare the ML environment:
+
+```powershell
+cd ml_pipeline
+python -m venv .venv-ml
+.\.venv-ml\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+2. If you want to download images from Cloudinary, create a local config first:
+
+```powershell
+Copy-Item config_template.py config.py
+```
+
+Then add your Cloudinary credentials to `ml_pipeline/config.py`.
+
+3. Optional dataset download:
+
+```powershell
+python download_dataset.py
+```
+
+4. Arrange your dataset into class folders under `ml_pipeline/dataset/`.
+
+Expected structure:
+
+```text
+ml_pipeline/dataset/
+  Botrytis/
+  Fresh Leaf/
+  Leaf_Spot/
+  Powdery_Mildew/
+  Rust/
+```
+
+5. Train the backend model artifact:
+
+```powershell
+python train.py
+```
+
+Outputs written by `train.py`:
+
+- `backend/ai/plant_disease_model.keras`
+- `backend/ai/class_names.json`
+- `ml_pipeline/best_model.keras`
+- `ml_pipeline/training_history.png`
+
+`train_model.py` is still included as an alternate/manual training workflow that saves local model files based on `ml_pipeline/config.py`, but `train.py` is the best choice when you want to refresh the exact model used by the current backend.
 
 Current mobile prediction behavior:
 
@@ -616,9 +793,9 @@ Current mobile prediction behavior:
 
 Copy the example files before running locally:
 
-```bash
-copy backend\.env.example backend\.env
-copy mobile\.env.example mobile\.env
+```powershell
+Copy-Item backend\.env.example backend\.env
+Copy-Item mobile\.env.example mobile\.env
 ```
 
 The FastAPI backend runner and the optional Flask payment backend both load
@@ -647,6 +824,13 @@ ALLOWED_RETURN_URL_PREFIXES=exp://,exps://,florana-payments://,https://auth.expo
 ```env
 EXPO_PUBLIC_API_BASE_URL=http://YOUR_COMPUTER_LAN_IP:8000
 ```
+
+Choose the value based on where the mobile app is running:
+
+- Real phone with Expo Go: use your computer LAN IP
+- Android emulator: `http://10.0.2.2:8000`
+- iOS simulator: `http://127.0.0.1:8000`
+- Expo web on the same computer: `http://127.0.0.1:8000`
 
 ### ML Pipeline Cloudinary Config
 
