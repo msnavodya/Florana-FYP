@@ -16,6 +16,10 @@ Florana is a final-year project that combines a mobile plant-care experience, AI
 
 </div>
 
+## What is Florana?
+
+Florana is a unified flower plant care platform that brings smart disease detection, growth tracking, reminders, shopping, and admin management into one connected experience. It is designed to support home gardeners, small flower sellers, and students with AI-assisted plant care and seasonal flower shopping.
+
 ## Project Showcase
 
 Florana is a final-year project for flower plant care, flower plant disease detection, growth tracking, and flower plant shopping. It combines an Expo React Native mobile app, a FastAPI backend, a TensorFlow/Keras disease prediction model, an admin dashboard, and a legacy React web client.
