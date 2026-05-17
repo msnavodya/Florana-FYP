@@ -70,6 +70,8 @@ Use these files depending on what you need:
   Full repository overview, architecture, setup, backend routes, and module summary
 - `backend/README.md`
   Detailed guide for the FastAPI backend, storage fallback behavior, route coverage, and backend verification
+- `admin-dashboard/README.md`
+  Detailed guide for the React + Vite admin dashboard, routed pages, API usage, and build verification
 - `mobile/README.md`
   Detailed guide for the Expo mobile app, screens, translations, reminders, and Expo startup flow
 - `florana/README.md`
