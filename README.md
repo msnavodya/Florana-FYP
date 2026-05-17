@@ -329,6 +329,8 @@ Version snapshot below is based on the current repository manifests and the veri
 - Optional Cloudinary account for ML dataset download workflow
 - Optional Stripe keys for live card payment testing
 
+> Tip: Review `mobile/README.md` and `admin-dashboard/README.md` for module-specific configuration before running the full stack.
+
 ## Quick Start For Viewers
 
 Use this path if you want someone new to the repository to get the whole project running with the fewest surprises.
