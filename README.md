@@ -68,6 +68,8 @@ Use these files depending on what you need:
 
 - `README.md`
   Full repository overview, architecture, setup, backend routes, and module summary
+- `backend/README.md`
+  Detailed guide for the FastAPI backend, storage fallback behavior, route coverage, and backend verification
 - `mobile/README.md`
   Detailed guide for the Expo mobile app, screens, translations, reminders, and Expo startup flow
 - `florana/README.md`
