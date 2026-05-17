@@ -6,7 +6,13 @@
 
 Florana is a final-year project that combines a mobile plant-care experience, AI-assisted disease prediction, growth tracking, reminders, shopping, and admin management in one connected platform.
 
-`Expo React Native` `FastAPI` `TensorFlow / Keras` `Admin Dashboard` `MongoDB`
+[![Expo](https://img.shields.io/badge/Expo-000020?style=for-the-badge&logo=expo&logoColor=white)](https://expo.dev/)
+[![React Native](https://img.shields.io/badge/React%20Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactnative.dev/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![TensorFlow / Keras](https://img.shields.io/badge/TensorFlow%20%2F%20Keras-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white)](https://www.tensorflow.org/)
+[![Admin Dashboard](https://img.shields.io/badge/Admin%20Dashboard-4F46E5?style=for-the-badge&logoColor=white)](#)
+[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![Status: Academic Complete](https://img.shields.io/badge/Status-Academic%20Complete-2EA043?style=for-the-badge&logoColor=white)](#)
 
 </div>
 
