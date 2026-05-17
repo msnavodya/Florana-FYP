@@ -66,6 +66,8 @@ Completed project areas:
 
 Use these files depending on what you need:
 
+- `GETTING_STARTED.md`
+  Fastest GitHub clone-to-run guide with the shortest path for setup, verification, and first launch
 - `README.md`
   Full repository overview, architecture, setup, backend routes, and module summary
 - `backend/README.md`

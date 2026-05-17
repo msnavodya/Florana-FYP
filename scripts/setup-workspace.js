@@ -141,4 +141,6 @@ log("Next steps:");
 log("1. Update backend/.env and mobile/.env if you need a different local API URL or payment keys.");
 log("2. Run `npm run verify` to check the workspace.");
 log("3. Start the backend with `npm run backend:start` and the mobile app with `npm start`.");
-log("4. MongoDB is optional for a first run because the backend falls back to local JSON storage.");
+log("4. Start the admin dashboard with `npm run admin:start` if you want the web admin UI.");
+log("5. Local admin login: admin@florana.com / 123456.");
+log("6. MongoDB is optional for a first run because the backend falls back to local JSON storage.");
