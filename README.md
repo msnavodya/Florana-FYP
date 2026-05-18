@@ -942,22 +942,49 @@ The preview images below are embedded directly in the README using commit-pinned
 
 ### Mobile App Preview
 
-| Screen | Preview |
-| --- | --- |
-| Welcome screen | <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/welcome-screen.png" alt="Welcome screen" width="220" /> |
-| Home dashboard | <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/home-dashboard.png" alt="Home dashboard" width="220" /> |
-| Disease diagnosis result | <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/diagnosis-result.png" alt="Disease diagnosis result" width="220" /> |
-| Plant profile | <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/plant-profile.png" alt="Plant profile" width="220" /> |
-| Growth tracker and history | <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/growth-tracker.png" alt="Growth tracker and history" width="220" /> |
-| Community screen | <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/community.png" alt="Community screen" width="220" /> |
-| Seasonal catalog | <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/catalog.png" alt="Seasonal catalog" width="220" /> |
-| Checkout and payment method | <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/checkout.png" alt="Checkout and payment method" width="220" /> |
+<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;">
+  <div style="max-width: 220px; text-align: center;">
+    <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/welcome-screen.png" alt="Welcome screen" width="220" />
+    <p>Welcome screen</p>
+  </div>
+  <div style="max-width: 220px; text-align: center;">
+    <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/home-dashboard.png" alt="Home dashboard" width="220" />
+    <p>Home dashboard</p>
+  </div>
+  <div style="max-width: 220px; text-align: center;">
+    <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/diagnosis-result.png" alt="Disease diagnosis result" width="220" />
+    <p>Disease diagnosis result</p>
+  </div>
+  <div style="max-width: 220px; text-align: center;">
+    <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/plant-profile.png" alt="Plant profile" width="220" />
+    <p>Plant profile</p>
+  </div>
+  <div style="max-width: 220px; text-align: center;">
+    <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/growth-tracker.png" alt="Growth tracker and history" width="220" />
+    <p>Growth tracker and history</p>
+  </div>
+  <div style="max-width: 220px; text-align: center;">
+    <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/community.png" alt="Community screen" width="220" />
+    <p>Community screen</p>
+  </div>
+  <div style="max-width: 220px; text-align: center;">
+    <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/catalog.png" alt="Seasonal catalog" width="220" />
+    <p>Seasonal catalog</p>
+  </div>
+  <div style="max-width: 220px; text-align: center;">
+    <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/checkout.png" alt="Checkout and payment method" width="220" />
+    <p>Checkout and payment method</p>
+  </div>
+</div>
 
 ### Admin Dashboard Preview
 
-| Screen | Preview |
-| --- | --- |
-| Admin dashboard | <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/admin-dashboard.png" alt="Admin dashboard" width="520" /> |
+<div style="display: flex; justify-content: center; margin-top: 1rem;">
+  <div style="max-width: 520px; text-align: center;">
+    <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/admin-dashboard.png" alt="Admin dashboard" width="520" />
+    <p>Admin dashboard</p>
+  </div>
+</div>
 
 ## 12. Dataset Information
 
