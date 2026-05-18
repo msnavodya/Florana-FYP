@@ -946,42 +946,42 @@ The preview images are embedded directly in the README using commit-pinned image
 
 ### Mobile App Preview
 
-<div style="overflow-x:auto; padding: 1rem 0;">
-  <div style="display: flex; flex-wrap: nowrap; gap: 1rem; min-width: max-content;">
-    <div style="flex: 0 0 auto; width:220px; text-align:center;">
+<table>
+  <tr>
+    <td style="text-align:center; vertical-align:top; padding: 0.5rem;">
       <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/welcome-screen.png" alt="Welcome screen" width="220" />
       <p>Welcome screen</p>
-    </div>
-    <div style="flex: 0 0 auto; width:220px; text-align:center;">
+    </td>
+    <td style="text-align:center; vertical-align:top; padding: 0.5rem;">
       <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/home-dashboard.png" alt="Home dashboard" width="220" />
       <p>Home dashboard</p>
-    </div>
-    <div style="flex: 0 0 auto; width:220px; text-align:center;">
+    </td>
+    <td style="text-align:center; vertical-align:top; padding: 0.5rem;">
       <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/diagnosis-result.png" alt="Disease diagnosis result" width="220" />
       <p>Disease diagnosis result</p>
-    </div>
-    <div style="flex: 0 0 auto; width:220px; text-align:center;">
+    </td>
+    <td style="text-align:center; vertical-align:top; padding: 0.5rem;">
       <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/plant-profile.png" alt="Plant profile" width="220" />
       <p>Plant profile</p>
-    </div>
-    <div style="flex: 0 0 auto; width:220px; text-align:center;">
+    </td>
+    <td style="text-align:center; vertical-align:top; padding: 0.5rem;">
       <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/growth-tracker.png" alt="Growth tracker and history" width="220" />
       <p>Growth tracker and history</p>
-    </div>
-    <div style="flex: 0 0 auto; width:220px; text-align:center;">
+    </td>
+    <td style="text-align:center; vertical-align:top; padding: 0.5rem;">
       <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/community.png" alt="Community screen" width="220" />
       <p>Community screen</p>
-    </div>
-    <div style="flex: 0 0 auto; width:220px; text-align:center;">
+    </td>
+    <td style="text-align:center; vertical-align:top; padding: 0.5rem;">
       <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/catalog.png" alt="Seasonal catalog" width="220" />
       <p>Seasonal catalog</p>
-    </div>
-    <div style="flex: 0 0 auto; width:220px; text-align:center;">
+    </td>
+    <td style="text-align:center; vertical-align:top; padding: 0.5rem;">
       <img src="https://raw.githubusercontent.com/msnavodya/Florana-FYP/147a44601e892f8f08afb827ce199cbeb73d4a1a/docs/screenshots/checkout.png" alt="Checkout and payment method" width="220" />
       <p>Checkout and payment method</p>
-    </div>
-  </div>
-</div>
+    </td>
+  </tr>
+</table>
 
 ### Admin Dashboard Preview
 
