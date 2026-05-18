@@ -938,7 +938,11 @@ Uploaded images are served from:
 
 ## 11. Screenshots
 
-The preview images below are embedded directly in the README using commit-pinned image URLs, so the current branch does not need to keep the screenshot files tracked.
+### Horizontal Mobile Showcase
+
+The mobile screens below are arranged side-by-side in a single horizontal row. Scroll left → right to view the Mobile UI frames.
+
+The preview images are embedded directly in the README using commit-pinned image URLs, so the current branch does not need to keep the screenshot files tracked.
 
 ### Mobile App Preview
 
